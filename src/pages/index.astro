@@ -1,49 +1,247 @@
 ---
+import { getCollection } from 'astro:content';
+import { Image } from 'astro:assets';
 import BaseHead from '../components/BaseHead.astro';
 import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
-import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
+import FormattedDate from '../components/FormattedDate.astro';
+import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
+import avatarPlaceholder from '../assets/blog-placeholder-about.jpg';
+
+const posts = (await getCollection('blog'))
+	.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
+	.slice(0, 5);
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
 	<head>
 		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
+		<style>
+			main {
+				width: 100%;
+				max-width: 1140px;
+				padding: 0;
+				background: transparent;
+			}
+			.page-wrapper {
+				position: relative;
+				min-height: 100vh;
+			}
+			.page-wrapper::before {
+				content: '';
+				position: fixed;
+				inset: 0;
+				z-index: -1;
+				background: url('/bg-pattern.svg') center / cover no-repeat;
+				background-color: #eae6f0;
+			}
+			.hero {
+				display: flex;
+				align-items: flex-start;
+				gap: 2em;
+				max-width: 1140px;
+				margin: 2em auto;
+				padding: 0;
+			}
+			.profile {
+				flex: 0 0 33.333%;
+				text-align: left;
+				position: sticky;
+				top: 2em;
+				align-self: flex-start;
+				background: rgba(255, 255, 255, 1);
+		border-radius: 20px;
+				padding: 2em;
+				box-shadow: 0 2px 12px rgba(var(--black), 0.04);
+			}
+			.avatar {
+				width: 120px;
+				height: 120px;
+				border-radius: 50%;
+				object-fit: cover;
+				border: 4px solid white;
+				box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+			}
+			.profile-name {
+				font-size: 1.6em;
+				font-weight: 700;
+				margin: 0.5em 0 0.15em;
+				color: rgb(var(--black));
+			}
+			.profile-bio {
+				color: rgb(var(--gray));
+				font-size: 0.93em;
+				line-height: 1.7;
+				margin: 0.8em 0 1.2em;
+			}
+			.profile-links {
+				display: flex;
+				justify-content: flex-start;
+				gap: 0.6em;
+				flex-wrap: wrap;
+			}
+			.profile-links a {
+				display: inline-flex;
+				align-items: center;
+				gap: 0.35em;
+				padding: 0.4em 0.9em;
+				border-radius: 8px;
+				background: rgb(var(--gray-light));
+				color: rgb(var(--gray-dark));
+				text-decoration: none;
+				font-size: 0.86em;
+				transition: all 0.2s ease;
+			}
+			.profile-links a:hover {
+				background: var(--accent);
+				color: white;
+			}
+			.post-feed {
+				flex: 0 0 66.666%;
+				min-width: 0;
+				background: rgba(255, 255, 255, 1);
+		border-radius: 20px;
+				padding: 2em;
+				box-shadow: 0 2px 12px rgba(var(--black), 0.04);
+			}
+			.section-title {
+				font-size: 1.2em;
+				font-weight: 700;
+				margin: 0 0 1.2em;
+				color: rgb(var(--black));
+				padding-bottom: 0.6em;
+				border-bottom: 2px solid rgb(var(--gray-light));
+			}
+			.post-list {
+				list-style: none;
+				margin: 0;
+				padding: 0;
+				display: flex;
+				flex-direction: column;
+				gap: 0.8em;
+			}
+			.post-list li a {
+				display: block;
+				padding: 1em 1.2em;
+				background: rgb(var(--gray-light));
+				border-radius: 12px;
+				text-decoration: none;
+				transition: all 0.2s ease;
+			}
+			.post-list li a:hover {
+				background: white;
+				box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+				transform: translateY(-1px);
+			}
+			.post-title {
+				font-size: 1.05em;
+				font-weight: 600;
+				color: rgb(var(--black));
+				margin: 0 0 0.2em;
+				line-height: 1.3;
+			}
+			.post-date {
+				font-size: 0.82em;
+				color: rgb(var(--gray));
+			}
+			.post-desc {
+				font-size: 0.88em;
+				color: rgb(var(--gray));
+				margin: 0.35em 0 0;
+				line-height: 1.5;
+			}
+			.view-all {
+				display: inline-block;
+				margin-top: 1.2em;
+				color: var(--accent);
+				text-decoration: none;
+				font-weight: 500;
+				font-size: 0.93em;
+			}
+			.view-all:hover {
+				text-decoration: underline;
+			}
+
+			@media (max-width: 768px) {
+				.hero {
+					flex-direction: column;
+					align-items: stretch;
+					gap: 1.5em;
+					margin: 1.5em auto;
+				}
+				.profile {
+					position: static;
+					width: auto;
+					flex: none;
+				}
+				.post-feed {
+					width: auto;
+					flex: none;
+				}
+			}
+		</style>
 	</head>
 	<body>
-		<Header />
-		<main>
-			<h1>🧑‍🚀 Hello, Astronaut!</h1>
-			<p>
-				Welcome to the official <a href="https://astro.build/">Astro</a> blog starter template. This template
-				serves as a lightweight, minimally-styled starting point for anyone looking to build a personal
-				website, blog, or portfolio with Astro.
-			</p>
-			<p>
-				This template comes with a few integrations already configured in your
-				<code>astro.config.mjs</code> file. You can customize your setup with
-				<a href="https://astro.build/integrations">Astro Integrations</a> to add tools like Tailwind,
-				React, or Vue to your project.
-			</p>
-			<p>Here are a few ideas on how to get started with the template:</p>
-			<ul>
-				<li>Edit this page in <code>src/pages/index.astro</code></li>
-				<li>Edit the site header items in <code>src/components/Header.astro</code></li>
-				<li>Add your name to the footer in <code>src/components/Footer.astro</code></li>
-				<li>Check out the included blog posts in <code>src/content/blog/</code></li>
-				<li>Customize the blog post page layout in <code>src/layouts/BlogPost.astro</code></li>
-			</ul>
-			<p>
-				Have fun! If you get stuck, remember to
-				<a href="https://docs.astro.build/">read the docs</a>
-				or <a href="https://astro.build/chat">join us on Discord</a> to ask questions.
-			</p>
-			<p>
-				Looking for a blog template with a bit more personality? Check out
-				<a href="https://github.com/Charca/astro-blog-template">astro-blog-template</a>
-				by <a href="https://twitter.com/Charca">Maxi Ferreira</a>.
-			</p>
-		</main>
-		<Footer />
+		<div class="page-wrapper">
+			<Header />
+			<main>
+				<div class="hero">
+					<aside class="profile">
+						<Image
+							class="avatar"
+							src={avatarPlaceholder}
+							alt="kaito's avatar"
+							width={120}
+							height={120}
+						/>
+						<h1 class="profile-name">kaito</h1>
+						<p class="profile-bio">
+							热爱技术，专注于 Web 开发和开源项目。<br />
+							喜欢探索新事物，分享编程知识与生活感悟。
+						</p>
+						<div class="profile-links">
+							<a href="https://github.com" target="_blank">
+								<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+									<path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+								</svg>
+								GitHub
+							</a>
+							<a href="https://twitter.com" target="_blank">
+								<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+									<path fill="currentColor" d="M12.6.75h2.454l-5.36 6.142L16 15.25h-4.937l-3.867-5.07-4.425 5.07H.316l5.733-6.57L0 .75h5.063l3.495 4.633L12.601.75Zm-.86 13.028h1.36L4.323 2.145H2.865l8.875 11.633Z"/>
+								</svg>
+								Twitter
+							</a>
+							<a href="mailto:kaito@example.com">
+								<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+									<path fill="currentColor" d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4Zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1H2Zm13 2.383-4.708 2.825L15 11.105V5.383Zm-.034 6.876-5.64-3.471L8 9.583l-1.326-.795-5.64 3.47A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.741ZM1 11.105l4.708-2.897L1 5.383v5.722Z"/>
+								</svg>
+								Email
+							</a>
+						</div>
+					</aside>
+
+					<section class="post-feed">
+						<h2 class="section-title">最新文章</h2>
+						<ul class="post-list">
+							{posts.map((post) => (
+								<li>
+									<a href={`/blog/${post.id}/`}>
+										<div class="post-title">{post.data.title}</div>
+										<div class="post-date">
+											<FormattedDate date={post.data.pubDate} />
+										</div>
+										<div class="post-desc">{post.data.description}</div>
+									</a>
+								</li>
+							))}
+						</ul>
+						<a class="view-all" href="/blog">查看全部文章 →</a>
+					</section>
+				</div>
+			</main>
+			<Footer />
+		</div>
 	</body>
 </html>
