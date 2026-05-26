@@ -17,34 +17,12 @@ const posts = (await getCollection('blog'))
 <html lang="zh-CN">
 	<head>
 		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
-		<script>
-			// Apply saved theme before first paint to prevent FOUC
-			(() => {
-				const saved = localStorage.getItem('theme');
-				const preferDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-				const theme = saved === 'dark' || saved === 'light' ? saved : (preferDark ? 'dark' : 'light');
-				document.documentElement.setAttribute('data-theme', theme);
-				document.documentElement.setAttribute('data-theme-choice', saved || 'system');
-			})();
-		</script>
 		<style>
 			main {
 				width: 100%;
 				max-width: 1140px;
 				padding: 0;
 				background: transparent;
-			}
-			.page-wrapper {
-				position: relative;
-				min-height: 100vh;
-			}
-			.page-wrapper::before {
-				content: '';
-				position: fixed;
-				inset: 0;
-				z-index: -1;
-				background: url('/bg-pattern.svg') center / cover no-repeat;
-				background-color: var(--page-bg);
 			}
 			.hero {
 				display: grid;
@@ -54,6 +32,14 @@ const posts = (await getCollection('blog'))
 				max-width: 1140px;
 				margin: 2em auto;
 				padding: 0;
+			}
+
+			/* Left column */
+			.left-col {
+				display: flex;
+				flex-direction: column;
+				gap: 2em;
+				min-width: 0;
 			}
 			.profile {
 				text-align: center;
@@ -104,20 +90,118 @@ const posts = (await getCollection('blog'))
 				background: var(--accent);
 				color: var(--card-bg);
 			}
-			.post-feed {
-				min-width: 0;
+
+			/* Shared card style for left column */
+			.card {
 				background: var(--card-bg);
 				border-radius: 20px;
 				padding: 2em;
 				box-shadow: 0 2px 12px rgba(var(--black), 0.04);
 			}
 			.section-title {
-				font-size: 1.2em;
+				font-size: 1.1em;
 				font-weight: 700;
-				margin: 0 0 1.2em;
+				margin: 0 0 1em;
 				color: rgb(var(--black));
-				padding-bottom: 0.6em;
+				padding-bottom: 0.5em;
 				border-bottom: 2px solid rgb(var(--gray-light));
+			}
+
+			/* Projects */
+			.project-list {
+				display: flex;
+				flex-direction: column;
+				gap: 0.6em;
+			}
+			.project-item {
+				display: block;
+				padding: 0.8em 0.9em;
+				background: rgb(var(--gray-light));
+				border-radius: 10px;
+				text-decoration: none;
+				transition: all 0.2s ease;
+			}
+			.project-item:hover {
+				background: var(--card-bg);
+				box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+				transform: translateY(-1px);
+			}
+			.project-name {
+				display: block;
+				font-size: 0.9em;
+				font-weight: 600;
+				color: rgb(var(--black));
+				margin-bottom: 0.15em;
+			}
+			.project-desc {
+				font-size: 0.8em;
+				color: rgb(var(--gray));
+				line-height: 1.4;
+			}
+
+			/* Friends */
+			.friend-list {
+				display: flex;
+				flex-direction: column;
+				gap: 0.5em;
+			}
+			.friend-link {
+				display: flex;
+				align-items: center;
+				gap: 0.5em;
+				padding: 0.55em 0.75em;
+				background: rgb(var(--gray-light));
+				border-radius: 10px;
+				text-decoration: none;
+				transition: all 0.2s ease;
+			}
+			.friend-link:hover {
+				background: var(--card-bg);
+				box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+				transform: translateY(-1px);
+			}
+			.friend-avatar {
+				width: 28px;
+				height: 28px;
+				border-radius: 50%;
+				background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				font-size: 0.7em;
+				font-weight: 700;
+				color: #fff;
+				flex-shrink: 0;
+			}
+			.friend-info {
+				display: flex;
+				flex-direction: column;
+				min-width: 0;
+			}
+			.friend-name {
+				font-size: 0.85em;
+				font-weight: 600;
+				color: rgb(var(--black));
+			}
+			.friend-desc {
+				font-size: 0.75em;
+				color: rgb(var(--gray));
+				overflow: hidden;
+				text-overflow: ellipsis;
+				white-space: nowrap;
+			}
+
+			/* Right column: post feed */
+			.post-feed {
+				background: var(--card-bg);
+				border-radius: 20px;
+				padding: 2em;
+				box-shadow: 0 2px 12px rgba(var(--black), 0.04);
+			}
+			.post-feed .section-title {
+				font-size: 1.2em;
+				margin-bottom: 1.2em;
+				padding-bottom: 0.6em;
 			}
 			.post-list {
 				list-style: none;
@@ -179,10 +263,10 @@ const posts = (await getCollection('blog'))
 		</style>
 	</head>
 	<body>
-		<div class="page-wrapper">
-			<Header />
-			<main>
-				<div class="hero">
+		<Header />
+		<main>
+			<div class="hero">
+				<div class="left-col">
 					<aside class="profile">
 						<Image
 							class="avatar"
@@ -197,19 +281,13 @@ const posts = (await getCollection('blog'))
 							喜欢探索新事物，分享编程知识与生活感悟。
 						</p>
 						<div class="profile-links">
-							<a href="https://github.com" target="_blank">
+							<a href="https://github.com/korolkk" target="_blank">
 								<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
 									<path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
 								</svg>
 								GitHub
 							</a>
-							<a href="https://twitter.com" target="_blank">
-								<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-									<path fill="currentColor" d="M12.6.75h2.454l-5.36 6.142L16 15.25h-4.937l-3.867-5.07-4.425 5.07H.316l5.733-6.57L0 .75h5.063l3.495 4.633L12.601.75Zm-.86 13.028h1.36L4.323 2.145H2.865l8.875 11.633Z"/>
-								</svg>
-								Twitter
-							</a>
-							<a href="mailto:kaito@example.com">
+							<a href="mailto:704788475@qq.com">
 								<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
 									<path fill="currentColor" d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4Zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1H2Zm13 2.383-4.708 2.825L15 11.105V5.383Zm-.034 6.876-5.64-3.471L8 9.583l-1.326-.795-5.64 3.47A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.741ZM1 11.105l4.708-2.897L1 5.383v5.722Z"/>
 								</svg>
@@ -218,26 +296,78 @@ const posts = (await getCollection('blog'))
 						</div>
 					</aside>
 
-					<section class="post-feed">
-						<h2 class="section-title">最新文章</h2>
-						<ul class="post-list">
-							{posts.map((post) => (
-								<li>
-									<a href={`/blog/${post.id}/`}>
-										<div class="post-title">{post.data.title}</div>
-										<div class="post-date">
-											<FormattedDate date={post.data.pubDate} />
-										</div>
-										<div class="post-desc">{post.data.description}</div>
-									</a>
-								</li>
-							))}
-						</ul>
-						<a class="view-all" href="/blog">查看全部文章 →</a>
+					<section class="card projects-card">
+						<h2 class="section-title">开源项目</h2>
+						<div class="project-list">
+							<a href="#" class="project-item">
+								<span class="project-name">KaitoBlog</span>
+								<span class="project-desc">基于 Astro 6 的极简博客主题，卡片式设计，内置暗色模式</span>
+							</a>
+							<a href="#" class="project-item">
+								<span class="project-name">QuickNote</span>
+								<span class="project-desc">命令行速记工具，支持 Markdown 渲染和标签分类</span>
+							</a>
+							<a href="#" class="project-item">
+								<span class="project-name">ColorCraft</span>
+								<span class="project-desc">调色板生成器，从图片提取色彩，支持多种导出格式</span>
+							</a>
+						</div>
+					</section>
+
+					<section class="card friends-card">
+						<h2 class="section-title">友情链接</h2>
+						<div class="friend-list">
+							<a href="#" class="friend-link">
+								<span class="friend-avatar">D</span>
+								<span class="friend-info">
+									<span class="friend-name">DevCafe</span>
+									<span class="friend-desc">专注前端工程化的技术博客</span>
+								</span>
+							</a>
+							<a href="#" class="friend-link">
+								<span class="friend-avatar">S</span>
+								<span class="friend-info">
+									<span class="friend-name">StarOcean</span>
+									<span class="friend-desc">全栈开发者的笔记与思考</span>
+								</span>
+							</a>
+							<a href="#" class="friend-link">
+								<span class="friend-avatar">P</span>
+								<span class="friend-info">
+									<span class="friend-name">PixelLab</span>
+									<span class="friend-desc">设计与代码的交汇之地</span>
+								</span>
+							</a>
+							<a href="#" class="friend-link">
+								<span class="friend-avatar">M</span>
+								<span class="friend-info">
+									<span class="friend-name">MoonLight</span>
+									<span class="friend-desc">独立开发者的产品日志</span>
+								</span>
+							</a>
+						</div>
 					</section>
 				</div>
-			</main>
-			<Footer />
-		</div>
+
+				<section class="post-feed">
+					<h2 class="section-title">最新文章</h2>
+					<ul class="post-list">
+						{posts.map((post) => (
+							<li>
+								<a href={`/blog/${post.id}/`}>
+									<div class="post-title">{post.data.title}</div>
+									<div class="post-date">
+										<FormattedDate date={post.data.pubDate} />
+									</div>
+									<div class="post-desc">{post.data.description}</div>
+								</a>
+							</li>
+						))}
+					</ul>
+					<a class="view-all" href="/blog">查看全部文章 →</a>
+				</section>
+			</div>
+		</main>
+		<Footer />
 	</body>
 </html>

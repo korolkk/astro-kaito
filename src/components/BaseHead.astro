@@ -3,7 +3,7 @@
 // all pages through the use of the <BaseHead /> component.
 import '../styles/global.css';
 import type { ImageMetadata } from 'astro';
-import FallbackImage from '../assets/blog-placeholder-1.jpg';
+import FallbackImage from '../assets/blog-placeholder-2.jpg';
 import { SITE_TITLE } from '../consts';
 import { Font } from 'astro:assets';
 
@@ -33,6 +33,17 @@ const { title, description, image = FallbackImage } = Astro.props;
 <meta name="generator" content={Astro.generator} />
 
 <Font cssVariable="--font-atkinson" preload />
+
+<!-- Anti-FOUC: apply saved theme before first paint -->
+<script>
+	(() => {
+		const saved = localStorage.getItem('theme');
+		const preferDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+		const theme = saved === 'dark' || saved === 'light' ? saved : (preferDark ? 'dark' : 'light');
+		document.documentElement.setAttribute('data-theme', theme);
+		document.documentElement.setAttribute('data-theme-choice', saved || 'system');
+	})();
+</script>
 
 <!-- Canonical URL -->
 <link rel="canonical" href={canonicalURL} />

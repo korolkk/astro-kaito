@@ -13,6 +13,7 @@
 :root {
 	--accent: #2337ff;
 	--accent-dark: #000d8a;
+	--accent-rgb: 35, 55, 255;
 	--black: 15, 18, 25;
 	--gray: 96, 115, 159;
 	--gray-light: 229, 233, 240;
@@ -29,6 +30,7 @@
 [data-theme='dark'] {
 	--accent: #5b8af7;
 	--accent-dark: #8ba8f7;
+	--accent-rgb: 91, 138, 247;
 	--black: 224, 224, 235;
 	--gray: 150, 160, 180;
 	--gray-light: 40, 45, 60;
@@ -47,8 +49,13 @@ body {
 	margin: 0;
 	padding: 0;
 	text-align: left;
-	background: linear-gradient(var(--gray-gradient)) no-repeat;
-	background-size: 100% 600px;
+	background:
+		radial-gradient(circle at 85% 15%, rgba(var(--accent-rgb), 0.07) 0%, transparent 50%),
+		radial-gradient(circle at 15% 85%, rgba(var(--accent-rgb), 0.05) 0%, transparent 50%),
+		radial-gradient(circle, rgba(var(--gray), 0.04) 1px, transparent 1px),
+		linear-gradient(var(--gray-gradient)) no-repeat;
+	background-color: var(--page-bg);
+	background-size: 100% 100%, 100% 100%, 24px 24px, 100% 600px;
 	word-wrap: break-word;
 	overflow-wrap: break-word;
 	color: rgb(var(--gray-dark));
