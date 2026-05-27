@@ -3,6 +3,7 @@ title: 'JWT认证 ｜ 字节跳动青训营笔记'
 description: '参数'
 pubDate: 'Feb 10 2023'
 heroImage: '../../assets/blog-placeholder-3.jpg'
+tags: ['字节青训营', '后端']
 ---
 ## 配置
 

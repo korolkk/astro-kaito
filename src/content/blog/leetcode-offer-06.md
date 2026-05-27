@@ -3,6 +3,7 @@ title: '剑指 Offer 06. 从尾到头打印链表'
 description: '剑指 Offer 06. 从尾到头打印链表'
 pubDate: 'Jan 10 2023'
 heroImage: '../../assets/blog-placeholder-5.jpg'
+tags: ['LeetCode', '算法']
 ---
 ## 题目
 

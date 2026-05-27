@@ -3,6 +3,7 @@ title: 'ROS2入门篇'
 description: '暂无简介'
 pubDate: 'Apr 28 2023'
 heroImage: '../../assets/blog-placeholder-3.jpg'
+tags: ['ROS2', '机器人']
 ---
 # ROS2入门篇
 

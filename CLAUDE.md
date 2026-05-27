@@ -20,29 +20,30 @@ npm run astro -- check  # 类型检查项目
 ### 路由（基于文件）
 
 - `src/pages/index.astro` → `/`（首页）
-- `src/pages/blog/index.astro` → `/blog`（文章列表）
+- `src/pages/blog/index.astro` → `/blog`（文章列表，时间轴布局，支持标签筛选）
 - `src/pages/blog/[...slug].astro` → `/blog/:slug`（单篇文章，使用 `getStaticPaths` 进行 SSG）
 - `src/pages/about.astro` → `/about`（使用 BlogPost 布局）
 - `src/pages/rss.xml.js` → `/rss.xml`（RSS Feed 端点）
+- `src/pages/search-index.json.js` → `/search-index.json`（搜索索引 JSON）
 
 ### 内容
 
-博客文章存放在 `src/content/blog/` 中，格式为 `.md` 或 `.mdx`。集合 schema 在 `src/content.config.ts` 中通过 `astro:content` 定义。必填 frontmatter：`title`（字符串）、`description`（字符串）、`pubDate`（日期）。可选：`updatedDate`（日期）、`heroImage`（图片）。
+博客文章存放在 `src/content/blog/` 中，格式为 `.md` 或 `.mdx`。集合 schema 在 `src/content.config.ts` 中通过 `astro:content` 定义。必填 frontmatter：`title`（字符串）、`description`（字符串）、`pubDate`（日期）。可选：`updatedDate`（日期）、`heroImage`（图片）、`tags`（字符串数组，默认空数组）。
 
 通过 `getCollection('blog')` 加载文章，通过 `render(post)` 渲染文章内容。
 
 ### 布局与组件
 
-- **`src/layouts/BlogPost.astro`** — 博客文章和关于页面的共享布局。接收 `title`、`description`、`pubDate`、`updatedDate?`、`heroImage?` 作为 props，通过 `<slot />` 渲染内容。
-- **`src/components/BaseHead.astro`** — `<head>` 元数据（charset、viewport、OG 标签、Twitter 卡片、canonical URL、favicon、字体预加载）。使用 `Astro.site` 和 `Astro.url`。
-- **`src/components/Header.astro`** — 网站头部导航，包含导航链接（首页、博客、关于）和社交图标链接。内部使用 `HeaderLink.astro` 实现激活状态样式。
+- **`src/layouts/BlogPost.astro`** — 博客文章和关于页面的共享布局。接收 `title`、`description`、`pubDate`、`updatedDate?`、`heroImage?`、`tags?`、`prevPost?`、`nextPost?` 作为 props，通过 `<slot />` 渲染内容。包含阅读进度条、标签展示、封面图、上一篇/下一篇导航。
+- **`src/components/BaseHead.astro`** — `<head>` 元数据（charset、viewport、OG 标签、Twitter 卡片、canonical URL、favicon、字体预加载、防 FOUC 主题脚本）。使用 `Astro.site` 和 `Astro.url`。
+- **`src/components/Header.astro`** — 网站头部导航，包含导航链接（首页、博客、关于）、内联搜索框（含搜索索引加载和结果渲染）、主题切换下拉菜单（亮色/暗色/跟随系统）。内部使用 `HeaderLink.astro` 实现激活状态样式。导航栏卡片式设计，上直角下圆角。
 - **`src/components/HeaderLink.astro`** — 单个导航链接，通过匹配 `Astro.url.pathname` 检测激活状态。
-- **`src/components/Footer.astro`** — 页面底部，包含版权年份。
+- **`src/components/Footer.astro`** — 页面底部，包含版权年份和返回顶部按钮（固定右下角，滚动超过 400px 显示）。
 - **`src/components/FormattedDate.astro`** — 根据 `Date` prop 渲染 `<time>` 元素。
 
 ### 样式与字体
 
-- **`src/styles/global.css`** — 全局样式，包含用于主题的 CSS 自定义属性（颜色变量如 `--accent`、`--black`、`--gray` 等）。由 `BaseHead.astro` 引入，确保每个页面都加载。
+- **`src/styles/global.css`** — 全局样式，包含用于主题的 CSS 自定义属性（颜色变量如 `--accent`、`--black`、`--gray`、`--card-bg`、`--page-bg` 等）。由 `BaseHead.astro` 引入，确保每个页面都加载。
 - **字体** — Atkinson Hyperlegible，通过 Astro 的 `fontProviders.local()` 在 `astro.config.mjs` 中本地加载。配置为 CSS 变量 `--font-atkinson`。
 
 ### 构建产物中 CSS 的分布
@@ -62,35 +63,61 @@ npm run astro -- check  # 类型检查项目
 - **始终在全局样式中加入 `box-sizing: border-box`**，否则 `max-width` + `padding` 会导致实际宽度超出预期（content-box 下 padding 加在 width 外面）
 - **`1/3 + 2/3` 分栏用 CSS Grid 而非 Flex**：Grid 的 `1fr 2fr` 从扣除 `gap` 后的剩余空间分配比例，Flex 的 `33.333% + 66.666%` + `gap` 会溢出
 
-### 3. Hover 下拉菜单的鼠标桥接
+### 3. 导航栏与页面内容宽度对齐
+导航栏 `.nav-inner` 的 `max-width: 1140px` 和 `padding: 0.6em 2em`，页面 `main` 的 `width` 和 `padding-left/right` 必须匹配才能对齐。全局 `main` 的默认 `padding: 3em 1em`，博客列表页需要覆盖为 `width: 1140px; padding-left: 2em; padding-right: 2em` 才能与导航栏严格对齐。
+
+### 4. Hover 下拉菜单的鼠标桥接
 `margin-top` 会在按钮与下拉菜单之间产生间隙，鼠标移过间隙时 `:hover` 断开导致菜单消失。
 - **修复**：在父容器上添加 `::after { content: ''; position: absolute; inset: 100% 0 auto 0; height: 10px; }` 作为隐形桥接，并将 `margin-top` 缩小到 `1px`
 
-### 4. 主题切换的防闪烁（FOUC）
+### 5. 主题切换的防闪烁（FOUC）
 暗色模式切换脚本必须在 `<head>` 中**同步执行**（阻塞渲染），在首帧绘制前设置 `data-theme`。否则暗色模式用户会看到白色闪烁。使用 `localStorage` 持久化选择，`matchMedia('(prefers-color-scheme: dark)')` 跟随系统。
 
-### 5. 主题色实现模式
+### 6. 主题色实现模式
 - 所有颜色通过 CSS 变量定义，亮色在 `:root`，暗色在 `[data-theme='dark']`
 - 卡片背景、页面背景等**必须用变量**（如 `var(--card-bg)`），不能用硬编码的 `#fff` 或 `rgba(255,255,255,1)`
 - `color-scheme: light/dark` 属性告诉浏览器使用对应的原生控件样式（滚动条、表单等）
 
-### 6. 浏览器缓存导致"改了但没生效"
+### 7. 浏览器缓存导致"改了但没生效"
 CSS 修改后用户反馈"没变化"，常见原因：
 - Vite dev server 的 HMR 对 `import` 的 `.css` 文件不总是热更新 → 重启 `npm run dev`
 - 浏览器缓存旧 CSS → 硬刷新 `Ctrl+Shift+R`
 - 构建后的 CSS 文件名 hash 变化说明内容已更新，若 hash 没变说明内容确实没变
 
-### 7. Astro 图片缓存的清理（关键坑）
+### 8. Astro 图片缓存的清理（关键坑）
 替换或删除 `src/assets/` 中的图片后，构建产物可能仍包含旧图片。原因：Astro 在 `node_modules/.astro/assets/` 中维护资产缓存。
 - **替换/删除图片后必须执行**：`rm -rf node_modules/.astro dist .astro && npm run build`
 - 仅删 `dist/` 不够，`node_modules/.astro/` 是 Vite 的持久化缓存，dev server 也依赖它
 - 验证命令：`find . -path "*/node_modules" -prune -o -name "*图片名*" -print`
 
-### 8. Hexo → Astro 博客迁移要点
+### 9. Hexo → Astro 博客迁移要点
 - **Frontmatter 转换**：`date: YYYY-MM-DD HH:MM:SS` → `pubDate: 'Mon DD YYYY'`，`tags/categories/id` 移除，需生成 `description`
 - **CRLF 坑**：Hexo 的 `.md` 文件常使用 Windows CRLF 换行，正则匹配 frontmatter 时需 `\r?\n`
 - **图片目录**：Hexo 文章图片放在同名子目录中，迁移后相对路径引用不变，直接复制即可
 - **封面图**：迁移后 `blog-placeholder-1~5.jpg` 随机分配 `heroImage`
+
+### 10. Astro 性能优化原则
+本项目以 Astro 6 为核心，追求极致页面加载速度。所有开发决策必须遵循 Astro 的"零 JS 默认"理念：
+- **默认零 JS**：页面应尽可能为纯静态 HTML/CSS，不引入客户端 JS。交互功能（搜索、主题切换、标签筛选等）的 JS 必须内联在 `<script>` 中，不通过外部文件加载。禁止引入任何 JS 框架（React、Vue 等）。
+- **图片优化**：使用 Astro 内置的 `<Image />` 组件自动生成 WebP/AVIF 多格式、多尺寸响应式图片。文章内的本地图片应放在文章同名目录下，由 Astro 自动优化。
+- **CSS 管理**：全局样式通过 `BaseHead.astro` import 的 `global.css` 提供（CSS 变量、重置、排版），组件样式使用 `<style>` 标签 scoped 到组件。避免 CSS 框架（Tailwind 等），手写轻量 CSS。
+- **字体策略**：使用 `astro.config.mjs` 中 `fontProviders.local()` 本地托管字体，避免外部 Google Fonts 请求。预加载关键字体子集，使用 `font-display: swap` 防止 FOIT。
+- **构建产物检查**：每次重大修改后运行 `npm run build`，检查 `dist/` 中是否有不必要的 JS 文件、过大的图片或未压缩的资源。目标：Lighthouse 评分 100/100。
+- **缓存策略**：静态资源（图片、字体、CSS）带有内容哈希文件名，可设置长期缓存。HTML 页面使用 `Astro.site` 生成准确的 canonical URL，SEO 友好。
+
+### 11. `is:inline` 脚本与 Astro 模块作用域（关键坑）
+Astro 6 默认将 `.astro` 组件中的 `<script>` 处理为 `<script type="module">`，这会导致两个问题：
+- **模块作用域隔离**：`document.getElementById()` 在模块脚本顶层获取 DOM 可能返回 null（因为模块延迟执行，DOM 可能已渲染但变量被隔离）
+- **全局变量冲突**：多个 `<script is:inline>` 共享全局作用域，同名变量（如 `let ticking`）会报错
+- **修复**：所有需要 DOM 操作的脚本必须使用 `<script is:inline>` + IIFE 包裹（`(function() { ... })()`），避免变量冲突
+- **事件委托**：当按钮内包含 SVG 子元素时，用 `btn.contains(e.target)` 而非 `e.target === btn`，确保点击子元素也能正确响应
+
+### 12. 时间轴布局与标签筛选模式
+博客列表页使用 CSS Grid 四栏时间轴布局：`grid-template-columns: 100px 28px 1fr 160px`（日期 / 圆点连线 / 内容 / 封面）。
+- **年份分组**：在 Astro 模板中使用 `let currentYear = 0` 追踪年份，新年份首篇文章添加 `year-break` 类显示年份标题并高亮圆点
+- **标签筛选**：客户端 JS 读取 URL `?tag=xxx` 参数，通过 `data-tags` 属性和 `classList.toggle('hidden')` 过滤文章，`history.replaceState()` 更新 URL
+- **响应式**：≤800px 隐藏封面列，≤500px 缩窄日期列
+- 标签数据从 `getCollection('blog')` 的结果中提取：`[...new Set(posts.flatMap(p => p.data.tags || []))].sort()`
 
 ## 站点配置
 

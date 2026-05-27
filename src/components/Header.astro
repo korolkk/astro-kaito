@@ -12,7 +12,17 @@ import HeaderLink from './HeaderLink.astro';
 			<HeaderLink href="/about">关于</HeaderLink>
 		</div>
 		<div class="nav-right">
-			<button class="search-btn" id="searchBtn" aria-label="Search">
+			<div class="search-area" id="searchArea">
+				<input
+					type="text"
+					id="searchInput"
+					class="search-input"
+					placeholder="搜索..."
+					autocomplete="off"
+				/>
+				<div class="search-results" id="searchResults"></div>
+			</div>
+			<button class="search-btn" id="searchBtn" aria-label="搜索">
 				<svg viewBox="0 0 24 24" aria-hidden="true" width="20" height="20">
 					<path fill="currentColor" d="M10 18a7.952 7.952 0 0 0 4.897-1.688l4.396 4.396 1.414-1.414-4.396-4.396A7.952 7.952 0 0 0 18 10c0-4.411-3.589-8-8-8s-8 3.589-8 8 3.589 8 8 8zm0-14c3.309 0 6 2.691 6 6s-2.691 6-6 6-6-2.691-6-6 2.691-6 6-6z"/>
 				</svg>
@@ -47,6 +57,7 @@ import HeaderLink from './HeaderLink.astro';
 		</div>
 	</nav>
 </header>
+
 <style>
 	header {
 		margin: 0;
@@ -74,6 +85,8 @@ import HeaderLink from './HeaderLink.astro';
 		border-bottom-left-radius: 20px;
 		border-bottom-right-radius: 20px;
 		box-shadow: 0 2px 12px rgba(var(--black), 0.04);
+		position: relative;
+		z-index: 100;
 	}
 	nav a {
 		padding: 1em 0.5em;
@@ -90,6 +103,108 @@ import HeaderLink from './HeaderLink.astro';
 		align-items: center;
 		gap: 0.5em;
 	}
+
+	/* Search */
+	.search-area {
+		position: relative;
+		display: flex;
+		align-items: center;
+	}
+	.search-input {
+		width: 0;
+		padding: 0;
+		border: none;
+		background: transparent;
+		color: rgb(var(--black));
+		font-size: 0.9em;
+		font-family: inherit;
+		outline: none;
+		transition: width 0.25s ease, padding 0.25s ease;
+	}
+	.search-area.open .search-input {
+		width: 200px;
+		padding: 0.45em 0.6em;
+		border: 1px solid rgb(var(--gray-light));
+		border-radius: 8px;
+		background: rgb(var(--gray-light));
+	}
+	.search-input::placeholder {
+		color: rgb(var(--gray));
+	}
+	.search-results {
+		position: absolute;
+		top: 100%;
+		right: 0;
+		margin-top: 0.5em;
+		width: 320px;
+		background: var(--card-bg);
+		border: 1px solid rgb(var(--gray-light));
+		border-radius: 12px;
+		max-height: 360px;
+		overflow-y: auto;
+		box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+		display: none;
+	}
+	.search-area.has-results .search-results {
+		display: block;
+	}
+	.search-empty {
+		text-align: center;
+		padding: 2em 1em;
+		color: rgb(var(--gray));
+		font-size: 0.85em;
+	}
+	.search-result-item {
+		display: block;
+		padding: 0.85em 1em;
+		text-decoration: none;
+		border-bottom: 1px solid rgb(var(--gray-light));
+		transition: background 0.15s ease;
+	}
+	.search-result-item:first-child {
+		border-radius: 12px 12px 0 0;
+	}
+	.search-result-item:last-child {
+		border-radius: 0 0 12px 12px;
+		border-bottom: none;
+	}
+	.search-result-item:only-child {
+		border-radius: 12px;
+	}
+	.search-result-item:hover,
+	.search-result-item.active {
+		background: rgb(var(--gray-light));
+	}
+	.search-result-title {
+		font-size: 0.9em;
+		font-weight: 600;
+		color: rgb(var(--black));
+		margin-bottom: 0.15em;
+		line-height: 1.3;
+	}
+	.search-result-title mark {
+		background: rgba(var(--accent-rgb), 0.2);
+		color: var(--accent);
+		border-radius: 2px;
+		padding: 0 0.1em;
+	}
+	.search-result-desc {
+		font-size: 0.78em;
+		color: rgb(var(--gray));
+		line-height: 1.4;
+		display: -webkit-box;
+		-webkit-line-clamp: 2;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
+	}
+
+	/* Internal links */
+	.internal-links {
+		display: flex;
+		gap: 0;
+	}
+
+	/* Search button */
 	.search-btn {
 		background: none;
 		border: 1px solid rgb(var(--gray-light));
@@ -100,6 +215,7 @@ import HeaderLink from './HeaderLink.astro';
 		display: flex;
 		align-items: center;
 		transition: all 0.2s ease;
+		flex-shrink: 0;
 	}
 	.search-btn:hover {
 		background: rgb(var(--gray-light));
@@ -109,6 +225,7 @@ import HeaderLink from './HeaderLink.astro';
 	/* Theme switcher */
 	.theme-switcher {
 		position: relative;
+		flex-shrink: 0;
 	}
 	.theme-switcher::after {
 		content: '';
@@ -145,7 +262,7 @@ import HeaderLink from './HeaderLink.astro';
 		gap: 0.15em;
 		min-width: 140px;
 		box-shadow: 0 4px 20px rgba(0,0,0,0.12);
-		z-index: 100;
+		z-index: 200;
 	}
 	.theme-switcher:hover .theme-dropdown {
 		display: flex;
@@ -174,7 +291,8 @@ import HeaderLink from './HeaderLink.astro';
 		font-weight: 600;
 	}
 </style>
-<script>
+
+<script is:inline>
 	function applyTheme(choice) {
 		const preferDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 		const resolved = choice === 'dark' || choice === 'light' ? choice : (preferDark ? 'dark' : 'light');
@@ -208,4 +326,142 @@ import HeaderLink from './HeaderLink.astro';
 			applyTheme('system');
 		}
 	});
+
+	// ========== Search ==========
+	(function() {
+		const area = document.getElementById('searchArea');
+		const input = document.getElementById('searchInput');
+		const results = document.getElementById('searchResults');
+		const btn = document.getElementById('searchBtn');
+		let index = null;
+		let activeIdx = -1;
+
+		function open() {
+			area.classList.add('open');
+			setTimeout(() => input.focus(), 50);
+		}
+
+		function close() {
+			area.classList.remove('open');
+			area.classList.remove('has-results');
+			input.value = '';
+			results.innerHTML = '';
+			activeIdx = -1;
+		}
+
+		btn.addEventListener('click', () => {
+			if (area.classList.contains('open')) {
+				if (input.value) {
+					input.value = '';
+					results.innerHTML = '';
+					area.classList.remove('has-results');
+					activeIdx = -1;
+				} else {
+					close();
+				}
+			} else {
+				open();
+			}
+		});
+
+		// Close on outside click
+		document.addEventListener('click', (e) => {
+			if (!area.contains(e.target) && !btn.contains(e.target)) {
+				close();
+			}
+		});
+
+		// Keyboard
+		document.addEventListener('keydown', (e) => {
+			if (!area.classList.contains('open')) return;
+
+			const items = results.querySelectorAll('.search-result-item');
+
+			if (e.key === 'Escape') {
+				close();
+				btn.focus();
+			} else if (e.key === 'ArrowDown') {
+				e.preventDefault();
+				if (items.length > 0) {
+					activeIdx = Math.min(activeIdx + 1, items.length - 1);
+					items.forEach((item, i) => item.classList.toggle('active', i === activeIdx));
+					items[activeIdx]?.scrollIntoView({ block: 'nearest' });
+				}
+			} else if (e.key === 'ArrowUp') {
+				e.preventDefault();
+				if (items.length > 0) {
+					activeIdx = Math.max(activeIdx - 1, 0);
+					items.forEach((item, i) => item.classList.toggle('active', i === activeIdx));
+					items[activeIdx]?.scrollIntoView({ block: 'nearest' });
+				}
+			} else if (e.key === 'Enter' && activeIdx >= 0) {
+				e.preventDefault();
+				items[activeIdx]?.click();
+			}
+		});
+
+		let debounceTimer;
+		input.addEventListener('input', () => {
+			clearTimeout(debounceTimer);
+			debounceTimer = setTimeout(doSearch, 150);
+		});
+
+		async function loadIndex() {
+			if (index) return index;
+			try {
+				const resp = await fetch('/search-index.json');
+				index = await resp.json();
+				return index;
+			} catch (err) {
+				console.error('Failed to load search index:', err);
+				return [];
+			}
+		}
+
+		async function doSearch() {
+			const query = input.value.trim().toLowerCase();
+			if (!query) {
+				results.innerHTML = '';
+				area.classList.remove('has-results');
+				activeIdx = -1;
+				return;
+			}
+
+			const posts = await loadIndex();
+			const filtered = posts.filter((post) => {
+				const t = post.title.toLowerCase();
+				const d = post.description.toLowerCase();
+				return t.includes(query) || d.includes(query) || (post.tags || []).join(' ').toLowerCase().includes(query);
+			});
+
+			if (filtered.length === 0) {
+				results.innerHTML = '<div class="search-empty">未找到相关文章</div>';
+				area.classList.add('has-results');
+				activeIdx = -1;
+				return;
+			}
+
+			const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+			const highlight = (text, q) => {
+				const idx = text.toLowerCase().indexOf(q);
+				if (idx === -1) return esc(text);
+				const before = text.slice(0, idx);
+				const match = text.slice(idx, idx + q.length);
+				const after = text.slice(idx + q.length);
+				return `${esc(before)}<mark>${esc(match)}</mark>${esc(after)}`;
+			};
+
+			results.innerHTML = filtered
+				.map(
+					(post, i) =>
+						`<a href="${post.url}" class="search-result-item" data-idx="${i}">
+							<div class="search-result-title">${highlight(post.title, query)}</div>
+							<div class="search-result-desc">${highlight(post.description, query)}</div>
+						</a>`
+				)
+				.join('');
+			area.classList.add('has-results');
+			activeIdx = -1;
+		}
+	})();
 </script>

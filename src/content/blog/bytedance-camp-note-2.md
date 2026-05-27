@@ -3,6 +3,7 @@ title: 'Go 语言入门-工程实践｜ 字节跳动青训营笔记'
 description: '本节课程主要分为四个方面：'
 pubDate: 'Jan 16 2023'
 heroImage: '../../assets/blog-placeholder-3.jpg'
+tags: ['字节青训营', '后端']
 ---
 ## 一、本堂课重点内容：
 

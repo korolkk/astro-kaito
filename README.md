@@ -64,6 +64,34 @@ Astro 会查找 `src/pages/` 目录下的 `.astro` 或 `.md` 文件，每个文�
 
 ## 更新日志
 
+### 2026-05-28 — 文章标签、时间轴列表、翻页导航
+
+**标签系统**
+- `src/content.config.ts`：blog schema 新增 `tags: z.array(z.string()).optional().default([])`
+- 为全部 77 篇文章添加标签，覆盖 8 个分类：CSP、LeetCode、字节青训营、Git、ROS2、Markdown/MDX、计算机视觉、随笔
+- 文章页面和博客列表页以药丸样式展示标签
+- `src/pages/search-index.json.js`：搜索索引包含 tags 字段，支持按标签搜索
+
+**文章页面增强**
+- 阅读进度条：页面顶部 sticky 定位，RAF 节流跟随滚动
+- 上一篇/下一篇导航：文章底部两栏导航，显示相邻文章标题
+- 封面图紧凑化：`720×240`，`object-fit: cover`
+
+**博客列表页时间轴重设计**
+- 左侧日期 + 中间圆点连线 + 中间文章信息 + 右侧封面缩略图
+- 同一年份只显示一次年份标题，年份切换时圆点高亮
+- 悬停动画：圆点放大 1.5 倍 + 主题色光晕扩散，连线同步变色
+- 标签筛选栏：顶部药丸按钮，点击过滤文章，URL 参数 `?tag=xxx` 支持直达
+- 卡片背景跟随主题切换（`var(--card-bg)`），宽度 1140px 与导航栏对齐
+
+**搜索修复**
+- Header 脚本添加 `is:inline` 防止 Astro 处理为 `type="module"` 导致 DOM 操作失败
+- 修复点击搜索按钮内 SVG 图标时搜索栏立即关闭的问题（`btn.contains(e.target)` 替代 `e.target !== btn`）
+- 所有内联脚本使用 IIFE 包裹避免全局变量冲突
+
+**返回顶部按钮**
+- `src/components/Footer.astro`：右下角固定定位，滚动超过 400px 淡入显示，平滑滚动至顶部
+
 ### 2026-05-27 — 内容迁移与界面打磨
 
 **主题修复**

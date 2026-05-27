@@ -3,6 +3,7 @@ title: '消息队列与RPC原理 ｜ 字节跳动青训营笔记'
 description: '消息队列中间件是分布式系统中重要的组件，主要解决应用解耦，异步消息，流量削锋等问题，实现高性能，高可用，可伸缩和最终一致性架构。目前使用较多的消息队列有ActiveMQ，RabbitMQ，ZeroMQ，Kafka，MetaMQ，Roc...'
 pubDate: 'Feb 12 2023'
 heroImage: '../../assets/blog-placeholder-5.jpg'
+tags: ['字节青训营', '后端']
 ---
 ## 消息队列
 

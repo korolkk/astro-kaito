@@ -6,9 +6,12 @@ import Footer from '../components/Footer.astro';
 import FormattedDate from '../components/FormattedDate.astro';
 import Header from '../components/Header.astro';
 
-type Props = CollectionEntry<'blog'>['data'];
+type Props = CollectionEntry<'blog'>['data'] & {
+	prevPost?: CollectionEntry<'blog'> | null;
+	nextPost?: CollectionEntry<'blog'> | null;
+};
 
-const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
+const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nextPost } = Astro.props;
 ---
 
 <html lang="en">
@@ -22,12 +25,20 @@ const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
 			}
 			.hero-image {
 				width: 100%;
+				max-height: 240px;
+				overflow: hidden;
+				margin-bottom: 0;
 			}
 			.hero-image img {
 				display: block;
 				margin: 0 auto;
 				border-radius: 12px;
 				box-shadow: var(--box-shadow);
+				width: 100%;
+				max-width: 720px;
+				height: auto;
+				object-fit: cover;
+				max-height: 240px;
 			}
 			.prose {
 				width: 720px;
@@ -52,6 +63,106 @@ const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
 			.last-updated-on {
 				font-style: italic;
 			}
+
+			/* Progress bar */
+			.progress-bar {
+				position: sticky;
+				top: 0;
+				z-index: 99;
+				width: 100%;
+				height: 3px;
+				background: transparent;
+			}
+			.progress-bar::after {
+				content: '';
+				display: block;
+				height: 100%;
+				width: var(--progress, 0%);
+				background: linear-gradient(90deg, var(--accent), rgba(var(--accent-rgb), 0.6));
+				transition: width 0.1s linear;
+			}
+
+			/* Tags */
+			.tags {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.4em;
+				justify-content: center;
+				margin-top: 0.8em;
+			}
+			.tag {
+				display: inline-block;
+				padding: 0.25em 0.7em;
+				font-size: 0.78em;
+				color: var(--accent);
+				background: rgba(var(--accent-rgb), 0.08);
+				border: 1px solid rgba(var(--accent-rgb), 0.15);
+				border-radius: 999px;
+				text-decoration: none;
+				transition: background 0.2s ease;
+			}
+			.tag:hover {
+				background: rgba(var(--accent-rgb), 0.16);
+			}
+
+			/* Post navigation */
+			.post-nav {
+				display: flex;
+				justify-content: space-between;
+				gap: 1em;
+				margin-top: 3em;
+				padding-top: 1.5em;
+				border-top: 1px solid rgb(var(--gray-light));
+			}
+			.post-nav-link {
+				flex: 1;
+				max-width: 48%;
+				text-decoration: none;
+				padding: 0.8em 1em;
+				border-radius: 10px;
+				border: 1px solid rgb(var(--gray-light));
+				transition: border-color 0.2s ease, background 0.2s ease;
+			}
+			.post-nav-link:hover {
+				border-color: var(--accent);
+				background: rgba(var(--accent-rgb), 0.04);
+			}
+			.post-nav-link.empty {
+				visibility: hidden;
+			}
+			.post-nav-link.next {
+				text-align: right;
+				margin-left: auto;
+			}
+			.post-nav-label {
+				display: block;
+				font-size: 0.78em;
+				color: rgb(var(--gray));
+				margin-bottom: 0.3em;
+			}
+			.post-nav-title {
+				display: block;
+				font-size: 0.95em;
+				font-weight: 600;
+				color: rgb(var(--black));
+				line-height: 1.4;
+				display: -webkit-box;
+				-webkit-line-clamp: 2;
+				-webkit-box-orient: vertical;
+				overflow: hidden;
+			}
+			@media (max-width: 600px) {
+				.post-nav {
+					flex-direction: column;
+					gap: 0.6em;
+				}
+				.post-nav-link {
+					max-width: 100%;
+				}
+				.post-nav-link.next {
+					margin-left: 0;
+				}
+			}
 		</style>
 	</head>
 
@@ -59,9 +170,14 @@ const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
 		<Header />
 		<main>
 			<article>
-				<div class="hero-image">
-					{heroImage && <Image width={1020} height={510} src={heroImage} alt="" />}
-				</div>
+				<div class="progress-bar" id="progressBar"></div>
+				{
+					heroImage && (
+						<div class="hero-image">
+							<Image width={720} height={240} src={heroImage} alt="" />
+						</div>
+					)
+				}
 				<div class="prose">
 					<div class="title">
 						<div class="date">
@@ -75,12 +191,73 @@ const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
 							}
 						</div>
 						<h1>{title}</h1>
+						{
+							tags && tags.length > 0 && (
+								<div class="tags">
+									{tags.map((tag) => (
+										<a class="tag" href={`/blog?tag=${encodeURIComponent(tag)}`}>{tag}</a>
+									))}
+								</div>
+							)
+						}
 						<hr />
 					</div>
 					<slot />
+					{
+						(prevPost || nextPost) && (
+							<nav class="post-nav">
+								{
+									prevPost ? (
+										<a class="post-nav-link prev" href={`/blog/${prevPost.id}/`}>
+											<span class="post-nav-label">上一篇</span>
+											<span class="post-nav-title">{prevPost.data.title}</span>
+										</a>
+									) : <span class="post-nav-link prev empty" />
+								}
+								{
+									nextPost ? (
+										<a class="post-nav-link next" href={`/blog/${nextPost.id}/`}>
+											<span class="post-nav-label">下一篇</span>
+											<span class="post-nav-title">{nextPost.data.title}</span>
+										</a>
+									) : <span class="post-nav-link next empty" />
+								}
+							</nav>
+						)
+					}
 				</div>
 			</article>
 		</main>
 		<Footer />
 	</body>
 </html>
+
+<script is:inline>
+	(function () {
+		const bar = document.getElementById('progressBar');
+		let ticking = false;
+
+		function updateProgress() {
+			const article = document.querySelector('article');
+			if (!article) return;
+			const articleTop = article.offsetTop;
+			const articleHeight = article.offsetHeight;
+			const viewportHeight = window.innerHeight;
+			const scrolled = window.scrollY - articleTop + viewportHeight;
+			const progress = Math.min(100, Math.max(0, (scrolled / articleHeight) * 100));
+			bar.style.setProperty('--progress', `${progress}%`);
+		}
+
+		window.addEventListener('scroll', () => {
+			if (!ticking) {
+				requestAnimationFrame(() => {
+					updateProgress();
+					ticking = false;
+				});
+				ticking = true;
+			}
+		});
+
+		updateProgress();
+	})();
+</script>

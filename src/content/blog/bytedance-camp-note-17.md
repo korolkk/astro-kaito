@@ -3,6 +3,7 @@ title: 'Go-Hertz Web框架实现简易抖音 ｜ 字节跳动青训营后端结�
 description: '项目核心信息：简易版抖音后端服务    Github 地址：https://github.com/qiong-14/EasyDouYin'
 pubDate: 'Feb 24 2023'
 heroImage: '../../assets/blog-placeholder-2.jpg'
+tags: ['字节青训营', '后端']
 ---
 ## 一、项目介绍
 

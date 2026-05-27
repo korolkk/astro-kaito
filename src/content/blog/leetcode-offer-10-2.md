@@ -3,6 +3,7 @@ title: '剑指 Offer 10- II. 青蛙跳台阶问题'
 description: '剑指 Offer 10- II. 青蛙跳台阶问题'
 pubDate: 'Jan 14 2023'
 heroImage: '../../assets/blog-placeholder-3.jpg'
+tags: ['LeetCode', '算法']
 ---
 ## 题目
 

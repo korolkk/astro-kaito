@@ -3,6 +3,7 @@ title: '分布式定时任务 ｜ 字节跳动青训营笔记'
 description: '业务流程             定时扫描抖音用户集卡状态        汇总计算用户的瓜分金额        定时开奖    技术体量             亿级用户规模        十亿级资金规模        百万级读写QP...'
 pubDate: 'Feb 08 2023'
 heroImage: '../../assets/blog-placeholder-2.jpg'
+tags: ['字节青训营', '后端']
 ---
 ## 一、前言
 

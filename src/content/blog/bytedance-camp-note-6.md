@@ -3,6 +3,7 @@ title: '规则引擎设计与实现 ｜ 字节跳动青训营笔记'
 description: '暂无简介'
 pubDate: 'Feb 01 2023'
 heroImage: '../../assets/blog-placeholder-2.jpg'
+tags: ['字节青训营', '后端']
 ---
 ## 一、认识规则引擎
 

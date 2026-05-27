@@ -3,6 +3,7 @@ title: 'Go 高质量编程与性能调优 ｜ 字节跳动青训营笔记'
 description: '暂无简介'
 pubDate: 'Jan 18 2023'
 heroImage: '../../assets/blog-placeholder-2.jpg'
+tags: ['字节青训营', '后端']
 ---
 ## 一、高质量编程：
 

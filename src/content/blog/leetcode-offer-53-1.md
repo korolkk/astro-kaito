@@ -3,6 +3,7 @@ title: '剑指 Offer 53 - I. 在排序数组中查找数字 I'
 description: '剑指 Offer 53 - I. 在排序数组中查找数字 I'
 pubDate: 'Jan 10 2023'
 heroImage: '../../assets/blog-placeholder-3.jpg'
+tags: ['LeetCode', '算法']
 ---
 ## 题目
 

@@ -3,6 +3,7 @@ title: 'Go 框架三件套详解(Web/RPC/ORM) ｜ 字节跳动青训营笔记'
 description: '暂无简介'
 pubDate: 'Feb 01 2023'
 heroImage: '../../assets/blog-placeholder-5.jpg'
+tags: ['字节青训营', '后端']
 ---
 ## 一、Gorm：
 

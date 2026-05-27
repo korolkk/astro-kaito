@@ -3,6 +3,7 @@ title: 'Go 语言基础及实战案例｜ 字节跳动青训营笔记'
 description: '暂无简介'
 pubDate: 'Jan 15 2023'
 heroImage: '../../assets/blog-placeholder-3.jpg'
+tags: ['字节青训营', '后端']
 ---
 ## 一、本堂课重点内容：
 

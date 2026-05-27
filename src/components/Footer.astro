@@ -5,6 +5,13 @@ const today = new Date();
 <footer>
 	&copy; {today.getFullYear()} kaito. All rights reserved.
 </footer>
+
+<button id="backToTop" class="back-to-top" aria-label="返回顶部">
+	<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+		<path fill="currentColor" d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/>
+	</svg>
+</button>
+
 <style>
 	footer {
 		padding: 2em 1em;
@@ -12,4 +19,66 @@ const today = new Date();
 		color: rgb(var(--gray));
 		font-size: 0.9em;
 	}
+	.back-to-top {
+		position: fixed;
+		bottom: 2em;
+		right: 2em;
+		z-index: 50;
+		width: 40px;
+		height: 40px;
+		border-radius: 10px;
+		border: 1px solid rgb(var(--gray-light));
+		background: var(--card-bg);
+		color: rgb(var(--gray-dark));
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		opacity: 0;
+		transform: translateY(10px);
+		pointer-events: none;
+		transition: opacity 0.25s ease, transform 0.25s ease, background 0.2s ease, color 0.2s ease;
+		box-shadow: 0 2px 12px rgba(var(--black), 0.08);
+	}
+	.back-to-top.visible {
+		opacity: 1;
+		transform: translateY(0);
+		pointer-events: auto;
+	}
+	.back-to-top:hover {
+		background: var(--accent);
+		color: #fff;
+		border-color: var(--accent);
+	}
 </style>
+
+<script is:inline>
+	(function () {
+		const btn = document.getElementById('backToTop');
+		let ticking = false;
+
+		function toggle() {
+			if (window.scrollY > 400) {
+				btn.classList.add('visible');
+			} else {
+				btn.classList.remove('visible');
+			}
+		}
+
+		window.addEventListener('scroll', () => {
+			if (!ticking) {
+				requestAnimationFrame(() => {
+					toggle();
+					ticking = false;
+				});
+				ticking = true;
+			}
+		});
+
+		btn.addEventListener('click', () => {
+			window.scrollTo({ top: 0, behavior: 'smooth' });
+		});
+
+		toggle();
+	})();
+</script>

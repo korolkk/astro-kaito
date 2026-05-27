@@ -3,6 +3,7 @@ title: '高性能 Go 语言发行版优化的内存管理优化 ｜ 字节跳动
 description: '暂无简介'
 pubDate: 'Jan 20 2023'
 heroImage: '../../assets/blog-placeholder-2.jpg'
+tags: ['字节青训营', '后端']
 ---
 ## 一、自动内存管理：
 

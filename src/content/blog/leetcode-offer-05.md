@@ -3,6 +3,7 @@ title: '剑指 Offer 05. 替换空格'
 description: '剑指 Offer 05. 替换空格'
 pubDate: 'Jan 10 2023'
 heroImage: '../../assets/blog-placeholder-2.jpg'
+tags: ['LeetCode', '算法']
 ---
 ## 题目
 

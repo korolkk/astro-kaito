@@ -3,6 +3,7 @@ title: '大项目Redis的原理及应用 ｜ 字节跳动青训营笔记'
 description: '暂无简介'
 pubDate: 'Feb 22 2023'
 heroImage: '../../assets/blog-placeholder-2.jpg'
+tags: ['字节青训营', '后端']
 ---
 ## Redis介绍
 

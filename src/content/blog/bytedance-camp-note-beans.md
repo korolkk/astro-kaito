@@ -3,6 +3,7 @@ title: '青训营 X 码上掘金 攒青豆 Golang'
 description: '暂无简介'
 pubDate: 'Feb 07 2023'
 heroImage: '../../assets/blog-placeholder-2.jpg'
+tags: ['字节青训营', '后端', 'Go']
 ---
 # 青训营 X 码上掘金 攒青豆 Golang
 
