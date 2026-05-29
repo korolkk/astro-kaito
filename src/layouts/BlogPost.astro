@@ -9,9 +9,10 @@ import Header from '../components/Header.astro';
 type Props = CollectionEntry<'blog'>['data'] & {
 	prevPost?: CollectionEntry<'blog'> | null;
 	nextPost?: CollectionEntry<'blog'> | null;
+	headings?: { text: string; level: number; id: string }[];
 };
 
-const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nextPost } = Astro.props;
+const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nextPost, headings = [] } = Astro.props;
 ---
 
 <html lang="en">
@@ -40,11 +41,18 @@ const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nex
 				object-fit: cover;
 				max-height: 240px;
 			}
+			.article-wrapper {
+				width: 100%;
+				max-width: 1140px;
+				margin: 0 auto;
+				padding: 0 2em;
+				position: relative;
+			}
 			.prose {
 				width: 720px;
-				max-width: calc(100% - 2em);
-				margin: auto;
-				padding: 1em;
+				max-width: 100%;
+				margin: 0 auto;
+				padding: 1em 0;
 				color: rgb(var(--gray-dark));
 			}
 			.title {
@@ -151,6 +159,60 @@ const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nex
 				-webkit-box-orient: vertical;
 				overflow: hidden;
 			}
+
+			/* Table of Contents */
+			.toc-sidebar {
+				position: fixed;
+				right: max(2em, calc((100vw - 1140px) / 2 - 220px));
+				top: 6em;
+				width: 220px;
+				max-height: calc(100vh - 8em);
+				overflow-y: auto;
+				z-index: 50;
+				padding-left: 1em;
+				border-left: 2px solid rgb(var(--gray-light));
+				display: none;
+			}
+			.toc-sidebar.has-toc {
+				display: block;
+			}
+			.toc-sidebar .toc-title {
+				font-size: 0.82em;
+				font-weight: 700;
+				color: rgb(var(--black));
+				margin-bottom: 0.8em;
+				letter-spacing: 0.04em;
+				text-transform: uppercase;
+			}
+			.toc-sidebar a {
+				display: block;
+				padding: 0.3em 0;
+				font-size: 0.8em;
+				color: rgb(var(--gray));
+				text-decoration: none;
+				line-height: 1.4;
+				transition: color 0.15s ease;
+				border-left: 2px solid transparent;
+				margin-left: -1em;
+				padding-left: 1em;
+			}
+			.toc-sidebar a:hover,
+			.toc-sidebar a.active {
+				color: var(--accent);
+				border-left-color: var(--accent);
+			}
+			.toc-sidebar a.toc-h3 {
+				padding-left: 1.8em;
+			}
+			.toc-sidebar a.toc-h4 {
+				padding-left: 2.6em;
+			}
+
+			@media (max-width: 1300px) {
+				.toc-sidebar {
+					display: none !important;
+				}
+			}
 			@media (max-width: 600px) {
 				.post-nav {
 					flex-direction: column;
@@ -178,55 +240,70 @@ const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nex
 						</div>
 					)
 				}
-				<div class="prose">
-					<div class="title">
-						<div class="date">
-							<FormattedDate date={pubDate} />
+				<div class="article-wrapper">
+					<div class="prose">
+						<div class="title">
+							<div class="date">
+								<FormattedDate date={pubDate} />
+								{
+									updatedDate && (
+										<div class="last-updated-on">
+											Last updated on <FormattedDate date={updatedDate} />
+										</div>
+									)
+								}
+							</div>
+							<h1>{title}</h1>
 							{
-								updatedDate && (
-									<div class="last-updated-on">
-										Last updated on <FormattedDate date={updatedDate} />
+								tags && tags.length > 0 && (
+									<div class="tags">
+										{tags.map((tag) => (
+											<a class="tag" href={`/blog?tag=${encodeURIComponent(tag)}`}>{tag}</a>
+										))}
 									</div>
 								)
 							}
+							<hr />
 						</div>
-						<h1>{title}</h1>
+						<slot />
 						{
-							tags && tags.length > 0 && (
-								<div class="tags">
-									{tags.map((tag) => (
-										<a class="tag" href={`/blog?tag=${encodeURIComponent(tag)}`}>{tag}</a>
-									))}
-								</div>
+							(prevPost || nextPost) && (
+								<nav class="post-nav">
+									{
+										prevPost ? (
+											<a class="post-nav-link prev" href={`/blog/${prevPost.id}/`}>
+												<span class="post-nav-label">上一篇</span>
+												<span class="post-nav-title">{prevPost.data.title}</span>
+											</a>
+										) : <span class="post-nav-link prev empty" />
+									}
+									{
+										nextPost ? (
+											<a class="post-nav-link next" href={`/blog/${nextPost.id}/`}>
+												<span class="post-nav-label">下一篇</span>
+												<span class="post-nav-title">{nextPost.data.title}</span>
+											</a>
+										) : <span class="post-nav-link next empty" />
+									}
+								</nav>
 							)
 						}
-						<hr />
 					</div>
-					<slot />
-					{
-						(prevPost || nextPost) && (
-							<nav class="post-nav">
-								{
-									prevPost ? (
-										<a class="post-nav-link prev" href={`/blog/${prevPost.id}/`}>
-											<span class="post-nav-label">上一篇</span>
-											<span class="post-nav-title">{prevPost.data.title}</span>
-										</a>
-									) : <span class="post-nav-link prev empty" />
-								}
-								{
-									nextPost ? (
-										<a class="post-nav-link next" href={`/blog/${nextPost.id}/`}>
-											<span class="post-nav-label">下一篇</span>
-											<span class="post-nav-title">{nextPost.data.title}</span>
-										</a>
-									) : <span class="post-nav-link next empty" />
-								}
-							</nav>
-						)
-					}
 				</div>
 			</article>
+
+			{
+				headings.length > 0 && (
+					<aside class="toc-sidebar has-toc" id="tocSidebar">
+						<div class="toc-title">目录</div>
+						<nav id="tocNav">
+							{headings.map((h) => (
+								<a href={`#${h.id}`} class={`toc-h${h.level}`}>{h.text}</a>
+							))}
+						</nav>
+					</aside>
+				)
+			}
 		</main>
 		<Footer />
 	</body>
@@ -252,6 +329,7 @@ const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nex
 			if (!ticking) {
 				requestAnimationFrame(() => {
 					updateProgress();
+					updateActiveToc();
 					ticking = false;
 				});
 				ticking = true;
@@ -259,5 +337,31 @@ const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nex
 		});
 
 		updateProgress();
+
+		// TOC active tracking
+		function updateActiveToc() {
+			const tocLinks = document.querySelectorAll('#tocNav a');
+			if (tocLinks.length === 0) return;
+
+			const headings = [];
+			tocLinks.forEach((link) => {
+				const id = link.getAttribute('href')?.slice(1);
+				if (id) {
+					const el = document.getElementById(id);
+					if (el) headings.push({ el, link });
+				}
+			});
+
+			if (headings.length === 0) return;
+
+			let active = headings[0].link;
+			for (const { el, link } of headings) {
+				if (el.getBoundingClientRect().top <= 120) {
+					active = link;
+				}
+			}
+			tocLinks.forEach((link) => link.classList.remove('active'));
+			active.classList.add('active');
+		}
 	})();
 </script>

@@ -8,9 +8,43 @@ import FormattedDate from '../components/FormattedDate.astro';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 import avatarPlaceholder from '../assets/blog-placeholder-about.jpg';
 
-const posts = (await getCollection('blog'))
-	.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
-	.slice(0, 5);
+const allPosts = (await getCollection('blog')).sort(
+	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
+);
+
+const posts = allPosts.slice(0, 5);
+
+function countChars(body: string): number {
+	let text = body
+		.replace(/```[\s\S]*?```/g, '')
+		.replace(/`[^`]*`/g, '')
+		.replace(/!\[[^\]]*\]\([^)]*\)/g, '')
+		.replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+		.replace(/^#{1,6}\s/gm, '')
+		.replace(/[*_~]{1,3}/g, '')
+		.replace(/<[^>]*>/g, '');
+	return text.replace(/\s/g, '').length;
+}
+
+function fmt(n: number): string {
+	return n.toLocaleString('zh-CN');
+}
+
+const now = new Date();
+const firstPost = allPosts[allPosts.length - 1];
+const lastPost = allPosts[0];
+
+const stats = {
+	articleCount: allPosts.length,
+	tagCount: new Set(allPosts.flatMap((p) => p.data.tags || [])).size,
+	wordCount: allPosts.reduce((sum, p) => sum + countChars(p.body || ''), 0),
+	runDays: firstPost
+		? Math.ceil((now.valueOf() - firstPost.data.pubDate.valueOf()) / (1000 * 60 * 60 * 24))
+		: 0,
+	lastActiveDays: lastPost
+		? Math.ceil((now.valueOf() - lastPost.data.pubDate.valueOf()) / (1000 * 60 * 60 * 24))
+		: 0,
+};
 ---
 
 <!doctype html>
@@ -107,36 +141,38 @@ const posts = (await getCollection('blog'))
 				border-bottom: 2px solid rgb(var(--gray-light));
 			}
 
-			/* Projects */
-			.project-list {
-				display: flex;
-				flex-direction: column;
-				gap: 0.6em;
+			/* Stats table */
+			.stats-table {
+				width: 100%;
+				border-collapse: collapse;
 			}
-			.project-item {
-				display: block;
-				padding: 0.8em 0.9em;
-				background: rgb(var(--gray-light));
-				border-radius: 10px;
-				text-decoration: none;
-				transition: all 0.2s ease;
-			}
-			.project-item:hover {
-				background: var(--card-bg);
-				box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-				transform: translateY(-1px);
-			}
-			.project-name {
-				display: block;
+			.stats-table td {
+				padding: 0.65em 0;
 				font-size: 0.9em;
-				font-weight: 600;
-				color: rgb(var(--black));
-				margin-bottom: 0.15em;
+				vertical-align: middle;
 			}
-			.project-desc {
-				font-size: 0.8em;
+			.stats-table tr:not(:last-child) td {
+				border-bottom: 1px solid rgba(var(--gray), 0.12);
+			}
+			.stats-table .stat-icon {
+				width: 2em;
+				color: var(--accent);
+				font-size: 0.75em;
+			}
+			.stats-table .stat-label {
 				color: rgb(var(--gray));
-				line-height: 1.4;
+			}
+			.stats-table .stat-value {
+				text-align: right;
+				font-weight: 700;
+				color: rgb(var(--black));
+				font-variant-numeric: tabular-nums;
+			}
+			.stats-table .stat-unit {
+				font-weight: 400;
+				font-size: 0.85em;
+				color: rgb(var(--gray));
+				font-variant-numeric: normal;
 			}
 
 			/* Friends */
@@ -296,22 +332,47 @@ const posts = (await getCollection('blog'))
 						</div>
 					</aside>
 
-					<section class="card projects-card">
-						<h2 class="section-title">开源项目</h2>
-						<div class="project-list">
-							<a href="#" class="project-item">
-								<span class="project-name">KaitoBlog</span>
-								<span class="project-desc">基于 Astro 6 的极简博客主题，卡片式设计，内置暗色模式</span>
-							</a>
-							<a href="#" class="project-item">
-								<span class="project-name">QuickNote</span>
-								<span class="project-desc">命令行速记工具，支持 Markdown 渲染和标签分类</span>
-							</a>
-							<a href="#" class="project-item">
-								<span class="project-name">ColorCraft</span>
-								<span class="project-desc">调色板生成器，从图片提取色彩，支持多种导出格式</span>
-							</a>
-						</div>
+					<section class="card stats-card">
+						<h2 class="section-title">站点统计</h2>
+						<table class="stats-table">
+							<tbody>
+								<tr>
+									<td class="stat-icon">
+										<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+									</td>
+									<td class="stat-label">文章</td>
+									<td class="stat-value">{fmt(stats.articleCount)}</td>
+								</tr>
+								<tr>
+									<td class="stat-icon">
+										<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+									</td>
+									<td class="stat-label">标签</td>
+									<td class="stat-value">{fmt(stats.tagCount)}</td>
+								</tr>
+								<tr>
+									<td class="stat-icon">
+										<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+									</td>
+									<td class="stat-label">总字数</td>
+									<td class="stat-value">{fmt(stats.wordCount)}</td>
+								</tr>
+								<tr>
+									<td class="stat-icon">
+										<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+									</td>
+									<td class="stat-label">运行天数</td>
+									<td class="stat-value">{fmt(stats.runDays)} <span class="stat-unit">天</span></td>
+								</tr>
+								<tr>
+									<td class="stat-icon">
+										<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+									</td>
+									<td class="stat-label">最后活动</td>
+									<td class="stat-value">{fmt(stats.lastActiveDays)} <span class="stat-unit">天前</span></td>
+								</tr>
+							</tbody>
+						</table>
 					</section>
 
 					<section class="card friends-card">

@@ -1,0 +1,272 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import { SITE_TITLE } from '../consts';
+---
+
+<!doctype html>
+<html lang="zh-CN">
+	<head>
+		<BaseHead title={`AI工具 - ${SITE_TITLE}`} description="AI工具和开源项目合集" />
+		<style>
+			main {
+				width: 1140px;
+				max-width: calc(100% - 2em);
+				padding-left: 2em;
+				padding-right: 2em;
+			}
+			.page-title {
+				font-size: 1.6em;
+				font-weight: 700;
+				color: rgb(var(--black));
+				margin-bottom: 1.2em;
+				text-align: center;
+			}
+
+			/* Section */
+			.section {
+				background: var(--card-bg);
+				border-radius: 20px;
+				padding: 2em;
+				box-shadow: 0 2px 12px rgba(var(--black), 0.04);
+				margin-bottom: 2em;
+			}
+			.section-title {
+				font-size: 1.15em;
+				font-weight: 700;
+				margin: 0 0 1em;
+				color: rgb(var(--black));
+				padding-bottom: 0.5em;
+				border-bottom: 2px solid rgb(var(--gray-light));
+				display: flex;
+				align-items: center;
+				gap: 0.5em;
+			}
+			.section-title .icon {
+				font-size: 1.2em;
+			}
+
+			/* Tools grid */
+			.tools-grid {
+				display: grid;
+				grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+				gap: 1em;
+			}
+			.tool-card {
+				display: flex;
+				flex-direction: column;
+				padding: 1.2em;
+				background: rgb(var(--gray-light));
+				border-radius: 12px;
+				text-decoration: none;
+				transition: all 0.2s ease;
+			}
+			.tool-card:hover {
+				background: var(--card-bg);
+				box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+				transform: translateY(-2px);
+			}
+			.tool-header {
+				display: flex;
+				align-items: center;
+				gap: 0.6em;
+				margin-bottom: 0.5em;
+			}
+			.tool-icon {
+				width: 40px;
+				height: 40px;
+				border-radius: 10px;
+				background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				font-size: 1.1em;
+				color: #fff;
+				flex-shrink: 0;
+			}
+			.tool-name {
+				font-size: 1em;
+				font-weight: 700;
+				color: rgb(var(--black));
+			}
+			.tool-desc {
+				font-size: 0.85em;
+				color: rgb(var(--gray));
+				line-height: 1.5;
+				margin: 0;
+			}
+			.tool-tags {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.3em;
+				margin-top: 0.6em;
+			}
+			.tool-tag {
+				font-size: 0.72em;
+				padding: 0.15em 0.5em;
+				border-radius: 999px;
+				color: var(--accent);
+				background: rgba(var(--accent-rgb), 0.07);
+			}
+
+			/* Project list (simpler) */
+			.project-list {
+				display: flex;
+				flex-direction: column;
+				gap: 0.6em;
+			}
+			.project-item {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				padding: 0.9em 1em;
+				background: rgb(var(--gray-light));
+				border-radius: 10px;
+				text-decoration: none;
+				transition: all 0.2s ease;
+			}
+			.project-item:hover {
+				background: var(--card-bg);
+				box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+				transform: translateY(-1px);
+			}
+			.project-info {
+				min-width: 0;
+			}
+			.project-name {
+				display: block;
+				font-size: 0.92em;
+				font-weight: 600;
+				color: rgb(var(--black));
+				margin-bottom: 0.1em;
+			}
+			.project-desc {
+				font-size: 0.8em;
+				color: rgb(var(--gray));
+				line-height: 1.4;
+			}
+			.project-arrow {
+				color: var(--accent);
+				font-size: 1.2em;
+				flex-shrink: 0;
+				margin-left: 1em;
+			}
+		</style>
+	</head>
+	<body>
+		<Header />
+		<main>
+			<h1 class="page-title">AI 工具 & 开源项目</h1>
+
+			<section class="section">
+				<h2 class="section-title">
+					<span class="icon">🤖</span> AI 工具推荐
+				</h2>
+				<div class="tools-grid">
+					<a href="https://claude.ai" target="_blank" class="tool-card">
+						<div class="tool-header">
+							<span class="tool-icon">C</span>
+							<span class="tool-name">Claude</span>
+						</div>
+						<p class="tool-desc">Anthropic 出品的 AI 助手，擅长代码推理、长文本分析和创意写作。</p>
+						<div class="tool-tags">
+							<span class="tool-tag">对话</span>
+							<span class="tool-tag">编程</span>
+						</div>
+					</a>
+
+					<a href="https://chat.openai.com" target="_blank" class="tool-card">
+						<div class="tool-header">
+							<span class="tool-icon">G</span>
+							<span class="tool-name">ChatGPT</span>
+						</div>
+						<p class="tool-desc">OpenAI 的通用对话模型，生态丰富，插件和 GPTs 扩展性好。</p>
+						<div class="tool-tags">
+							<span class="tool-tag">对话</span>
+							<span class="tool-tag">通用</span>
+						</div>
+					</a>
+
+					<a href="https://github.com/features/copilot" target="_blank" class="tool-card">
+						<div class="tool-header">
+							<span class="tool-icon">GH</span>
+							<span class="tool-name">GitHub Copilot</span>
+						</div>
+						<p class="tool-desc">IDE 内嵌 AI 编程助手，代码补全和 Chat 功能深度集成编辑器。</p>
+						<div class="tool-tags">
+							<span class="tool-tag">编程</span>
+							<span class="tool-tag">IDE</span>
+						</div>
+					</a>
+
+					<a href="https://www.perplexity.ai" target="_blank" class="tool-card">
+						<div class="tool-header">
+							<span class="tool-icon">P</span>
+							<span class="tool-name">Perplexity</span>
+						</div>
+						<p class="tool-desc">AI 搜索引擎，实时联网检索并附来源引用，适合技术调研。</p>
+						<div class="tool-tags">
+							<span class="tool-tag">搜索</span>
+							<span class="tool-tag">调研</span>
+						</div>
+					</a>
+
+					<a href="https://www.midjourney.com" target="_blank" class="tool-card">
+						<div class="tool-header">
+							<span class="tool-icon">MJ</span>
+							<span class="tool-name">Midjourney</span>
+						</div>
+						<p class="tool-desc">AI 图像生成工具，通过文字描述生成高质量的艺术和设计图像。</p>
+						<div class="tool-tags">
+							<span class="tool-tag">图像</span>
+							<span class="tool-tag">设计</span>
+						</div>
+					</a>
+
+					<a href="https://gemini.google.com" target="_blank" class="tool-card">
+						<div class="tool-header">
+							<span class="tool-icon">Ge</span>
+							<span class="tool-name">Gemini</span>
+						</div>
+						<p class="tool-desc">Google 多模态 AI，深度整合 Google 生态，支持文本/图像/代码。</p>
+						<div class="tool-tags">
+							<span class="tool-tag">多模态</span>
+							<span class="tool-tag">对话</span>
+						</div>
+					</a>
+				</div>
+			</section>
+
+			<section class="section">
+				<h2 class="section-title">
+					<span class="icon">📦</span> 开源项目
+				</h2>
+				<div class="project-list">
+					<a href="#" class="project-item">
+						<span class="project-info">
+							<span class="project-name">KaitoBlog</span>
+							<span class="project-desc">基于 Astro 6 的极简博客主题，卡片式设计，内置暗色模式</span>
+						</span>
+						<span class="project-arrow">→</span>
+					</a>
+					<a href="#" class="project-item">
+						<span class="project-info">
+							<span class="project-name">QuickNote</span>
+							<span class="project-desc">命令行速记工具，支持 Markdown 渲染和标签分类</span>
+						</span>
+						<span class="project-arrow">→</span>
+					</a>
+					<a href="#" class="project-item">
+						<span class="project-info">
+							<span class="project-name">ColorCraft</span>
+							<span class="project-desc">调色板生成器，从图片提取色彩，支持多种导出格式</span>
+						</span>
+						<span class="project-arrow">→</span>
+					</a>
+				</div>
+			</section>
+		</main>
+		<Footer />
+	</body>
+</html>

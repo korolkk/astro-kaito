@@ -20,8 +20,29 @@ const allPosts = (await getCollection('blog')).sort(
 const currentIndex = allPosts.findIndex((p) => p.id === post.id);
 const prevPost = currentIndex < allPosts.length - 1 ? allPosts[currentIndex + 1] : null;
 const nextPost = currentIndex > 0 ? allPosts[currentIndex - 1] : null;
+
+function extractHeadings(body: string): { text: string; level: number; id: string }[] {
+	const headings: { text: string; level: number; id: string }[] = [];
+	const regex = /^(#{2,4})\s+(.+)$/gm;
+	let match: RegExpExecArray | null;
+	while ((match = regex.exec(body)) !== null) {
+		const level = match[1].length;
+		const text = match[2].trim();
+		const id = text
+			.toLowerCase()
+			.replace(/[^\w一-鿿぀-ゟ가-힯\s-]/g, '')
+			.trim()
+			.replace(/\s+/g, '-')
+			.replace(/-+/g, '-')
+			.replace(/^-|-$/g, '');
+		headings.push({ text, level, id });
+	}
+	return headings;
+}
+
+const headings = extractHeadings(post.body || '');
 ---
 
-<BlogPost {...post.data} prevPost={prevPost} nextPost={nextPost}>
+<BlogPost {...post.data} prevPost={prevPost} nextPost={nextPost} headings={headings}>
 	<Content />
 </BlogPost>
