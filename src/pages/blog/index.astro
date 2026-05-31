@@ -6,6 +6,8 @@ import Footer from '../../components/Footer.astro';
 import Header from '../../components/Header.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
 
+const PAGE_SIZE = 15;
+
 const posts = (await getCollection('blog')).sort(
 	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
 );
@@ -33,6 +35,11 @@ let currentYear = 0;
 				border-radius: 20px;
 				padding: 2.5em;
 				box-shadow: 0 2px 12px rgba(var(--black), 0.04);
+				display: flex;
+				flex-direction: column;
+			}
+			.timeline {
+				min-height: 85em;
 			}
 
 			/* Tag filter */
@@ -208,6 +215,68 @@ let currentYear = 0;
 				display: block;
 			}
 
+			/* Pagination */
+			.pagination {
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				gap: 0.5em;
+				margin-top: 2.5em;
+				padding-top: 1.5em;
+				border-top: 1px solid rgb(var(--gray-light));
+			}
+			.pagination.hidden {
+				display: none;
+			}
+
+			.page-arrow,
+			.page-num {
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				width: 2em;
+				height: 2em;
+				border: none;
+				background: none;
+				color: rgb(var(--gray));
+				font-size: 0.92em;
+				font-family: inherit;
+				cursor: pointer;
+				border-radius: 6px;
+				transition: all 0.15s ease;
+			}
+			.page-arrow:hover:not(.disabled),
+			.page-num:hover {
+				color: var(--accent);
+				background: rgba(var(--accent-rgb), 0.06);
+			}
+			.page-arrow.disabled {
+				opacity: 0.25;
+				cursor: default;
+			}
+			.page-num.active {
+				color: var(--accent);
+				font-weight: 700;
+			}
+
+			.page-nums {
+				display: flex;
+				align-items: center;
+				gap: 0.15em;
+			}
+			.page-ellipsis {
+				min-width: 2em;
+				text-align: center;
+				color: rgb(var(--gray));
+				font-size: 0.85em;
+			}
+
+			.page-total {
+				font-size: 0.82em;
+				color: rgb(var(--gray));
+				margin-left: 0.4em;
+			}
+
 			@media (max-width: 800px) {
 				.timeline-item {
 					grid-template-columns: 70px 22px 1fr;
@@ -241,6 +310,9 @@ let currentYear = 0;
 				}
 				.timeline-content h3 {
 					font-size: 0.92em;
+				}
+				.page-total {
+					display: none;
 				}
 			}
 		</style>
@@ -298,6 +370,13 @@ let currentYear = 0;
 					}
 				</div>
 				<div class="no-results" id="noResults">没有找到相关文章</div>
+
+				<nav class="pagination" id="pagination">
+					<button class="page-arrow" id="pagePrev">‹</button>
+					<span class="page-nums" id="pageNumbers"></span>
+					<button class="page-arrow" id="pageNext">›</button>
+					<span class="page-total" id="pageTotal"></span>
+				</nav>
 			</div>
 		</main>
 		<Footer />
@@ -306,53 +385,162 @@ let currentYear = 0;
 
 <script is:inline>
 	(function () {
-		const filter = document.getElementById('tagFilter');
-		const items = document.querySelectorAll('.timeline-item');
-		const noResults = document.getElementById('noResults');
+		var PAGE_SIZE = 15;
+		var filter = document.getElementById('tagFilter');
+		var items = Array.from(document.querySelectorAll('.timeline-item'));
+		var noResults = document.getElementById('noResults');
+		var pagination = document.getElementById('pagination');
+		var pagePrev = document.getElementById('pagePrev');
+		var pageNext = document.getElementById('pageNext');
+		var pageNumbers = document.getElementById('pageNumbers');
+		var pageTotal = document.getElementById('pageTotal');
+		var currentTag = '';
+		var currentPage = 1;
 
-		function applyFilter(tag) {
-			let visible = 0;
-			items.forEach((item) => {
-				const tags = item.dataset.tags ? item.dataset.tags.split(',') : [];
-				const show = !tag || tags.includes(tag);
-				if (show) {
-					item.classList.remove('hidden');
-					visible++;
-				} else {
-					item.classList.add('hidden');
-				}
+		function getVisibleItems() {
+			return items.filter(function (item) {
+				var tags = item.dataset.tags ? item.dataset.tags.split(',') : [];
+				return !currentTag || tags.indexOf(currentTag) > -1;
 			});
-			if (noResults) {
-				noResults.classList.toggle('show', visible === 0);
+		}
+
+		function setArrowDisabled(btn, disabled) {
+			if (disabled) {
+				btn.classList.add('disabled');
+				btn.disabled = true;
+			} else {
+				btn.classList.remove('disabled');
+				btn.disabled = false;
+			}
+		}
+
+		function updateUI() {
+			var visible = getVisibleItems();
+			var totalPages = Math.ceil(visible.length / PAGE_SIZE) || 1;
+			if (currentPage > totalPages) currentPage = totalPages;
+
+			// Show/hide items
+			items.forEach(function (item) { item.classList.add('hidden'); });
+			var start = (currentPage - 1) * PAGE_SIZE;
+			var end = Math.min(start + PAGE_SIZE, visible.length);
+			for (var i = start; i < end; i++) {
+				visible[i].classList.remove('hidden');
 			}
 
-			if (filter) {
-				filter.querySelectorAll('.tag-filter-btn').forEach((btn) => {
-					btn.classList.toggle('active', btn.dataset.tag === tag);
+			// No results
+			if (noResults) {
+				noResults.classList.toggle('show', visible.length === 0);
+			}
+
+			// Pagination
+			if (totalPages <= 1) {
+				pagination.classList.add('hidden');
+			} else {
+				pagination.classList.remove('hidden');
+				setArrowDisabled(pagePrev, currentPage <= 1);
+				setArrowDisabled(pageNext, currentPage >= totalPages);
+
+				// Build page numbers
+				var html = '';
+				var maxShow = 5;
+
+				if (totalPages <= maxShow + 2) {
+					for (var p = 1; p <= totalPages; p++) {
+						html += pageNumBtn(p);
+					}
+				} else {
+					var startPage = Math.max(2, currentPage - Math.floor(maxShow / 2) + 1);
+					var endPage = Math.min(totalPages - 1, currentPage + Math.floor(maxShow / 2));
+
+					// Adjust to keep visible count
+					while (endPage - startPage < maxShow - 3 && endPage < totalPages - 1) endPage++;
+					while (endPage - startPage < maxShow - 3 && startPage > 2) startPage--;
+
+					html += pageNumBtn(1);
+					if (startPage > 2) html += '<span class="page-ellipsis">…</span>';
+					for (var p = startPage; p <= endPage; p++) {
+						html += pageNumBtn(p);
+					}
+					if (endPage < totalPages - 1) html += '<span class="page-ellipsis">…</span>';
+					html += pageNumBtn(totalPages);
+				}
+
+				pageNumbers.innerHTML = html;
+				pageTotal.textContent = totalPages + ' 页';
+
+				// Bind page number clicks
+				pageNumbers.querySelectorAll('.page-num').forEach(function (btn) {
+					btn.addEventListener('click', function () {
+						currentPage = parseInt(this.dataset.page, 10);
+						// keep scroll position
+						updateUI();
+						updateURL();
+					});
 				});
 			}
 
-			const url = new URL(window.location);
-			if (tag) {
-				url.searchParams.set('tag', tag);
+			updateURL();
+		}
+
+		function pageNumBtn(p) {
+			var cls = p === currentPage ? 'page-num active' : 'page-num';
+			return '<button class="' + cls + '" data-page="' + p + '">' + p + '</button>';
+		}
+
+		function updateURL() {
+			var url = new URL(window.location);
+			if (currentTag) {
+				url.searchParams.set('tag', currentTag);
 			} else {
 				url.searchParams.delete('tag');
+			}
+			if (currentPage > 1) {
+				url.searchParams.set('page', currentPage);
+			} else {
+				url.searchParams.delete('page');
 			}
 			window.history.replaceState({}, '', url);
 		}
 
+		// Tag filter clicks
 		if (filter) {
-			filter.querySelectorAll('.tag-filter-btn').forEach((btn) => {
-				btn.addEventListener('click', () => {
-					applyFilter(btn.dataset.tag);
+			filter.querySelectorAll('.tag-filter-btn').forEach(function (btn) {
+				btn.addEventListener('click', function () {
+					currentTag = btn.dataset.tag;
+					currentPage = 1;
+					filter.querySelectorAll('.tag-filter-btn').forEach(function (b) {
+						b.classList.toggle('active', b.dataset.tag === currentTag);
+					});
+					updateUI();
 				});
 			});
 		}
 
-		const params = new URLSearchParams(window.location.search);
-		const activeTag = params.get('tag') || '';
-		if (activeTag) {
-			applyFilter(activeTag);
+		// Prev / Next
+		pagePrev.addEventListener('click', function () {
+			if (currentPage <= 1) return;
+			currentPage--;
+			// keep scroll position
+			updateUI();
+		});
+		pageNext.addEventListener('click', function () {
+			var totalPages = Math.ceil(getVisibleItems().length / PAGE_SIZE) || 1;
+			if (currentPage >= totalPages) return;
+			currentPage++;
+			// keep scroll position
+			updateUI();
+		});
+
+		// Init from URL
+		var params = new URLSearchParams(window.location.search);
+		currentTag = params.get('tag') || '';
+		currentPage = parseInt(params.get('page'), 10) || 1;
+
+		if (currentTag && filter) {
+			filter.querySelectorAll('.tag-filter-btn').forEach(function (btn) {
+				btn.classList.toggle('active', btn.dataset.tag === currentTag);
+			});
 		}
+		updateUI();
 	})();
 </script>

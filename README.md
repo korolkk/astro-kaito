@@ -64,6 +64,40 @@ Astro 会查找 `src/pages/` 目录下的 `.astro` 或 `.md` 文件，每个文�
 
 ## 更新日志
 
+### 2026-06-01 — 站点统计、AI工具页、文章目录、关于时间线、翻页优化
+
+**站点统计卡片**
+- 首页侧栏新增站点统计卡片：表格布局 + SVG 图标，显示文章数 / 标签数 / 总字数 / 运行天数 / 最后活动
+- 字数计算：读取所有文章 body，清理 Markdown 语法后统计字符数
+
+**AI 工具页面**
+- 新建 `src/pages/ai-tools.astro`：AI 工具推荐卡片（Claude / ChatGPT / Copilot / Perplexity / Midjourney / Gemini）+ 开源项目列表
+- 导航栏新增「AI工具」入口
+- 首页移除开源项目卡片（迁移至 AI 工具页面）
+
+**文章目录 TOC**
+- `src/pages/blog/[...slug].astro`：新增 `extractHeadings()` 函数，从 post.body 提取 h2-h4 标题并生成匹配 ID
+- `src/layouts/BlogPost.astro`：新增右侧悬浮目录侧边栏（220px），层级缩进，scroll 驱动高亮激活章节
+- 屏幕 ≤1300px 时自动隐藏
+
+**首页头像卡片更新**
+- 简介更新为嵌入式工程师身份
+- 新增座右铭展示
+
+**关于页面成长历程时间线**
+- `src/pages/about.astro`：纵向时间轴 + 卡片式布局，6 个里程碑（倒序）
+- 每条含时间范围 / 持续时长 / 副标题 / 详细描述 / 技能标签 / 成就栏
+- 真实履历：杭州电子科技大学 → MCM/ICM F 奖 → 字节青训营 → ROS2 实习 → 浙江大华嵌入式
+
+**博客列表页翻页**
+- 每页 15 篇文章，客户端 JS 分页
+- 箭号 + 数字页码统一风格，悬停 accent 色，当前页加粗
+- 与标签筛选联动，URL 参数 `?page=N&tag=xxx`
+- 卡片 min-height 保证翻页栏位置稳定不跳动
+
+**斜杠命令**
+- `.claude/skills/`：新增 `/commit` `/push` `/ship` 三个斜杠命令
+
 ### 2026-05-28 — 文章标签、时间轴列表、翻页导航
 
 **标签系统**
