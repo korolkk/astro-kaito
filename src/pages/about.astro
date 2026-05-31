@@ -25,6 +25,98 @@ import Layout from '../layouts/BlogPost.astro';
 		<strong>兴趣领域：</strong>Web 性能优化、编译器原理、算法与数据结构
 	</p>
 
+	<h2>成长历程</h2>
+
+	<div class="timeline">
+		<div class="tl-item">
+			<div class="tl-marker">
+				<div class="tl-dot"></div>
+			</div>
+			<div class="tl-card">
+				<span class="tl-date">2020 年 9 月</span>
+				<h3>🎓 踏入大学校门</h3>
+				<p>进入大学，主修计算机科学与技术。初识 C 语言与数据结构，打开了编程世界的大门。</p>
+			</div>
+		</div>
+
+		<div class="tl-item">
+			<div class="tl-marker">
+				<div class="tl-dot"></div>
+			</div>
+			<div class="tl-card">
+				<span class="tl-date">2021 年 6 月</span>
+				<h3>🌐 前端启蒙</h3>
+				<p>系统学习 HTML/CSS/JavaScript，搭建第一个个人网站。开始参与校内的开源项目，熟悉 Git 协作流程。</p>
+			</div>
+		</div>
+
+		<div class="tl-item">
+			<div class="tl-marker">
+				<div class="tl-dot"></div>
+			</div>
+			<div class="tl-card">
+				<span class="tl-date">2022 年 3 月</span>
+				<h3>🏆 技术竞赛 & 算法训练</h3>
+				<p>参加 CSP 认证和 LeetCode 刷题训练，系统提升算法与数据结构能力。累计解题 200+，建立个人算法笔记库。</p>
+			</div>
+		</div>
+
+		<div class="tl-item">
+			<div class="tl-marker">
+				<div class="tl-dot"></div>
+			</div>
+			<div class="tl-card">
+				<span class="tl-date">2022 年 7 月</span>
+				<h3>💼 第一份实习</h3>
+				<p>在某互联网公司担任前端开发实习生，参与内部工具平台的开发与维护，接触 React 生态和工程化实践。</p>
+			</div>
+		</div>
+
+		<div class="tl-item">
+			<div class="tl-marker">
+				<div class="tl-dot"></div>
+			</div>
+			<div class="tl-card">
+				<span class="tl-date">2023 年 1 月</span>
+				<h3>🚀 字节跳动青训营</h3>
+				<p>参加字节跳动后端青训营，学习 Go 语言与微服务架构。完成「简易抖音」后端项目，获得优秀学员称号。</p>
+			</div>
+		</div>
+
+		<div class="tl-item">
+			<div class="tl-marker">
+				<div class="tl-dot"></div>
+			</div>
+			<div class="tl-card">
+				<span class="tl-date">2023 年 6 月</span>
+				<h3>🤖 机器人 & ROS2 探索</h3>
+				<p>接触机器人操作系统 ROS2，学习点云处理与深度图像转换。拓展技术视野，从纯软件跨向软硬结合方向。</p>
+			</div>
+		</div>
+
+		<div class="tl-item">
+			<div class="tl-marker">
+				<div class="tl-dot"></div>
+			</div>
+			<div class="tl-card">
+				<span class="tl-date">2024 年 6 月</span>
+				<h3>🎓 毕业 & 新起点</h3>
+				<p>顺利完成本科学业，正式步入工作岗位。持续深耕全栈开发，同时运营个人技术博客 KaitoBlog。</p>
+			</div>
+		</div>
+
+		<div class="tl-item">
+			<div class="tl-marker">
+				<div class="tl-dot"></div>
+			</div>
+			<div class="tl-card">
+				<span class="tl-date">2026 年 5 月</span>
+				<h3>📝 博客重构 & AI 时代</h3>
+				<p>将博客从 Hexo 迁移至 Astro 6，全面重设计。积极探索 AI 辅助编程，在效率与质量之间寻找最佳平衡点。</p>
+			</div>
+		</div>
+	</div>
+
 	<h2>关于本站</h2>
 
 	<p>
@@ -44,3 +136,95 @@ import Layout from '../layouts/BlogPost.astro';
 		<li>Email：<a href="mailto:704788475@qq.com">704788475@qq.com</a></li>
 	</ul>
 </Layout>
+
+<style>
+	/* Timeline */
+	.timeline {
+		position: relative;
+		padding: 0.5em 0;
+	}
+	.tl-item {
+		display: grid;
+		grid-template-columns: 32px 1fr;
+		gap: 1em;
+		position: relative;
+	}
+	.tl-item:not(:last-child) {
+		padding-bottom: 1em;
+	}
+
+	/* Dot & line */
+	.tl-marker {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		position: relative;
+	}
+	.tl-dot {
+		width: 12px;
+		height: 12px;
+		border-radius: 50%;
+		background: var(--accent);
+		flex-shrink: 0;
+		margin-top: 0.45em;
+		position: relative;
+		z-index: 2;
+		box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.12);
+	}
+	.tl-item:not(:last-child) .tl-marker::after {
+		content: '';
+		width: 2px;
+		flex: 1;
+		background: rgba(var(--accent-rgb), 0.2);
+		margin-top: 6px;
+		min-height: calc(100% + 1em);
+	}
+
+	/* Card */
+	.tl-card {
+		background: var(--card-bg);
+		border: 1px solid rgb(var(--gray-light));
+		border-radius: 12px;
+		padding: 1em 1.2em;
+		transition: box-shadow 0.2s ease, transform 0.2s ease;
+	}
+	.tl-item:hover .tl-card {
+		box-shadow: 0 2px 16px rgba(var(--black), 0.06);
+		transform: translateY(-1px);
+	}
+	.tl-card:hover .tl-dot {
+		box-shadow: 0 0 0 8px rgba(var(--accent-rgb), 0.18);
+	}
+	.tl-date {
+		display: inline-block;
+		font-size: 0.78em;
+		font-weight: 600;
+		color: var(--accent);
+		background: rgba(var(--accent-rgb), 0.07);
+		padding: 0.15em 0.6em;
+		border-radius: 999px;
+		margin-bottom: 0.4em;
+	}
+	.tl-card h3 {
+		margin: 0 0 0.3em;
+		font-size: 1em;
+		color: rgb(var(--black));
+	}
+	.tl-card p {
+		margin: 0;
+		font-size: 0.88em;
+		color: rgb(var(--gray));
+		line-height: 1.6;
+	}
+
+	@media (max-width: 500px) {
+		.tl-item {
+			grid-template-columns: 24px 1fr;
+			gap: 0.7em;
+		}
+		.tl-dot {
+			width: 10px;
+			height: 10px;
+		}
+	}
+</style>
