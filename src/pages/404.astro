@@ -1,0 +1,92 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { SITE_TITLE } from '../consts';
+---
+
+<!doctype html>
+<html lang="zh-CN">
+	<head>
+		<BaseHead title={`404 - ${SITE_TITLE}`} description="页面未找到" />
+		<style>
+			main {
+				width: 1140px;
+				max-width: calc(100% - 2em);
+				padding: 0 2em;
+			}
+			.not-found {
+				text-align: center;
+				padding: 4em 2em;
+				background: var(--card-bg);
+				border-radius: 20px;
+				box-shadow: 0 2px 12px rgba(var(--black), 0.04);
+			}
+			.not-found h1 {
+				font-size: 5em;
+				font-weight: 700;
+				color: var(--accent);
+				margin: 0;
+				line-height: 1;
+				letter-spacing: -0.03em;
+			}
+			.not-found h2 {
+				font-size: 1.3em;
+				color: rgb(var(--black));
+				margin: 0.5em 0 0.8em;
+				font-weight: 600;
+			}
+			.not-found p {
+				color: rgb(var(--gray));
+				margin-bottom: 1.8em;
+				line-height: 1.6;
+			}
+			.not-found .actions {
+				display: flex;
+				gap: 0.8em;
+				justify-content: center;
+				flex-wrap: wrap;
+			}
+			.not-found .btn {
+				display: inline-block;
+				padding: 0.6em 1.4em;
+				border-radius: 10px;
+				text-decoration: none;
+				font-size: 0.93em;
+				font-weight: 500;
+				transition: all 0.2s ease;
+			}
+			.btn-primary {
+				background: var(--accent);
+				color: #fff;
+			}
+			.btn-primary:hover {
+				opacity: 0.85;
+			}
+			.btn-outline {
+				border: 1px solid rgb(var(--gray-light));
+				color: rgb(var(--gray-dark));
+				background: transparent;
+			}
+			.btn-outline:hover {
+				border-color: var(--accent);
+				color: var(--accent);
+			}
+		</style>
+	</head>
+	<body>
+		<Header />
+		<main>
+			<div class="not-found">
+				<h1>404</h1>
+				<h2>页面未找到</h2>
+				<p>你访问的页面不存在或已被移除。<br />请检查链接是否正确，或者回到首页继续浏览。</p>
+				<div class="actions">
+					<a href="/" class="btn btn-primary">返回首页</a>
+					<a href="/blog" class="btn btn-outline">浏览文章</a>
+				</div>
+			</div>
+		</main>
+		<Footer />
+	</body>
+</html>
