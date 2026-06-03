@@ -3,6 +3,7 @@ import BaseHead from '../components/BaseHead.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import { SITE_TITLE } from '../consts';
+const base = import.meta.env.BASE_URL;
 ---
 
 <!doctype html>
@@ -82,8 +83,8 @@ import { SITE_TITLE } from '../consts';
 				<h2>页面未找到</h2>
 				<p>你访问的页面不存在或已被移除。<br />请检查链接是否正确，或者回到首页继续浏览。</p>
 				<div class="actions">
-					<a href="/" class="btn btn-primary">返回首页</a>
-					<a href="/blog" class="btn btn-outline">浏览文章</a>
+					<a href={`${base}`} class="btn btn-primary">返回首页</a>
+					<a href={`${base}blog`} class="btn btn-outline">浏览文章</a>
 				</div>
 			</div>
 		</main>

@@ -5,6 +5,7 @@ import BaseHead from '../../components/BaseHead.astro';
 import Footer from '../../components/Footer.astro';
 import Header from '../../components/Header.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
+const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
 
 const PAGE_SIZE = 15;
 
@@ -346,7 +347,7 @@ let currentYear = 0;
 									<div class="timeline-dot-col">
 										<div class="timeline-dot"></div>
 									</div>
-									<a class="timeline-content" href={`/blog/${post.id}/`}>
+									<a class="timeline-content" href={`${base}blog/${post.id}/`}>
 										<h3>{post.data.title}</h3>
 										<p class="desc">{post.data.description}</p>
 										{
@@ -359,7 +360,7 @@ let currentYear = 0;
 									</a>
 									{
 										post.data.heroImage && (
-											<a class="timeline-cover" href={`/blog/${post.id}/`} tabindex="-1">
+											<a class="timeline-cover" href={`${base}blog/${post.id}/`} tabindex="-1">
 												<Image width={320} height={180} src={post.data.heroImage} alt="" />
 											</a>
 										)

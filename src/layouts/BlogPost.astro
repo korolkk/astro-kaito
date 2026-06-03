@@ -5,6 +5,7 @@ import BaseHead from '../components/BaseHead.astro';
 import Footer from '../components/Footer.astro';
 import FormattedDate from '../components/FormattedDate.astro';
 import Header from '../components/Header.astro';
+const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
 
 type Props = CollectionEntry<'blog'>['data'] & {
 	prevPost?: CollectionEntry<'blog'> | null;
@@ -303,7 +304,7 @@ const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nex
 								tags && tags.length > 0 && (
 									<div class="tags">
 										{tags.map((tag) => (
-											<a class="tag" href={`/blog?tag=${encodeURIComponent(tag)}`}>{tag}</a>
+											<a class="tag" href={`${base}blog?tag=${encodeURIComponent(tag)}`}>{tag}</a>
 										))}
 									</div>
 								)
@@ -342,7 +343,7 @@ const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nex
 								<nav class="post-nav">
 									{
 										prevPost ? (
-											<a class="post-nav-link prev" href={`/blog/${prevPost.id}/`}>
+											<a class="post-nav-link prev" href={`${base}blog/${prevPost.id}/`}>
 												<span class="post-nav-label">上一篇</span>
 												<span class="post-nav-title">{prevPost.data.title}</span>
 											</a>
@@ -350,7 +351,7 @@ const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nex
 									}
 									{
 										nextPost ? (
-											<a class="post-nav-link next" href={`/blog/${nextPost.id}/`}>
+											<a class="post-nav-link next" href={`${base}blog/${nextPost.id}/`}>
 												<span class="post-nav-label">下一篇</span>
 												<span class="post-nav-title">{nextPost.data.title}</span>
 											</a>

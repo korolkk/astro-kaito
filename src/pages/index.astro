@@ -7,6 +7,7 @@ import Header from '../components/Header.astro';
 import FormattedDate from '../components/FormattedDate.astro';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 import avatarPlaceholder from '../assets/blog-placeholder-about.jpg';
+const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
 
 const allPosts = (await getCollection('blog')).sort(
 	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
@@ -423,7 +424,7 @@ const stats = {
 					<ul class="post-list">
 						{posts.map((post) => (
 							<li>
-								<a href={`/blog/${post.id}/`}>
+								<a href={`${base}blog/${post.id}/`}>
 									<div class="post-title">{post.data.title}</div>
 									<div class="post-date">
 										<FormattedDate date={post.data.pubDate} />
@@ -433,7 +434,7 @@ const stats = {
 							</li>
 						))}
 					</ul>
-					<a class="view-all" href="/blog">查看全部文章 →</a>
+					<a class="view-all" href={`${base}blog`}>查看全部文章 →</a>
 				</section>
 			</div>
 		</main>
