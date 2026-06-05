@@ -50,6 +50,23 @@ const stats = {
 	<head>
 		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
 		<style>
+			/* GitHub heatmap color variables */
+			:root {
+				--gh-level-0: transparent;
+				--gh-level-1: #9be9a8;
+				--gh-level-2: #40c463;
+				--gh-level-3: #30a14e;
+				--gh-level-4: #216e39;
+				--gh-square-border: rgba(var(--gray), 0.08);
+			}
+
+			[data-theme='dark'] {
+				--gh-level-1: #0e4429;
+				--gh-level-2: #006d32;
+				--gh-level-3: #26a641;
+				--gh-level-4: #39d353;
+			}
+
 			main {
 				width: 100%;
 				max-width: 1140px;
@@ -98,14 +115,38 @@ const stats = {
 				color: rgb(var(--gray));
 				font-size: 0.93em;
 				line-height: 1.7;
-				margin: 0.8em 0 1.2em;
+				margin: 0.8em 0 0.4em;
 			}
 			.profile-quote {
 				color: var(--accent);
 				font-size: 0.85em;
 				font-style: italic;
-				margin: 0.6em 0 0;
+				margin: 0;
 				opacity: 0.8;
+				display: inline;
+			}
+			.profile-quote-wrapper {
+				display: block;
+				margin: 0.6em 0 1.2em;
+				min-height: 1.4em;
+			}
+			.quote-cursor {
+				display: inline;
+				color: var(--accent);
+				font-weight: 700;
+				font-size: 0.9em;
+				opacity: 0;
+				margin-left: 1px;
+			}
+			.quote-cursor.visible {
+				opacity: 1;
+			}
+			.quote-cursor.blink {
+				animation: cursor-blink 1s step-end infinite;
+			}
+			@keyframes cursor-blink {
+				0%, 100% { opacity: 1; }
+				50% { opacity: 0; }
 			}
 			.profile-links {
 				display: flex;
@@ -178,6 +219,63 @@ const stats = {
 				font-size: 0.85em;
 				color: rgb(var(--gray));
 				font-variant-numeric: normal;
+			}
+			.stats-table .stat-num {
+				font-weight: 700;
+				color: rgb(var(--black));
+				font-variant-numeric: tabular-nums;
+			}
+
+			/* GitHub heatmap */
+			.github-card .gh-heatmap {
+				min-height: 80px;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+			}
+			.gh-loading {
+				color: rgb(var(--gray));
+				font-size: 0.85em;
+			}
+			.gh-loading span {
+				display: inline-block;
+				animation: gh-pulse 1.2s ease-in-out infinite;
+			}
+			@keyframes gh-pulse {
+				0%, 100% { opacity: 0.4; }
+				50% { opacity: 1; }
+			}
+			.gh-grid {
+				display: flex;
+				justify-content: center;
+				width: 100%;
+				overflow: hidden;
+			}
+			.gh-grid canvas {
+				border-radius: 4px;
+				max-width: 100%;
+				height: auto;
+			}
+			.gh-error {
+				color: rgb(var(--gray));
+				font-size: 0.85em;
+				display: flex;
+				align-items: center;
+				gap: 0.4em;
+			}
+			.gh-total {
+				text-align: center;
+				font-size: 0.82em;
+				color: rgb(var(--gray));
+				margin-top: 0.8em;
+			}
+			.gh-total strong {
+				color: var(--accent);
+				font-weight: 700;
+			}
+			.gh-summary {
+				color: rgb(var(--gray-dark));
+				font-weight: 600;
 			}
 
 			/* Friends */
@@ -321,7 +419,10 @@ const stats = {
 							嵌入式软件工程师，专注音视频开发方向。<br />
 							主攻 C/C++，熟悉海思、联咏、星宸芯片平台。
 						</p>
-						<p class="profile-quote">"饭里盐加多了，就会咸"</p>
+						<div class="profile-quote-wrapper">
+							<p class="profile-quote" id="profileQuote">"饭里盐加多了，就会咸"</p>
+							<span class="quote-cursor" id="quoteCursor" aria-hidden="true">|</span>
+						</div>
 						<div class="profile-links">
 							<a href="https://github.com/korolkk" target="_blank">
 								<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
@@ -347,38 +448,56 @@ const stats = {
 										<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
 									</td>
 									<td class="stat-label">文章</td>
-									<td class="stat-value">{fmt(stats.articleCount)}</td>
+									<td class="stat-value" data-target={stats.articleCount}><span class="stat-num">0</span></td>
 								</tr>
 								<tr>
 									<td class="stat-icon">
 										<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
 									</td>
 									<td class="stat-label">标签</td>
-									<td class="stat-value">{fmt(stats.tagCount)}</td>
+									<td class="stat-value" data-target={stats.tagCount}><span class="stat-num">0</span></td>
 								</tr>
 								<tr>
 									<td class="stat-icon">
 										<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
 									</td>
 									<td class="stat-label">总字数</td>
-									<td class="stat-value">{fmt(stats.wordCount)}</td>
+									<td class="stat-value" data-target={stats.wordCount}><span class="stat-num">0</span></td>
 								</tr>
 								<tr>
 									<td class="stat-icon">
 										<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
 									</td>
 									<td class="stat-label">运行天数</td>
-									<td class="stat-value">{fmt(stats.runDays)} <span class="stat-unit">天</span></td>
+									<td class="stat-value" data-target={stats.runDays}><span class="stat-num">0</span> <span class="stat-unit">天</span></td>
 								</tr>
 								<tr>
 									<td class="stat-icon">
 										<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
 									</td>
 									<td class="stat-label">最后活动</td>
-									<td class="stat-value">{fmt(stats.lastActiveDays)} <span class="stat-unit">天前</span></td>
+									<td class="stat-value" data-target={stats.lastActiveDays}><span class="stat-num">0</span> <span class="stat-unit">天前</span></td>
 								</tr>
 							</tbody>
 						</table>
+					</section>
+
+					<section class="card github-card">
+						<h2 class="section-title">GitHub 贡献</h2>
+						<div class="gh-heatmap" id="ghHeatmap">
+							<div class="gh-loading" id="ghLoading">
+								<span>加载中...</span>
+							</div>
+							<div class="gh-grid" id="ghGrid" style="display:none;">
+							</div>
+							<div class="gh-error" id="ghError" style="display:none;">
+								<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+								无法加载贡献数据
+							</div>
+						</div>
+						<div class="gh-total" id="ghTotal" style="display:none;">
+							过去一年共 <strong id="ghTotalCount">0</strong> 次贡献
+						</div>
 					</section>
 
 					<section class="card friends-card">
@@ -436,5 +555,268 @@ const stats = {
 			</div>
 		</main>
 		<Footer />
+
+		<script is:inline>
+			(function () {
+				// ========== Feature 1: GitHub contribution heatmap ==========
+				var heatmapEl = document.getElementById('ghHeatmap');
+				var loadingEl = document.getElementById('ghLoading');
+				var gridEl = document.getElementById('ghGrid');
+				var errorEl = document.getElementById('ghError');
+				var totalEl = document.getElementById('ghTotal');
+				var totalCountEl = document.getElementById('ghTotalCount');
+
+				if (!heatmapEl) return;
+
+				var storedData = null;
+				var levelColors = [];
+
+				function ghLevel(count) {
+					if (count === 0) return 0;
+					if (count <= 3) return 1;
+					if (count <= 7) return 2;
+					if (count <= 13) return 3;
+					return 4;
+				}
+
+				function loadColors() {
+					var style = getComputedStyle(document.documentElement);
+					levelColors = [
+						style.getPropertyValue('--gh-level-0').trim() || 'transparent',
+						style.getPropertyValue('--gh-level-1').trim(),
+						style.getPropertyValue('--gh-level-2').trim(),
+						style.getPropertyValue('--gh-level-3').trim(),
+						style.getPropertyValue('--gh-level-4').trim(),
+					];
+				}
+
+				function drawCanvas(data) {
+					loadColors();
+					gridEl.innerHTML = '';
+
+					var rows = 7;
+					var sq = 8;
+					var gap = 2;
+					var padding = 2;
+					var maxWidth = gridEl.clientWidth || 300;
+
+					// Hold square size fixed, reduce columns to fit
+					var cols = Math.floor((maxWidth - padding * 2 + gap) / (sq + gap));
+					cols = Math.min(53, cols);
+					cols = Math.max(10, cols);
+
+					var needed = cols * rows;
+					// Trim data to latest `needed` days
+					var contributions = data.length > needed ? data.slice(-needed) : data;
+
+					var dpr = window.devicePixelRatio || 1;
+					var w = cols * (sq + gap) - gap + padding * 2;
+					var h = rows * (sq + gap) - gap + padding * 2;
+
+					var canvas = document.createElement('canvas');
+					canvas.width = w * dpr;
+					canvas.height = h * dpr;
+					canvas.style.width = w + 'px';
+					canvas.style.height = h + 'px';
+					var ctx = canvas.getContext('2d');
+					ctx.scale(dpr, dpr);
+
+					// Total from full year data, not just drawn subset
+					var fullTotal = 0;
+					for (var t = 0; t < data.length; t++) {
+						fullTotal += data[t];
+					}
+
+					for (var i = 0; i < contributions.length; i++) {
+						var col = Math.floor(i / rows);
+						var row = i % rows;
+						var level = ghLevel(contributions[i]);
+						var x = padding + col * (sq + gap);
+						var y = padding + row * (sq + gap);
+						ctx.fillStyle = levelColors[level];
+						var r = Math.max(1, Math.floor(sq * 0.2));
+						ctx.beginPath();
+						ctx.moveTo(x + r, y);
+						ctx.lineTo(x + sq - r, y);
+						ctx.quadraticCurveTo(x + sq, y, x + sq, y + r);
+						ctx.lineTo(x + sq, y + sq - r);
+						ctx.quadraticCurveTo(x + sq, y + sq, x + sq - r, y + sq);
+						ctx.lineTo(x + r, y + sq);
+						ctx.quadraticCurveTo(x, y + sq, x, y + sq - r);
+						ctx.lineTo(x, y + r);
+						ctx.quadraticCurveTo(x, y, x + r, y);
+						ctx.closePath();
+						ctx.fill();
+					}
+
+					gridEl.appendChild(canvas);
+
+					totalCountEl.textContent = fullTotal.toLocaleString('zh-CN');
+					totalEl.style.display = 'block';
+				}
+
+				function showError() {
+					loadingEl.style.display = 'none';
+					errorEl.style.display = 'flex';
+				}
+
+				// Watch theme changes to redraw heatmap
+				var themeObserver = new MutationObserver(function () {
+					if (storedData) {
+						drawCanvas(storedData);
+					}
+				});
+				themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+				fetch('https://github-contributions-api.deno.dev/korolkk.json')
+					.then(function (resp) {
+						if (!resp.ok) throw new Error('HTTP ' + resp.status);
+						return resp.json();
+					})
+					.then(function (data) {
+						// data.contributions is an array of weeks, each week is an array of day objects
+						// Flatten and extract contributionCount from each day
+						var weeks = data.contributions || [];
+						var contributions = [];
+						for (var w = 0; w < weeks.length; w++) {
+							for (var d = 0; d < weeks[w].length; d++) {
+								contributions.push(weeks[w][d].contributionCount || 0);
+							}
+						}
+						if (contributions.length === 0) throw new Error('Empty data');
+						var needed = 53 * 7; // 371
+						if (contributions.length < needed) {
+							var pad = new Array(needed - contributions.length).fill(0);
+							contributions = pad.concat(contributions);
+						} else if (contributions.length > needed) {
+							contributions = contributions.slice(-needed);
+						}
+						storedData = contributions;
+						loadingEl.style.display = 'none';
+						gridEl.style.display = 'flex';
+						// Defer drawing until layout is computed
+						requestAnimationFrame(function () {
+							drawCanvas(contributions);
+						});
+					})
+					.catch(function () {
+						showError();
+					});
+			})();
+
+			// ========== Feature 2: Number counting animation ==========
+			(function () {
+				var statValues = document.querySelectorAll('.stat-value[data-target]');
+				if (statValues.length === 0) return;
+
+				var animated = false;
+
+				function fmtNum(n) {
+					return n.toLocaleString('zh-CN');
+				}
+
+				function easeOutExpo(t) {
+					return t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
+				}
+
+				function animate(el, targetVal, duration) {
+					var start = performance.now();
+					var numSpan = el.querySelector('.stat-num');
+					if (!numSpan) return;
+
+					function step(now) {
+						var elapsed = now - start;
+						var progress = Math.min(elapsed / duration, 1);
+						var eased = easeOutExpo(progress);
+						var current = Math.round(eased * targetVal);
+						numSpan.textContent = fmtNum(current);
+
+						if (progress < 1) {
+							requestAnimationFrame(step);
+						} else {
+							numSpan.textContent = fmtNum(targetVal);
+						}
+					}
+
+					requestAnimationFrame(step);
+				}
+
+				var observer = new IntersectionObserver(function (entries) {
+					entries.forEach(function (entry) {
+						if (entry.isIntersecting && !animated) {
+							animated = true;
+							statValues.forEach(function (td) {
+								var target = parseInt(td.getAttribute('data-target'), 10);
+								if (isNaN(target)) return;
+								animate(td, target, 1500);
+							});
+							observer.disconnect();
+						}
+					});
+				}, { threshold: 0.3 });
+
+				var statsCard = document.querySelector('.stats-card');
+				if (statsCard) {
+					observer.observe(statsCard);
+				}
+
+				// Fallback: if observer never fires (e.g. stats already visible), animate after 1s
+				setTimeout(function () {
+					if (!animated) {
+						animated = true;
+						statValues.forEach(function (td) {
+							var target = parseInt(td.getAttribute('data-target'), 10);
+							if (isNaN(target)) return;
+							animate(td, target, 1500);
+						});
+					}
+				}, 800);
+			})();
+
+			// ========== Feature 3: Typewriter effect ==========
+			(function () {
+				var quoteEl = document.getElementById('profileQuote');
+				var cursorEl = document.getElementById('quoteCursor');
+				if (!quoteEl || !cursorEl) return;
+
+				var fullText = quoteEl.textContent.trim();
+				if (!fullText) return;
+
+				quoteEl.textContent = '';
+				cursorEl.classList.add('visible');
+
+				var i = 0;
+
+				function typeDelay(ch) {
+					var code = ch.charCodeAt(0);
+					// CJK characters
+					if ((code >= 0x4E00 && code <= 0x9FFF) ||
+						(code >= 0x3400 && code <= 0x4DBF) ||
+						(code >= 0x3000 && code <= 0x303F) ||
+						(code >= 0xFF00 && code <= 0xFFEF)) {
+						return 80;
+					}
+					// Punctuation
+					if (/[,.!?;:，。！？；：、""''「」『』【】（）]/.test(ch)) {
+						return 150;
+					}
+					return 100;
+				}
+
+				function typeNext() {
+					if (i < fullText.length) {
+						quoteEl.textContent += fullText.charAt(i);
+						i++;
+						var delay = typeDelay(fullText.charAt(i - 1));
+						delay += Math.floor(Math.random() * 30);
+						setTimeout(typeNext, delay);
+					} else {
+						cursorEl.classList.add('blink');
+					}
+				}
+
+				setTimeout(typeNext, 300);
+			})();
+		</script>
 	</body>
 </html>
