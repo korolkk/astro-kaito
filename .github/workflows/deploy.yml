@@ -66,7 +66,7 @@ jobs:
             ssh -i ~/.ssh/aliyun_deploy_key root@$HOST \
               "rm -rf /var/www/kaitoblog/dist/* && \
                tar -xzf - -C /var/www/kaitoblog/dist/ && \
-               chcon -R -t httpd_sys_content_t /var/www/kaitoblog/dist/ && \
+               restorecon -R /var/www/kaitoblog/dist/ && \
                systemctl reload nginx"
 
   # ==================== 部署到 GitHub Pages ====================
