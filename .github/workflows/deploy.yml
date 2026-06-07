@@ -18,8 +18,8 @@ jobs:
   # ==================== 部署到阿里云服务器 ====================
   deploy-aliyun:
     runs-on: ubuntu-latest
-    # 仅在配置了阿里云 SSH 密钥后执行
-    if: ${{ github.event_name == 'push' }}
+    # 仅在配置了阿里云 Secrets 后执行
+    if: ${{ secrets.ALIYUN_HOST != '' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -35,16 +35,16 @@ jobs:
         env:
           BASE_URL: /
       - name: Deploy to Alibaba Cloud
-        uses: easingthemes/ssh-deploy@v5
-        with:
-          SSH_PRIVATE_KEY: ${{ secrets.ALIYUN_SSH_KEY }}
-          REMOTE_HOST: ${{ secrets.ALIYUN_HOST }}
-          REMOTE_USER: root
-          SOURCE: "dist/"
-          TARGET: "/var/www/kaitoblog/dist/"
-          SCRIPT_AFTER: |
-            chcon -R -t httpd_sys_content_t /var/www/kaitoblog/dist/
-            systemctl reload nginx
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.ALIYUN_SSH_KEY }}" > ~/.ssh/aliyun_deploy_key
+          chmod 600 ~/.ssh/aliyun_deploy_key
+          ssh-keyscan -H ${{ secrets.ALIYUN_HOST }} >> ~/.ssh/known_hosts
+          rsync -avz --delete \
+            -e "ssh -i ~/.ssh/aliyun_deploy_key" \
+            dist/ root@${{ secrets.ALIYUN_HOST }}:/var/www/kaitoblog/dist/
+          ssh -i ~/.ssh/aliyun_deploy_key root@${{ secrets.ALIYUN_HOST }} \
+            "chcon -R -t httpd_sys_content_t /var/www/kaitoblog/dist/ && systemctl reload nginx"
 
   # ==================== 部署到 GitHub Pages ====================
   build:
