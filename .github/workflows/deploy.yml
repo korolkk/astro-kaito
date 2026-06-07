@@ -18,32 +18,53 @@ jobs:
   # ==================== 部署到阿里云服务器 ====================
   deploy-aliyun:
     runs-on: ubuntu-latest
-    # 仅在配置了阿里云 Secrets 后执行
-    if: ${{ secrets.ALIYUN_HOST != '' }}
     steps:
+      - name: Check if Aliyun secrets configured
+        id: check
+        env:
+          HOST: ${{ secrets.ALIYUN_HOST }}
+        run: |
+          if [ -n "$HOST" ]; then
+            echo "configured=true" >> $GITHUB_OUTPUT
+          else
+            echo "configured=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Checkout
+        if: steps.check.outputs.configured == 'true'
         uses: actions/checkout@v4
+
       - name: Setup Node
+        if: steps.check.outputs.configured == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
+
       - name: Install dependencies
+        if: steps.check.outputs.configured == 'true'
         run: npm ci
+
       - name: Build
+        if: steps.check.outputs.configured == 'true'
         run: npm run build
         env:
           BASE_URL: /
+
       - name: Deploy to Alibaba Cloud
+        if: steps.check.outputs.configured == 'true'
+        env:
+          HOST: ${{ secrets.ALIYUN_HOST }}
+          SSH_KEY: ${{ secrets.ALIYUN_SSH_KEY }}
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.ALIYUN_SSH_KEY }}" > ~/.ssh/aliyun_deploy_key
+          echo "$SSH_KEY" > ~/.ssh/aliyun_deploy_key
           chmod 600 ~/.ssh/aliyun_deploy_key
-          ssh-keyscan -H ${{ secrets.ALIYUN_HOST }} >> ~/.ssh/known_hosts
+          ssh-keyscan -H $HOST >> ~/.ssh/known_hosts
           rsync -avz --delete \
             -e "ssh -i ~/.ssh/aliyun_deploy_key" \
-            dist/ root@${{ secrets.ALIYUN_HOST }}:/var/www/kaitoblog/dist/
-          ssh -i ~/.ssh/aliyun_deploy_key root@${{ secrets.ALIYUN_HOST }} \
+            dist/ root@$HOST:/var/www/kaitoblog/dist/
+          ssh -i ~/.ssh/aliyun_deploy_key root@$HOST \
             "chcon -R -t httpd_sys_content_t /var/www/kaitoblog/dist/ && systemctl reload nginx"
 
   # ==================== 部署到 GitHub Pages ====================
