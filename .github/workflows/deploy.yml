@@ -1,4 +1,4 @@
-name: Deploy to GitHub Pages
+name: Deploy
 
 on:
   push:
@@ -11,10 +11,42 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "pages"
+  group: "deploy"
   cancel-in-progress: false
 
 jobs:
+  # ==================== 部署到阿里云服务器 ====================
+  deploy-aliyun:
+    runs-on: ubuntu-latest
+    # 仅在配置了阿里云 SSH 密钥后执行
+    if: ${{ github.event_name == 'push' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Build
+        run: npm run build
+        env:
+          BASE_URL: /
+      - name: Deploy to Alibaba Cloud
+        uses: easingthemes/ssh-deploy@v5
+        with:
+          SSH_PRIVATE_KEY: ${{ secrets.ALIYUN_SSH_KEY }}
+          REMOTE_HOST: ${{ secrets.ALIYUN_HOST }}
+          REMOTE_USER: root
+          SOURCE: "dist/"
+          TARGET: "/var/www/kaitoblog/dist/"
+          SCRIPT_AFTER: |
+            chcon -R -t httpd_sys_content_t /var/www/kaitoblog/dist/
+            systemctl reload nginx
+
+  # ==================== 部署到 GitHub Pages ====================
   build:
     runs-on: ubuntu-latest
     steps:
