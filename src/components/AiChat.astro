@@ -5,13 +5,14 @@
 <div id="aiChatRoot">
 	<!-- Floating trigger button -->
 	<button id="aiChatBtn" class="ai-chat-btn" aria-label="AI 聊天">
-		<svg id="aiChatIcon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+		<span class="ai-chat-btn-glow"></span>
+		<svg id="aiChatIcon" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
 			<path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.17L4 17.17V4h16v12z"/>
 			<circle fill="currentColor" cx="8" cy="10" r="1.5"/>
 			<circle fill="currentColor" cx="12" cy="10" r="1.5"/>
 			<circle fill="currentColor" cx="16" cy="10" r="1.5"/>
 		</svg>
-		<svg id="aiChatCloseIcon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" style="display:none;">
+		<svg id="aiChatCloseIcon" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" style="display:none;">
 			<path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
 		</svg>
 	</button>
@@ -19,8 +20,11 @@
 	<!-- Chat dialog -->
 	<div id="aiChatDialog" class="ai-chat-dialog" aria-hidden="true">
 		<div class="ai-chat-header">
-			<span class="ai-chat-title">Kaito AI</span>
-			<span class="ai-chat-subtitle">Powered by OpenClaw</span>
+			<span class="ai-chat-header-icon">💬</span>
+			<div class="ai-chat-header-text">
+				<span class="ai-chat-title">Kaito AI</span>
+				<span class="ai-chat-subtitle">在线 · 随时可聊</span>
+			</div>
 			<button id="aiChatClose" class="ai-chat-close" aria-label="关闭对话">
 				<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
 					<path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
@@ -28,8 +32,8 @@
 			</button>
 		</div>
 		<div id="aiChatMessages" class="ai-chat-messages">
-			<div class="ai-chat-bubble ai-bot">
-				👋 你好！我是 Kaito 的 AI 分身，有什么想聊的？
+			<div class="ai-msg ai-bot">
+				<div class="ai-chat-bubble">👋 你好！我是 Kaito 的 AI 分身，有什么想聊的？</div>
 			</div>
 		</div>
 		<div class="ai-chat-input-area">
@@ -41,7 +45,7 @@
 				autocomplete="off"
 			></textarea>
 			<button id="aiChatSend" class="ai-chat-send" aria-label="发送">
-				<svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true">
+				<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
 					<path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
 				</svg>
 			</button>
@@ -50,32 +54,44 @@
 </div>
 
 <style>
+	/* ----- Trigger button ----- */
 	.ai-chat-btn {
 		position: fixed;
 		bottom: 5.5em;
 		right: 2em;
 		z-index: 60;
-		width: 42px;
-		height: 42px;
+		width: 48px;
+		height: 48px;
 		border-radius: 50%;
-		border: 1px solid rgb(var(--gray-light));
-		background: var(--card-bg);
-		color: rgb(var(--gray-dark));
+		border: none;
+		background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+		color: #fff;
 		cursor: pointer;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		box-shadow: 0 2px 12px rgba(var(--black), 0.1);
-		transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
+		box-shadow: 0 4px 20px rgba(99, 102, 241, 0.35);
+		transition: transform 0.25s ease, box-shadow 0.25s ease;
+		overflow: visible;
 	}
 	.ai-chat-btn:hover {
-		transform: scale(1.08);
-		background: var(--accent);
-		color: #fff;
-		border-color: var(--accent);
+		transform: scale(1.1);
+		box-shadow: 0 6px 28px rgba(99, 102, 241, 0.5);
+	}
+	.ai-chat-btn-glow {
+		position: absolute;
+		inset: -5px;
+		border-radius: 50%;
+		border: 2px solid rgba(99, 102, 241, 0.3);
+		animation: ai-glow-pulse 2.5s ease-in-out infinite;
+		pointer-events: none;
+	}
+	@keyframes ai-glow-pulse {
+		0%, 100% { transform: scale(1); opacity: 0.5; }
+		50% { transform: scale(1.18); opacity: 0; }
 	}
 
-	/* Dialog */
+	/* ----- Dialog shell ----- */
 	.ai-chat-dialog {
 		position: fixed;
 		bottom: 5.5em;
@@ -103,14 +119,23 @@
 		pointer-events: auto;
 	}
 
-	/* Header */
+	/* ----- Header ----- */
 	.ai-chat-header {
 		display: flex;
 		align-items: center;
-		gap: 0.4em;
-		padding: 0.9em 1em;
+		gap: 0.5em;
+		padding: 0.85em 1em;
 		border-bottom: 1px solid rgb(var(--gray-light));
 		flex-shrink: 0;
+	}
+	.ai-chat-header-icon {
+		font-size: 1.3em;
+		flex-shrink: 0;
+	}
+	.ai-chat-header-text {
+		display: flex;
+		flex-direction: column;
+		gap: 0.05em;
 	}
 	.ai-chat-title {
 		font-size: 0.95em;
@@ -118,9 +143,8 @@
 		color: rgb(var(--black));
 	}
 	.ai-chat-subtitle {
-		font-size: 0.72em;
+		font-size: 0.7em;
 		color: rgb(var(--gray));
-		margin-left: 0.3em;
 	}
 	.ai-chat-close {
 		margin-left: auto;
@@ -139,7 +163,7 @@
 		color: rgb(var(--black));
 	}
 
-	/* Messages */
+	/* ----- Messages ----- */
 	.ai-chat-messages {
 		flex: 1;
 		overflow-y: auto;
@@ -149,65 +173,70 @@
 		gap: 0.7em;
 		scroll-behavior: smooth;
 	}
-	.ai-chat-bubble {
+
+	/* Message row: controls left/right alignment */
+	.ai-msg {
+		display: flex;
 		max-width: 85%;
-		padding: 0.6em 0.85em;
-		border-radius: 14px;
-		font-size: 0.86em;
+		animation: ai-msg-in 0.3s ease-out;
+	}
+	.ai-msg.ai-bot  { align-self: flex-start; }
+	.ai-msg.ai-user { align-self: flex-end; }
+	.ai-msg.ai-error { align-self: center; max-width: 95%; }
+
+	@keyframes ai-msg-in {
+		from { opacity: 0; transform: translateY(8px); }
+		to   { opacity: 1; transform: translateY(0); }
+	}
+
+	/* Bubble itself */
+	.ai-chat-bubble {
+		padding: 0.65em 0.9em;
+		border-radius: 16px;
+		font-size: 0.88em;
 		line-height: 1.55;
 		word-break: break-word;
-		animation: ai-bubble-in 0.25s ease-out;
 	}
-	@keyframes ai-bubble-in {
-		from { opacity: 0; transform: translateY(8px); }
-		to { opacity: 1; transform: translateY(0); }
-	}
-	.ai-chat-bubble.ai-user {
-		align-self: flex-end;
-		background: var(--accent);
-		color: #fff;
-		border-bottom-right-radius: 4px;
-	}
-	.ai-chat-bubble.ai-bot {
-		align-self: flex-start;
+	.ai-bot  .ai-chat-bubble {
 		background: rgb(var(--gray-light));
 		color: rgb(var(--gray-dark));
 		border-bottom-left-radius: 4px;
 	}
-	.ai-chat-bubble.ai-error {
-		align-self: center;
-		background: rgba(220, 53, 69, 0.1);
+	.ai-user .ai-chat-bubble {
+		background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+		color: #fff;
+		border-bottom-right-radius: 4px;
+		box-shadow: 0 2px 8px rgba(99, 102, 241, 0.22);
+	}
+	.ai-error .ai-chat-bubble {
+		background: rgba(220, 53, 69, 0.07);
 		color: #dc3545;
 		font-size: 0.8em;
 		text-align: center;
+		border-radius: 10px;
 	}
 
-	/* Typing indicator */
-	.ai-typing {
-		align-self: flex-start;
+	/* ----- Typing indicator ----- */
+	.ai-msg.ai-typing .ai-chat-bubble {
 		display: flex;
 		align-items: center;
 		gap: 4px;
-		padding: 0.6em 0.85em;
-		background: rgb(var(--gray-light));
-		border-radius: 14px;
-		border-bottom-left-radius: 4px;
 	}
-	.ai-typing span {
+	.ai-msg.ai-typing .ai-chat-bubble span {
 		width: 7px;
 		height: 7px;
 		border-radius: 50%;
 		background: rgb(var(--gray));
 		animation: ai-bounce 1.2s ease-in-out infinite;
 	}
-	.ai-typing span:nth-child(2) { animation-delay: 0.15s; }
-	.ai-typing span:nth-child(3) { animation-delay: 0.3s; }
+	.ai-msg.ai-typing .ai-chat-bubble span:nth-child(2) { animation-delay: 0.15s; }
+	.ai-msg.ai-typing .ai-chat-bubble span:nth-child(3) { animation-delay: 0.3s; }
 	@keyframes ai-bounce {
 		0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
 		30% { transform: translateY(-6px); opacity: 1; }
 	}
 
-	/* Input area */
+	/* ----- Input ----- */
 	.ai-chat-input-area {
 		display: flex;
 		align-items: flex-end;
@@ -243,26 +272,20 @@
 		height: 38px;
 		border-radius: 10px;
 		border: none;
-		background: var(--accent);
+		background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
 		color: #fff;
 		cursor: pointer;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		transition: opacity 0.15s ease, transform 0.15s ease;
+		box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
 	}
-	.ai-chat-send:hover {
-		opacity: 0.85;
-	}
-	.ai-chat-send:active {
-		transform: scale(0.95);
-	}
-	.ai-chat-send:disabled {
-		opacity: 0.4;
-		cursor: not-allowed;
-	}
+	.ai-chat-send:hover  { opacity: 0.85; }
+	.ai-chat-send:active { transform: scale(0.95); }
+	.ai-chat-send:disabled { opacity: 0.4; cursor: not-allowed; }
 
-	/* Mobile */
+	/* ----- Mobile ----- */
 	@media (max-width: 500px) {
 		.ai-chat-dialog {
 			right: 0.5em;
@@ -298,12 +321,10 @@
 		var isSending = false;
 		var apiBase = '';
 
-		// Resolve API base: use same origin so Nginx proxies to the bridge
 		function getApiUrl(path) {
 			if (!apiBase) {
 				var header = document.querySelector('header');
 				var base = (header && header.dataset.baseUrl) || '/';
-				// base might be "/astro-kaito/" — strip trailing slash, then append /api/...
 				apiBase = base.replace(/\/?$/, '');
 			}
 			return apiBase + path;
@@ -333,10 +354,8 @@
 		});
 		close.addEventListener('click', closeDialog);
 
-		// Close on Escape
 		document.addEventListener('keydown', function (e) {
 			if (e.key === 'Escape' && isOpen) {
-				// If input has focus and text, clear first; else close
 				if (document.activeElement === input && input.value.trim()) {
 					input.value = '';
 					return;
@@ -350,23 +369,29 @@
 			messagesEl.scrollTop = messagesEl.scrollHeight;
 		}
 
-		function addBubble(text, type) {
-			var div = document.createElement('div');
-			div.className = 'ai-chat-bubble ai-' + type;
-			div.textContent = text;
-			messagesEl.appendChild(div);
+		function addMsg(text, type) {
+			var row = document.createElement('div');
+			row.className = 'ai-msg ai-' + type;
+			var bubble = document.createElement('div');
+			bubble.className = 'ai-chat-bubble';
+			bubble.textContent = text;
+			row.appendChild(bubble);
+			messagesEl.appendChild(row);
 			scrollToBottom();
-			return div;
+			return row;
 		}
 
 		function addTyping() {
-			var div = document.createElement('div');
-			div.className = 'ai-typing';
-			div.id = 'aiTyping';
-			div.innerHTML = '<span></span><span></span><span></span>';
-			messagesEl.appendChild(div);
+			var row = document.createElement('div');
+			row.className = 'ai-msg ai-bot ai-typing';
+			row.id = 'aiTyping';
+			var bubble = document.createElement('div');
+			bubble.className = 'ai-chat-bubble';
+			bubble.innerHTML = '<span></span><span></span><span></span>';
+			row.appendChild(bubble);
+			messagesEl.appendChild(row);
 			scrollToBottom();
-			return div;
+			return row;
 		}
 
 		function removeTyping() {
@@ -384,12 +409,11 @@
 			var text = input.value.trim();
 			if (!text || isSending) return;
 			input.value = '';
-			// Auto-resize input back
 			input.style.height = 'auto';
 
-			addBubble(text, 'user');
+			addMsg(text, 'user');
 			setSending(true);
-			var typingEl = addTyping();
+			addTyping();
 
 			try {
 				var resp = await fetch(getApiUrl('/api/chat'), {
@@ -411,19 +435,18 @@
 					} else {
 						errText = '请求失败（HTTP ' + resp.status + '）';
 					}
-					addBubble(errText, 'error');
+					addMsg(errText, 'error');
 				} else {
 					var data = await resp.json();
 					if (data.error) {
-						addBubble(data.error, 'error');
+						addMsg(data.error, 'error');
 					} else {
-						addBubble(data.reply || '（AI 没有返回内容）', 'bot');
+						addMsg(data.reply || '（AI 没有返回内容）', 'bot');
 					}
 				}
 			} catch (err) {
 				removeTyping();
-				// Network error — likely API not available (e.g. local dev)
-				addBubble('无法连接到 AI 服务，请稍后重试', 'error');
+				addMsg('无法连接到 AI 服务，请稍后重试', 'error');
 			}
 
 			setSending(false);
@@ -432,20 +455,14 @@
 
 		sendBtn.addEventListener('click', sendMessage);
 
-		// Enter to send, Shift+Enter for newline
-		// On mobile (no Shift), Enter alone does newline (default textarea behaviour)
 		input.addEventListener('keydown', function (e) {
 			if (e.key === 'Enter' && !e.shiftKey) {
-				// Check if this is likely a mobile keyboard (no modifier key support)
-				// Mobile virtual keyboards often don't support Shift+Enter,
-				// so on narrow screens (< 768px) treat plain Enter as newline.
-				if (window.innerWidth < 768) return; // default textarea behavior
+				if (window.innerWidth < 768) return;
 				e.preventDefault();
 				sendMessage();
 			}
 		});
 
-		// Auto-resize textarea
 		input.addEventListener('input', function () {
 			input.style.height = 'auto';
 			input.style.height = Math.min(input.scrollHeight, 100) + 'px';
