@@ -259,6 +259,116 @@ const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nex
 					display: none !important;
 				}
 			}
+			/* AI Q&A */
+			.ai-qa-section {
+				margin-top: 2em;
+				padding-top: 1.5em;
+				border-top: 1px solid rgb(var(--gray-light));
+			}
+			.ai-qa-section h3 {
+				font-size: 1.25em;
+				margin-bottom: 0.6em;
+			}
+			.ai-qa-presets {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.4em;
+				margin-bottom: 0.8em;
+			}
+			.ai-qa-preset {
+				padding: 0.35em 0.75em;
+				font-size: 0.82em;
+				font-family: inherit;
+				border: 1px solid rgb(var(--gray-light));
+				border-radius: 999px;
+				background: var(--card-bg);
+				color: rgb(var(--gray-dark));
+				cursor: pointer;
+				transition: all 0.2s ease;
+				white-space: nowrap;
+			}
+			.ai-qa-preset:hover {
+				border-color: var(--accent);
+				color: var(--accent);
+				background: rgba(var(--accent-rgb), 0.06);
+			}
+			.ai-qa-input-row {
+				display: flex;
+				gap: 0.5em;
+				align-items: center;
+			}
+			.ai-qa-input {
+				flex: 1;
+				padding: 0.55em 0.8em;
+				border: 1px solid rgb(var(--gray-light));
+				border-radius: 10px;
+				font-family: inherit;
+				font-size: 0.88em;
+				background: rgb(var(--gray-light));
+				color: rgb(var(--black));
+				outline: none;
+				transition: border-color 0.15s ease;
+			}
+			.ai-qa-input:focus {
+				border-color: var(--accent);
+			}
+			.ai-qa-input::placeholder {
+				color: rgb(var(--gray));
+			}
+			.ai-qa-send {
+				flex-shrink: 0;
+				padding: 0.55em 1.1em;
+				border: none;
+				border-radius: 10px;
+				background: var(--accent);
+				color: #fff;
+				font-family: inherit;
+				font-size: 0.88em;
+				font-weight: 600;
+				cursor: pointer;
+				transition: opacity 0.15s ease;
+			}
+			.ai-qa-send:hover {
+				opacity: 0.85;
+			}
+			.ai-qa-send:disabled {
+				opacity: 0.4;
+				cursor: not-allowed;
+			}
+			.ai-qa-response {
+				margin-top: 1em;
+				padding: 1em;
+				background: rgb(var(--gray-light));
+				border-radius: 12px;
+				font-size: 0.9em;
+				line-height: 1.65;
+				color: rgb(var(--gray-dark));
+				animation: ai-bubble-in 0.25s ease-out;
+			}
+			@keyframes ai-bubble-in {
+				from { opacity: 0; transform: translateY(8px); }
+				to { opacity: 1; transform: translateY(0); }
+			}
+			.ai-qa-response .ai-qa-loading {
+				display: flex;
+				align-items: center;
+				gap: 4px;
+				padding: 0.3em 0;
+			}
+			.ai-qa-response .ai-qa-loading span {
+				width: 7px;
+				height: 7px;
+				border-radius: 50%;
+				background: rgb(var(--gray));
+				animation: ai-bounce 1.2s ease-in-out infinite;
+			}
+			.ai-qa-response .ai-qa-loading span:nth-child(2) { animation-delay: 0.15s; }
+			.ai-qa-response .ai-qa-loading span:nth-child(3) { animation-delay: 0.3s; }
+			@keyframes ai-bounce {
+				0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+				30% { transform: translateY(-6px); opacity: 1; }
+			}
+
 			@media (max-width: 600px) {
 				.post-nav {
 					flex-direction: column;
@@ -325,6 +435,27 @@ const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nex
 							<a class="share-btn" id="shareWeibo" href="#" target="_blank" rel="noopener" title="分享到微博" aria-label="分享到微博">
 								<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M10.098 20.323c-3.977.391-7.414-1.406-7.672-4.02-.259-2.609 2.759-5.047 6.74-5.441 3.979-.394 7.413 1.404 7.671 4.018.259 2.6-2.759 5.049-6.739 5.443zm-2.098-3.186c-.67.11-1.34-.16-1.51-.62-.16-.46.22-.94.86-1.05.67-.11 1.34.16 1.51.62.16.46-.22.94-.86 1.05zm1.91-.12c-.29.05-.57-.07-.62-.27-.05-.2.08-.41.36-.46.29-.05.57.07.62.27.05.2-.08.41-.36.46zm3.27-.48c-2.04.34-3.24.62-3.69 1.04-.53.49-.3 1.32.56 1.83.85.5 2.04.56 3.22.33 1.18-.23 2.17-.76 2.4-1.32.23-.56-.21-.94-1.22-.87-.94.07-2.2.15-3.27-.23-.91-.33-.28-.73 0-.78zm4.86-2.35c-1.55-.48-3.39.3-4.09 1.73-.7 1.43-.04 2.98 1.45 3.46 1.5.49 3.39-.29 4.09-1.73.7-1.43-.01-2.98-1.45-3.46zm3.1-4.11c-.57-.82-1.37-1.19-2.2-1.12-.83.07-1.42.49-1.82 1.07-.4.58-.51 1.28-.33 1.95.18.67.62 1.22 1.24 1.57.61.35 1.41.5 2.12.4.71-.09 1.34-.45 1.75-1.02.41-.57.56-1.27.31-1.94-.25-.67-.71-1.11-1.07-.91z"/></svg>
 							</a>
+						</div>
+
+						<!-- AI Q&A -->
+						<div class="ai-qa-section" id="aiQaSection">
+							<h3>向 AI 提问（基于本文内容）</h3>
+							<div class="ai-qa-presets" id="aiQaPresets">
+								<button class="ai-qa-preset" data-question="这篇文章的核心观点是什么？">📌 核心观点是什么？</button>
+								<button class="ai-qa-preset" data-question="文中的技术方案有什么优缺点？">⚖️ 有什么优缺点？</button>
+								<button class="ai-qa-preset" data-question="这篇文章适合什么水平的读者？适合什么人看？">🎯 适合什么人看？</button>
+							</div>
+							<div class="ai-qa-input-row">
+								<input
+									type="text"
+									id="aiQaInput"
+									class="ai-qa-input"
+									placeholder="输入你的问题..."
+									autocomplete="off"
+								/>
+								<button id="aiQaSend" class="ai-qa-send">发送</button>
+							</div>
+							<div id="aiQaResponse" class="ai-qa-response" style="display:none;"></div>
 						</div>
 
 						<!-- Comments -->
@@ -461,6 +592,135 @@ const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nex
 		}
 	})();
 </script>
+<script is:inline>
+	(function () {
+		var section = document.getElementById('aiQaSection');
+		var input = document.getElementById('aiQaInput');
+		var sendBtn = document.getElementById('aiQaSend');
+		var responseEl = document.getElementById('aiQaResponse');
+		var presetBtns = document.querySelectorAll('.ai-qa-preset');
+
+		if (!section || !input || !sendBtn) return;
+
+		var isSending = false;
+		var apiBase = '';
+
+		function getApiUrl(path) {
+			if (!apiBase) {
+				var header = document.querySelector('header');
+				var base = (header && header.dataset.baseUrl) || '/';
+				apiBase = base.replace(/\/?$/, '');
+			}
+			return apiBase + path;
+		}
+
+		// Get article content from the prose section
+		function getArticleContent() {
+			var prose = document.querySelector('.prose');
+			if (!prose) return '';
+			var text = prose.textContent || '';
+			return text.trim().substring(0, 8000);
+		}
+
+		function getArticleTitle() {
+			var h1 = document.querySelector('.title h1');
+			return h1 ? h1.textContent.trim() : document.title;
+		}
+
+		function showLoading() {
+			responseEl.style.display = 'block';
+			responseEl.innerHTML = '<div class="ai-qa-loading"><span></span><span></span><span></span></div>';
+		}
+
+		function showResponse(text) {
+			responseEl.style.display = 'block';
+			responseEl.innerHTML = '';
+			var p = document.createElement('p');
+			p.style.margin = '0';
+			p.textContent = text;
+			responseEl.appendChild(p);
+		}
+
+		function showError(msg) {
+			responseEl.style.display = 'block';
+			responseEl.innerHTML = '';
+			var p = document.createElement('p');
+			p.style.margin = '0';
+			p.style.color = '#dc3545';
+			p.textContent = msg;
+			responseEl.appendChild(p);
+		}
+
+		function setSending(state) {
+			isSending = state;
+			sendBtn.disabled = state;
+			input.disabled = state;
+		}
+
+		async function askQuestion(question) {
+			if (isSending) return;
+			var q = question || input.value.trim();
+			if (!q) return;
+
+			if (!question) input.value = '';
+			setSending(true);
+			showLoading();
+
+			try {
+				var resp = await fetch(getApiUrl('/api/article-qa'), {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						question: q,
+						articleTitle: getArticleTitle(),
+						articleContent: getArticleContent(),
+					}),
+				});
+
+				if (!resp.ok) {
+					var msg = resp.status === 404
+						? 'AI 服务未配置（服务器端需部署 API Bridge）'
+						: '请求失败（HTTP ' + resp.status + '）';
+					showError(msg);
+				} else {
+					var data = await resp.json();
+					if (data.error) {
+						showError(data.error);
+					} else {
+						showResponse(data.reply || '（AI 没有返回内容）');
+					}
+				}
+			} catch (err) {
+				showError('无法连接到 AI 服务，请稍后重试');
+			}
+
+			setSending(false);
+		}
+
+		// Send button
+		sendBtn.addEventListener('click', function () { askQuestion(); });
+
+		// Enter key
+		input.addEventListener('keydown', function (e) {
+			if (e.key === 'Enter') {
+				e.preventDefault();
+				askQuestion();
+			}
+		});
+
+		// Preset question buttons
+		presetBtns.forEach(function (btn) {
+			btn.addEventListener('click', function () {
+				var q = btn.getAttribute('data-question');
+				if (q) {
+					input.value = q;
+					askQuestion(q);
+				}
+			});
+		});
+	})();
+</script>
+
 
 <!--
 	启用 Giscus 评论：

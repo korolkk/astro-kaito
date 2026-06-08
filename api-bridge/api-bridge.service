@@ -1,0 +1,15 @@
+[Unit]
+Description=KaitoBlog API Bridge
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/api-bridge
+ExecStart=/usr/bin/node /opt/api-bridge/server.js
+Restart=on-failure
+RestartSec=5
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=multi-user.target
