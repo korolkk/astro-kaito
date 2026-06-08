@@ -88,6 +88,46 @@ jobs:
 
           echo "✅ 阿里云部署成功"
 
+      - name: Deploy API Bridge (if changed)
+        if: steps.check.outputs.configured == 'true'
+        env:
+          HOST: ${{ secrets.ALIYUN_HOST }}
+          SSH_KEY: ${{ secrets.ALIYUN_SSH_KEY }}
+        run: |
+          # 检测 api-bridge/ 目录是否有变更（首次 push 时 HEAD~1 不存在，默认视为有变更）
+          CHANGED=$(git diff --name-only HEAD~1 HEAD -- api-bridge/ 2>/dev/null || echo "initial")
+          if [ -z "$CHANGED" ]; then
+            echo "📭 api-bridge/ 无变更，跳过"
+            exit 0
+          fi
+
+          echo "📦 检测到 api-bridge/ 变更，开始部署:"
+          echo "$CHANGED"
+
+          set -e
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/aliyun_deploy_key
+          chmod 600 ~/.ssh/aliyun_deploy_key
+          ssh-keyscan -H "$HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+          # 确保目标目录存在
+          ssh -i ~/.ssh/aliyun_deploy_key root@"$HOST" \
+            "mkdir -p /opt/api-bridge"
+
+          # 上传 api-bridge/ 文件（排除 .env 和 node_modules）
+          # .env.example 会上传，服务器端自动从 example 创建 .env（已有则跳过，保护 token）
+          echo "::group::上传 API Bridge 文件"
+          tar -czf - -C api-bridge --exclude='.env' --exclude='node_modules' . | \
+            ssh -i ~/.ssh/aliyun_deploy_key root@"$HOST" \
+              "cd /opt/api-bridge && \
+               tar -xzf - && \
+               cp -n .env.example .env 2>/dev/null || true && \
+               npm install --omit=dev && \
+               systemctl restart api-bridge"
+          echo "::endgroup::"
+
+          echo "✅ API Bridge 部署完成"
+
   # ==================== 部署到 GitHub Pages ====================
   build:
     runs-on: ubuntu-latest
