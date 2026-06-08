@@ -290,11 +290,8 @@ async function runDeploy() {
     }
     console.log(`[deploy] dist/ 包含 ${distCheck} 个文件/目录`);
 
-    // 3. 部署静态文件
-    console.log('[deploy] === 部署静态文件 ===');
-    // 用 dist/. 而非 dist/* — 避免目录为空时 glob 展开失败
-    run(`rm -rf ${DIST_DIR}/*`, REPO_DIR);
-    run(`cp -r dist/. ${DIST_DIR}/`, REPO_DIR);
+    // 3. Nginx 直接指向构建目录，无需复制
+    console.log('[deploy] === 应用部署 ===');
     run(`restorecon -R ${DIST_DIR}`, REPO_DIR);
     run('systemctl reload nginx', REPO_DIR);
 
