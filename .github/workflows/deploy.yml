@@ -57,17 +57,36 @@ jobs:
           HOST: ${{ secrets.ALIYUN_HOST }}
           SSH_KEY: ${{ secrets.ALIYUN_SSH_KEY }}
         run: |
+          set -e
           mkdir -p ~/.ssh
-          echo "$SSH_KEY" > ~/.ssh/aliyun_deploy_key
+
+          # 写入密钥（printf 确保末尾有换行，避免 ssh 报 "Load key ... invalid format"）
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/aliyun_deploy_key
           chmod 600 ~/.ssh/aliyun_deploy_key
-          ssh-keyscan -H $HOST >> ~/.ssh/known_hosts
+
+          # 添加主机密钥
+          ssh-keyscan -H "$HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+          # 先测试 SSH 连通性（失败时给出明确提示）
+          echo "::group::测试 SSH 连接"
+          ssh -i ~/.ssh/aliyun_deploy_key -o ConnectTimeout=10 root@"$HOST" "echo SSH 连接成功"
+          echo "::endgroup::"
+
+          # 确保目标目录存在
+          ssh -i ~/.ssh/aliyun_deploy_key root@"$HOST" \
+            "mkdir -p /var/www/kaitoblog/dist"
+
           # 用 tar 管道传输，不依赖服务端 rsync
+          echo "::group::上传文件"
           tar -czf - -C dist . | \
-            ssh -i ~/.ssh/aliyun_deploy_key root@$HOST \
+            ssh -i ~/.ssh/aliyun_deploy_key root@"$HOST" \
               "rm -rf /var/www/kaitoblog/dist/* && \
                tar -xzf - -C /var/www/kaitoblog/dist/ && \
                restorecon -R /var/www/kaitoblog/dist/ && \
                systemctl reload nginx"
+          echo "::endgroup::"
+
+          echo "✅ 阿里云部署成功"
 
   # ==================== 部署到 GitHub Pages ====================
   build:
