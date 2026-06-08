@@ -13,11 +13,49 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import rateLimit from 'express-rate-limit';
 
 const app = express();
 const PORT = parseInt(process.env.PORT, 10) || 3001;
 const OPENCLAW_URL = (process.env.OPENCLAW_API_URL || 'http://127.0.0.1:18789/v1').replace(/\/+$/, '');
 const OPENCLAW_TOKEN = process.env.OPENCLAW_API_TOKEN || '';
+
+// ======================
+// 限流配置（可通过环境变量覆盖）
+// ======================
+const CHAT_LIMIT = parseInt(process.env.CHAT_RATE_LIMIT, 10) || 20;         // 次/分钟/IP
+const QA_LIMIT = parseInt(process.env.QA_RATE_LIMIT, 10) || 10;             // 次/分钟/IP
+const GLOBAL_LIMIT = parseInt(process.env.GLOBAL_RATE_LIMIT, 10) || 60;     // 次/分钟/IP
+
+const rateLimitMessage = (limit) =>
+  `请求太频繁了，每分钟最多 ${limit} 次，请稍后再试 🌊`;
+
+// 全局兜底限流
+const globalLimiter = rateLimit({
+  windowMs: 60_000,
+  max: GLOBAL_LIMIT,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: rateLimitMessage(GLOBAL_LIMIT) },
+});
+
+// 聊天限流
+const chatLimiter = rateLimit({
+  windowMs: 60_000,
+  max: CHAT_LIMIT,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: rateLimitMessage(CHAT_LIMIT) },
+});
+
+// 文章问答限流（最贵，限制最严）
+const qaLimiter = rateLimit({
+  windowMs: 60_000,
+  max: QA_LIMIT,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: rateLimitMessage(QA_LIMIT) },
+});
 
 // ======================
 // Kaito AI 分身 system prompt
@@ -46,6 +84,7 @@ const SYSTEM_PROMPT = `你是 Kaito 的 AI 分身，运行在 KaitoBlog（kaitob
 // ======================
 app.use(cors());
 app.use(express.json({ limit: '50kb' }));
+app.use(globalLimiter); // 全局兜底
 
 // ======================
 // GET /api/health
@@ -57,7 +96,7 @@ app.get('/api/health', (_req, res) => {
 // ======================
 // POST /api/chat — 自由聊天
 // ======================
-app.post('/api/chat', async (req, res) => {
+app.post('/api/chat', chatLimiter, async (req, res) => {
   try {
     const { messages } = req.body;
 
@@ -118,7 +157,7 @@ app.post('/api/chat', async (req, res) => {
 // ======================
 // POST /api/article-qa — 文章问答
 // ======================
-app.post('/api/article-qa', async (req, res) => {
+app.post('/api/article-qa', qaLimiter, async (req, res) => {
   try {
     const { question, articleTitle, articleContent } = req.body;
 

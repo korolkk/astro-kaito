@@ -678,9 +678,14 @@ const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nex
 				});
 
 				if (!resp.ok) {
-					var msg = resp.status === 404
-						? 'AI 服务未配置（服务器端需部署 API Bridge）'
-						: '请求失败（HTTP ' + resp.status + '）';
+					var msg;
+					if (resp.status === 404) {
+						msg = 'AI 服务未配置（服务器端需部署 API Bridge）';
+					} else if (resp.status === 429) {
+						msg = '请求太频繁了，请稍后再试 🌊';
+					} else {
+						msg = '请求失败（HTTP ' + resp.status + '）';
+					}
 					showError(msg);
 				} else {
 					var data = await resp.json();

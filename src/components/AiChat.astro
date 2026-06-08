@@ -403,9 +403,14 @@
 				removeTyping();
 
 				if (!resp.ok) {
-					var errText = resp.status === 404
-						? 'AI 服务未配置（服务器端需部署 API Bridge）'
-						: '请求失败（HTTP ' + resp.status + '）';
+					var errText;
+					if (resp.status === 404) {
+						errText = 'AI 服务未配置（服务器端需部署 API Bridge）';
+					} else if (resp.status === 429) {
+						errText = '请求太频繁了，请稍后再试 🌊';
+					} else {
+						errText = '请求失败（HTTP ' + resp.status + '）';
+					}
 					addBubble(errText, 'error');
 				} else {
 					var data = await resp.json();
