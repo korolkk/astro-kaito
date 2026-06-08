@@ -283,8 +283,11 @@ async function runDeploy() {
     run('npm ci', REPO_DIR);
     console.log('[deploy] === 构建站点 ===');
     run('BASE_URL=/ npm run build', REPO_DIR);
-    // 确认构建产物存在
+    // 确认构建产物存在，避免 dist 为空时后续 cp 失败
     const distCheck = execSync(`ls ${REPO_DIR}/dist/ | wc -l`, { encoding: 'utf8' }).trim();
+    if (distCheck === '0') {
+      throw new Error(`构建失败：${REPO_DIR}/dist/ 目录为空`);
+    }
     console.log(`[deploy] dist/ 包含 ${distCheck} 个文件/目录`);
 
     // 3. 部署静态文件
