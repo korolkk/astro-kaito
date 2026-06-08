@@ -124,9 +124,8 @@ conn := utils.GetRedisConnection()
 
 *   获取所有成员
 
-```vbnet
+```go
 conn.Do("SMEMBERS", constant.VIDEO_FLAG+string(videoId))
-复制代码
 ```
 
 返回SET集合该key的所有成员
