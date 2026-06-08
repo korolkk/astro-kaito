@@ -282,14 +282,16 @@ async function runDeploy() {
     console.log('[deploy] === 安装依赖 ===');
     run('npm ci', REPO_DIR);
     console.log('[deploy] === 构建站点 ===');
-    run('npm run build', REPO_DIR);
-    // Astro 构建时读取 BASE_URL，通过 shell 环境变量注入
-    // （Astro 6 的 process.env.BASE_URL 在构建时生效）
+    run('BASE_URL=/ npm run build', REPO_DIR);
+    // 确认构建产物存在
+    const distCheck = execSync(`ls ${REPO_DIR}/dist/ | wc -l`, { encoding: 'utf8' }).trim();
+    console.log(`[deploy] dist/ 包含 ${distCheck} 个文件/目录`);
 
     // 3. 部署静态文件
     console.log('[deploy] === 部署静态文件 ===');
+    // 用 dist/. 而非 dist/* — 避免目录为空时 glob 展开失败
     run(`rm -rf ${DIST_DIR}/*`, REPO_DIR);
-    run(`cp -r dist/* ${DIST_DIR}/`, REPO_DIR);
+    run(`cp -r dist/. ${DIST_DIR}/`, REPO_DIR);
     run(`restorecon -R ${DIST_DIR}`, REPO_DIR);
     run('systemctl reload nginx', REPO_DIR);
 
