@@ -51,82 +51,24 @@ jobs:
         env:
           BASE_URL: /
 
-      - name: Deploy to Alibaba Cloud
+      - name: Trigger Alibaba Cloud deploy
         if: steps.check.outputs.configured == 'true'
         env:
           HOST: ${{ secrets.ALIYUN_HOST }}
-          SSH_KEY: ${{ secrets.ALIYUN_SSH_KEY }}
+          DEPLOY_SECRET: ${{ secrets.DEPLOY_SECRET }}
         run: |
-          set -e
-          mkdir -p ~/.ssh
-
-          # 写入密钥（printf 确保末尾有换行，避免 ssh 报 "Load key ... invalid format"）
-          printf '%s\n' "$SSH_KEY" > ~/.ssh/aliyun_deploy_key
-          chmod 600 ~/.ssh/aliyun_deploy_key
-
-          # 添加主机密钥
-          ssh-keyscan -H "$HOST" >> ~/.ssh/known_hosts 2>/dev/null
-
-          # 先测试 SSH 连通性（失败时给出明确提示）
-          echo "::group::测试 SSH 连接"
-          ssh -i ~/.ssh/aliyun_deploy_key -o ConnectTimeout=10 root@"$HOST" "echo SSH 连接成功"
-          echo "::endgroup::"
-
-          # 确保目标目录存在
-          ssh -i ~/.ssh/aliyun_deploy_key root@"$HOST" \
-            "mkdir -p /var/www/kaitoblog/dist"
-
-          # 用 tar 管道传输，不依赖服务端 rsync
-          echo "::group::上传文件"
-          tar -czf - -C dist . | \
-            ssh -i ~/.ssh/aliyun_deploy_key root@"$HOST" \
-              "rm -rf /var/www/kaitoblog/dist/* && \
-               tar -xzf - -C /var/www/kaitoblog/dist/ && \
-               restorecon -R /var/www/kaitoblog/dist/ && \
-               systemctl reload nginx"
-          echo "::endgroup::"
-
-          echo "✅ 阿里云部署成功"
-
-      - name: Deploy API Bridge (if changed)
-        if: steps.check.outputs.configured == 'true'
-        env:
-          HOST: ${{ secrets.ALIYUN_HOST }}
-          SSH_KEY: ${{ secrets.ALIYUN_SSH_KEY }}
-        run: |
-          # 检测 api-bridge/ 目录是否有变更（首次 push 时 HEAD~1 不存在，默认视为有变更）
-          CHANGED=$(git diff --name-only HEAD~1 HEAD -- api-bridge/ 2>/dev/null || echo "initial")
-          if [ -z "$CHANGED" ]; then
-            echo "📭 api-bridge/ 无变更，跳过"
-            exit 0
+          echo "📡 通知服务器拉取并部署..."
+          RESP=$(curl -s -w "\n%{http_code}" -X POST "http://$HOST/api/deploy" \
+            -H 'Content-Type: application/json' \
+            -d "{\"secret\":\"$DEPLOY_SECRET\"}")
+          HTTP_CODE=$(echo "$RESP" | tail -1)
+          BODY=$(echo "$RESP" | sed '$d')
+          echo "HTTP $HTTP_CODE: $BODY"
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "❌ 触发部署失败"
+            exit 1
           fi
-
-          echo "📦 检测到 api-bridge/ 变更，开始部署:"
-          echo "$CHANGED"
-
-          set -e
-          mkdir -p ~/.ssh
-          printf '%s\n' "$SSH_KEY" > ~/.ssh/aliyun_deploy_key
-          chmod 600 ~/.ssh/aliyun_deploy_key
-          ssh-keyscan -H "$HOST" >> ~/.ssh/known_hosts 2>/dev/null
-
-          # 确保目标目录存在
-          ssh -i ~/.ssh/aliyun_deploy_key root@"$HOST" \
-            "mkdir -p /opt/api-bridge"
-
-          # 上传 api-bridge/ 文件（排除 .env 和 node_modules）
-          # .env.example 会上传，服务器端自动从 example 创建 .env（已有则跳过，保护 token）
-          echo "::group::上传 API Bridge 文件"
-          tar -czf - -C api-bridge --exclude='.env' --exclude='node_modules' . | \
-            ssh -i ~/.ssh/aliyun_deploy_key root@"$HOST" \
-              "cd /opt/api-bridge && \
-               tar -xzf - && \
-               cp -n .env.example .env 2>/dev/null || true && \
-               npm install --omit=dev && \
-               systemctl restart api-bridge"
-          echo "::endgroup::"
-
-          echo "✅ API Bridge 部署完成"
+          echo "✅ 服务器已收到部署指令，正在后台执行"
 
   # ==================== 部署到 GitHub Pages ====================
   build:

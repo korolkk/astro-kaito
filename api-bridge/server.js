@@ -14,11 +14,17 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
+import { execSync } from 'child_process';
 
 const app = express();
 const PORT = parseInt(process.env.PORT, 10) || 3001;
 const OPENCLAW_URL = (process.env.OPENCLAW_API_URL || 'http://127.0.0.1:18789/v1').replace(/\/+$/, '');
 const OPENCLAW_TOKEN = process.env.OPENCLAW_API_TOKEN || '';
+const DEPLOY_SECRET = process.env.DEPLOY_SECRET || '';
+
+// 仓库路径（服务器上 clone 的位置）
+const REPO_DIR = '/var/www/kaitoblog';
+const DIST_DIR = '/var/www/kaitoblog/dist';
 
 // ======================
 // 限流配置（可通过环境变量覆盖）
@@ -228,6 +234,76 @@ ${truncatedContent}
     res.status(500).json({ error: '服务器内部错误' });
   }
 });
+
+// ======================
+// POST /api/deploy — Webhook 部署（由 GitHub Actions 触发）
+// ======================
+app.post('/api/deploy', async (req, res) => {
+  try {
+    const { secret } = req.body;
+
+    // 校验密钥
+    if (!DEPLOY_SECRET) {
+      return res.status(500).json({ error: '服务端未配置 DEPLOY_SECRET' });
+    }
+    if (secret !== DEPLOY_SECRET) {
+      return res.status(403).json({ error: '密钥错误' });
+    }
+
+    // 异步执行部署，避免超时
+    res.json({ status: 'deploying', timestamp: new Date().toISOString() });
+
+    // 部署逻辑在响应后执行（不阻塞 webhook 返回）
+    runDeploy().catch((err) => {
+      console.error('[deploy] 部署失败:', err.message);
+    });
+  } catch (err) {
+    console.error('[deploy] error:', err.message);
+    // 如果还没发送响应就出错
+    if (!res.headersSent) {
+      res.status(500).json({ error: '部署失败: ' + err.message });
+    }
+  }
+});
+
+async function runDeploy() {
+  const run = (cmd, cwd) => {
+    console.log(`[deploy] $ ${cmd}`);
+    return execSync(cmd, { cwd, encoding: 'utf8', timeout: 120_000 });
+  };
+
+  try {
+    // 1. 拉取最新代码
+    console.log('[deploy] === 拉取代码 ===');
+    run('git fetch origin main', REPO_DIR);
+    run('git reset --hard origin/main', REPO_DIR);
+
+    // 2. 安装依赖 + 构建
+    console.log('[deploy] === 安装依赖 ===');
+    run('npm ci', REPO_DIR);
+    console.log('[deploy] === 构建站点 ===');
+    run('npm run build', REPO_DIR);
+    // Astro 构建时读取 BASE_URL，通过 shell 环境变量注入
+    // （Astro 6 的 process.env.BASE_URL 在构建时生效）
+
+    // 3. 部署静态文件
+    console.log('[deploy] === 部署静态文件 ===');
+    run(`rm -rf ${DIST_DIR}/*`, REPO_DIR);
+    run(`cp -r dist/* ${DIST_DIR}/`, REPO_DIR);
+    run(`restorecon -R ${DIST_DIR}`, REPO_DIR);
+    run('systemctl reload nginx', REPO_DIR);
+
+    // 4. 更新 API Bridge 自身
+    console.log('[deploy] === 更新 API Bridge ===');
+    run('cp -n .env.example .env 2>/dev/null || true', '/opt/api-bridge');
+    run('npm install --omit=dev', '/opt/api-bridge');
+    run('systemctl restart api-bridge', REPO_DIR);
+
+    console.log('[deploy] ✅ 部署完成');
+  } catch (err) {
+    console.error('[deploy] ❌ 部署失败:', err.stderr || err.message);
+  }
+}
 
 // ======================
 // 启动
