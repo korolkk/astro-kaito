@@ -1,6 +1,6 @@
 ---
 title: "从 SSH 到 Webhook：让服务器自己部署自己"
-description: "经历了 SSH 端口暴露、5000 条 GitHub IP 白名单、密钥格式踩坑后，最终用 Webhook 方案让服务器自主拉取和部署。"
+description: "经历了 SSH 端口暴露、5000 条 GitHub IP 白名单、密钥格式踩坑后，最终用 Webhook 方案让服务器自主拉取和部署，顺便踩了三个新坑。"
 pubDate: "Jun 9 2026"
 heroImage: "../../assets/blog-placeholder-about.jpg"
 tags: ["部署", "CI/CD", "GitHub Actions", "DevOps"]
@@ -45,13 +45,12 @@ CI 只负责**通知**，服务器自己完成**拉取和部署**。好处：
 
 ### 1. 服务端：新增 `/api/deploy` 端点
 
-在之前写的 API Bridge 服务（Express, 端口 3001）上加了一个 webhook 端点：
+在之前写的 API Bridge 服务（Express, 端口 3001）上加了一个 webhook 端点，带密钥校验：
 
 ```javascript
 app.post('/api/deploy', async (req, res) => {
   const { secret } = req.body;
 
-  // 校验密钥（防止陌生人调用）
   if (secret !== DEPLOY_SECRET) {
     return res.status(403).json({ error: '密钥错误' });
   }
@@ -59,43 +58,56 @@ app.post('/api/deploy', async (req, res) => {
   // 先返回 200，部署在后台异步执行
   res.json({ status: 'deploying' });
 
-  // 异步执行部署
-  runDeploy();
+  runDeploy().catch((err) => {
+    console.error('[deploy] 部署失败:', err.message);
+  });
 });
+```
 
+部署逻辑拆成清晰的五步：
+
+```javascript
 async function runDeploy() {
-  // 1. git pull
-  execSync('git fetch origin main && git reset --hard origin/main', { cwd: REPO_DIR });
+  // 1. 拉取最新代码
+  run('git fetch origin main && git reset --hard origin/main', REPO_DIR);
 
-  // 2. 安装依赖 + 构建
-  execSync('npm ci && npm run build', { cwd: REPO_DIR });
+  // 2. 先更新 API Bridge 自身依赖（只装不重启，避免杀进程）
+  run('npm install --omit=dev', '/opt/api-bridge');
 
-  // 3. 部署到 Nginx 目录
-  execSync('rm -rf /var/www/kaitoblog/dist/* && cp -r dist/* /var/www/kaitoblog/dist/', { cwd: REPO_DIR });
-  execSync('restorecon -R /var/www/kaitoblog/dist/');
-  execSync('systemctl reload nginx');
+  // 3. 安装博客依赖 + 构建
+  run('npm ci', REPO_DIR);
+  run('BASE_URL=/ npm run build', REPO_DIR);  // systemd 环境需显式传入
 
-  // 4. 更新 API Bridge 自身
-  execSync('npm install --omit=dev', { cwd: '/opt/api-bridge' });
-  execSync('systemctl restart api-bridge');
+  // 4. Nginx 直接指向构建目录，仅需 SELinux 修复 + 重载
+  run('restorecon -R /var/www/kaitoblog/dist', REPO_DIR);
+  run('systemctl reload nginx', REPO_DIR);
+
+  // 5. 最后才重启 API Bridge（部署全部完成，不怕杀进程）
+  run('systemctl restart api-bridge', REPO_DIR);
 }
 ```
 
-用密钥（`DEPLOY_SECRET`）保护端点，只有持有正确密钥的请求才会触发部署。
+注意几个细节：
+- **`BASE_URL=/`**：systemd 启动的服务没有这个环境变量，必须显式传入，否则 Astro 不知道 `base` 该用啥
+- **步骤顺序**：API Bridge 依赖先装（不重启），博客构建部署完成后最后才 `restart`，避免中途杀进程
+- **不用 `cp`**：因为服务器上 `git clone` 的仓库就在 `/var/www/kaitoblog`，Nginx 的 `root` 直接指向它的 `dist/` 子目录，构建产物天然就在正确位置，不需要额外复制
 
 ### 2. CI 端：一个 curl 搞定
 
-GitHub Actions 的部署步骤从 30 行 SSH 命令简化为：
+GitHub Actions 的部署步骤从 40 行 SSH 命令简化为 8 行：
 
 ```yaml
-- name: Trigger deploy
+- name: Trigger Alibaba Cloud deploy
+  env:
+    HOST: ${{ secrets.ALIYUN_HOST }}
+    DEPLOY_SECRET: ${{ secrets.DEPLOY_SECRET }}
   run: |
-    curl -X POST "http://${{ secrets.ALIYUN_HOST }}/api/deploy" \
+    curl -X POST "http://$HOST/api/deploy" \
       -H 'Content-Type: application/json' \
-      -d '{"secret":"${{ secrets.DEPLOY_SECRET }}"}'
+      -d "{\"secret\":\"$DEPLOY_SECRET\"}"
 ```
 
-只需要两个 Secret：`ALIYUN_HOST`（服务器 IP）和 `DEPLOY_SECRET`（部署密钥）。不再需要 SSH 私钥。
+只需要两个 Secret（`ALIYUN_HOST` + `DEPLOY_SECRET`），不再需要 SSH 私钥。
 
 ### 3. Nginx 代理
 
@@ -109,6 +121,26 @@ location /api/ {
 
 `/api/deploy` 自然也在代理范围内，不需要额外开端口。
 
+## 实战中踩的三个坑
+
+### 坑一：Shiki 不认识 `vbnet`
+
+旧博客里有一段代码标记为 `vbnet`，但实际是 Go 代码。之前在 GitHub Actions 上构建时 Shiki 只是警告，换到服务器本地构建后，新版 Shiki 对未知语言处理变严格，直接导致构建失败。
+
+**教训**：代码块的语言标记要写对的，别指望工具一直包容你。
+
+### 坑二：systemd 环境没有 `BASE_URL`
+
+`astro.config.mjs` 里写了 `base: process.env.BASE_URL || '/'`，本意是本地开发默认 `/`，CI 构建时注入。但 systemd 启动的服务压根没有这个环境变量，构建出来的页面路径全乱了。
+
+**教训**：别假设环境变量一定存在，关键变量在命令中显式传入最稳妥。
+
+### 坑三：多余的 `cp` 操作
+
+最开始从 SSH 方案迁移时，顺手保留了 `rm -rf` + `cp -r` 的步骤。结果因为构建目录和 Nginx 目录是同一个，`cp` 报 `same file` 错误。删掉后才发现——根本不需要复制，构建产物已经在正确位置了。
+
+**教训**：换方案时不要把旧逻辑无脑搬过来，想清楚每一步是否还有必要。
+
 ## 对比
 
 | | SSH 推送方案 | Webhook 方案 |
@@ -119,14 +151,14 @@ location /api/ {
 | IP 白名单 | 5000+ 条不可行 | 不需要 |
 | SSH 密钥维护 | 生成/分发/轮换 | 不需要 |
 | 部署逻辑 | 写在 CI 里 | 服务器端控制 |
-| 故障排查 | CI 日志有限 | journalctl 完整日志 |
+| 故障排查 | CI 日志有限 | journalctl -u api-bridge -f |
 
 ## 总结
 
 这个方案的思路转变很简单：**从"推"变成"拉"**。
 
-CI 不再负责把文件传到服务器，只发一个信号。服务器收到信号后自己 `git pull`、自己构建、自己部署。少了 SSH 这一层，少了一大堆麻烦。
+CI 不再负责把文件传到服务器，只发一个信号。服务器收到信号后自己 `git pull`、自己构建、自己部署。少了 SSH 这一层，也少了一大堆麻烦。
 
 而且这个端点本身就架在 API Bridge 上，和 AI 聊天共用同一套基础设施——Nginx 代理、systemd 管理、限流保护。没有任何额外组件。
 
-如果你的项目也在用 GitHub Actions 部署到自有服务器，不妨试试这个思路。只要服务器能访问 GitHub（clone 代码），就不需要 SSH。
+如果你的项目也在用 GitHub Actions 部署到自有服务器，不妨试试这个思路。只要服务器能访问 GitHub（能 clone 代码），就不需要 SSH。
