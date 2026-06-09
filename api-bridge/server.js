@@ -269,7 +269,7 @@ app.post('/api/deploy', async (req, res) => {
 async function runDeploy() {
   const run = (cmd, cwd) => {
     console.log(`[deploy] $ ${cmd}`);
-    return execSync(cmd, { cwd, encoding: 'utf8', timeout: 120_000 });
+    return execSync(cmd, { cwd, encoding: 'utf8', timeout: 300_000 });
   };
 
   try {
