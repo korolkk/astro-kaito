@@ -303,7 +303,10 @@ async function runDeploy() {
 
     console.log('[deploy] ✅ 部署完成');
   } catch (err) {
-    console.error('[deploy] ❌ 部署失败:', err.stderr || err.message);
+    const stderr = err.stderr?.toString() || '';
+    const stdout = err.stdout?.toString() || '';
+    console.error('[deploy] ❌ 部署失败:', stderr || err.message);
+    if (stdout) console.error('[deploy] stdout:', stdout);
   }
 }
 
