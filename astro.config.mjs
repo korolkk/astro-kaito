@@ -6,7 +6,7 @@ import { defineConfig, fontProviders } from 'astro/config';
 
 // https://astro.build/config
 export default defineConfig({
-	site: 'https://korolkk.github.io',
+	site: 'https://kaitolab.net',
 	base: process.env.BASE_URL || '/',
 	integrations: [mdx(), sitemap()],
 	fonts: [
