@@ -58,7 +58,7 @@ jobs:
           DEPLOY_SECRET: ${{ secrets.DEPLOY_SECRET }}
         run: |
           echo "📡 通知服务器拉取并部署..."
-          RESP=$(curl -s -w "\n%{http_code}" -X POST "http://$HOST/api/deploy" \
+          RESP=$(curl -s -w "\n%{http_code}" -X POST "https://$HOST/api/deploy" \
             -H 'Content-Type: application/json' \
             -d "{\"secret\":\"$DEPLOY_SECRET\"}")
           HTTP_CODE=$(echo "$RESP" | tail -1)
