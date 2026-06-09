@@ -1,5 +1,5 @@
 /**
- * KaitoBlog API Bridge
+ * KaitoHub API Bridge
  *
  * 位于 Nginx 与 OpenClaw 网关之间的轻量桥接层。
  * 部署路径：/opt/api-bridge/
@@ -23,8 +23,8 @@ const OPENCLAW_TOKEN = process.env.OPENCLAW_API_TOKEN || '';
 const DEPLOY_SECRET = process.env.DEPLOY_SECRET || '';
 
 // 仓库路径（服务器上 clone 的位置）
-const REPO_DIR = '/var/www/kaitoblog';
-const DIST_DIR = '/var/www/kaitoblog/dist';
+const REPO_DIR = '/var/www/kaitohub';
+const DIST_DIR = '/var/www/kaitohub/dist';
 
 // ======================
 // 限流配置（可通过环境变量覆盖）
@@ -66,7 +66,7 @@ const qaLimiter = rateLimit({
 // ======================
 // Kaito AI 分身 system prompt
 // ======================
-const SYSTEM_PROMPT = `你是 Kaito 的 AI 分身，运行在 KaitoBlog（kaitoblog.com）上。
+const SYSTEM_PROMPT = `你是 Kaito 的 AI 分身，运行在 KaitoHub（kaitohub.com）上。
 
 ## 关于 Kaito
 - 嵌入式软件工程师，专注音视频开发方向
@@ -78,7 +78,7 @@ const SYSTEM_PROMPT = `你是 Kaito 的 AI 分身，运行在 KaitoBlog（kaitob
 - 回答简洁有料，不要长篇大论
 - 中文为主，技术术语可保留英文
 - 遇到不确定的问题诚实说不知道，不要编造
-- 可以适当推荐 KaitoBlog 上的相关文章
+- 可以适当推荐 KaitoHub 上的相关文章
 
 ## 边界
 - 只回答与技术、编程、嵌入式、音视频相关的问题
@@ -177,7 +177,7 @@ app.post('/api/article-qa', qaLimiter, async (req, res) => {
     // 截断文章内容以控制 token 消耗
     const truncatedContent = articleContent.substring(0, 8000);
 
-    const contextPrompt = `你正在帮助读者理解 KaitoBlog 上的一篇文章。
+    const contextPrompt = `你正在帮助读者理解 KaitoHub 上的一篇文章。
 
 ## 文章标题
 ${articleTitle || '（未知标题）'}

@@ -57,9 +57,9 @@ node -v  # 确认版本
 ### 克隆代码并构建
 
 ```bash
-sudo mkdir -p /var/www/kaitoblog
-sudo git clone https://github.com/korolkk/astro-kaito.git /var/www/kaitoblog
-cd /var/www/kaitoblog
+sudo mkdir -p /var/www/kaitohub
+sudo git clone https://github.com/korolkk/astro-kaito.git /var/www/kaitohub
+cd /var/www/kaitohub
 npm install
 npm run build
 ```
@@ -95,7 +95,7 @@ http {
         listen       80;
         server_name  你的域名.com;
 
-        root   /var/www/kaitoblog/dist;
+        root   /var/www/kaitohub/dist;
         index  index.html;
 
         # 静态资源长期缓存（文件名带 hash）
@@ -167,7 +167,7 @@ sudo ausearch -m avc -ts recent
 sudo setenforce 0
 ```
 
-果然是 SELinux。Nginx 进程的上下文（`httpd_t`）没有权限读取 `/var/www/kaitoblog/dist/` 目录下的文件。
+果然是 SELinux。Nginx 进程的上下文（`httpd_t`）没有权限读取 `/var/www/kaitohub/dist/` 目录下的文件。
 
 **永久修复**（不要关闭 SELinux，而是正确配置）：
 
@@ -176,10 +176,10 @@ sudo setenforce 0
 sudo dnf install policycoreutils-python-utils -y
 
 # 设置目录默认 SELinux 上下文（永久生效）
-sudo semanage fcontext -a -t httpd_sys_content_t "/var/www/kaitoblog/dist(/.*)?"
+sudo semanage fcontext -a -t httpd_sys_content_t "/var/www/kaitohub/dist(/.*)?"
 
 # 立即应用
-sudo restorecon -R /var/www/kaitoblog/dist/
+sudo restorecon -R /var/www/kaitohub/dist/
 
 # 允许 Nginx 发起网络连接
 sudo setsebool -P httpd_can_network_connect on
@@ -278,7 +278,7 @@ steps:
 最初用 rsync 传输文件：
 
 ```bash
-rsync -avz --delete -e "ssh -i key" dist/ root@$HOST:/var/www/kaitoblog/dist/
+rsync -avz --delete -e "ssh -i key" dist/ root@$HOST:/var/www/kaitohub/dist/
 ```
 
 报错：
@@ -295,9 +295,9 @@ rsync: connection unexpectedly closed
 ```bash
 tar -czf - -C dist . | \
   ssh -i key root@$HOST \
-    "rm -rf /var/www/kaitoblog/dist/* && \
-     tar -xzf - -C /var/www/kaitoblog/dist/ && \
-     restorecon -R /var/www/kaitoblog/dist/ && \
+    "rm -rf /var/www/kaitohub/dist/* && \
+     tar -xzf - -C /var/www/kaitohub/dist/ && \
+     restorecon -R /var/www/kaitohub/dist/ && \
      systemctl reload nginx"
 ```
 
@@ -322,9 +322,9 @@ chcon: can't apply partial context to unlabeled file 'favicon.ico'
 # CI 中的命令最终版
 tar -czf - -C dist . | \
   ssh -i key root@$HOST \
-    "rm -rf /var/www/kaitoblog/dist/* && \
-     tar -xzf - -C /var/www/kaitoblog/dist/ && \
-     restorecon -R /var/www/kaitoblog/dist/ && \
+    "rm -rf /var/www/kaitohub/dist/* && \
+     tar -xzf - -C /var/www/kaitohub/dist/ && \
+     restorecon -R /var/www/kaitohub/dist/ && \
      systemctl reload nginx"
 ```
 
@@ -402,9 +402,9 @@ jobs:
           ssh-keyscan -H $HOST >> ~/.ssh/known_hosts
           tar -czf - -C dist . | \
             ssh -i ~/.ssh/aliyun_deploy_key root@$HOST \
-              "rm -rf /var/www/kaitoblog/dist/* && \
-               tar -xzf - -C /var/www/kaitoblog/dist/ && \
-               restorecon -R /var/www/kaitoblog/dist/ && \
+              "rm -rf /var/www/kaitohub/dist/* && \
+               tar -xzf - -C /var/www/kaitohub/dist/ && \
+               restorecon -R /var/www/kaitohub/dist/ && \
                systemctl reload nginx"
 ```
 

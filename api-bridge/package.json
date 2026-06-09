@@ -1,7 +1,7 @@
 {
-  "name": "kaitoblog-api-bridge",
+  "name": "kaitohub-api-bridge",
   "version": "1.0.0",
-  "description": "API bridge between KaitoBlog frontend and OpenClaw AI gateway",
+  "description": "API bridge between KaitoHub frontend and OpenClaw AI gateway",
   "type": "module",
   "scripts": {
     "start": "node server.js",

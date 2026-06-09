@@ -182,6 +182,6 @@ AI 工具：  Claude Code（主力）+ ChatGPT / Copilot（辅助）
 
 **AI 没有让编程变简单——它让「想法的实现成本」趋近于零。**
 
-今天的 KaitoBlog 可能还不够完美，但它的迭代速度会很快——因为每次改进只需要几分钟的对话。
+今天的 KaitoHub 可能还不够完美，但它的迭代速度会很快——因为每次改进只需要几分钟的对话。
 
 如果你想用类似方式搭建自己的博客，可以参考 [Astro 官方文档](https://docs.astro.build) 和本站的 [GitHub 仓库](https://github.com/korolkk/astro-kaito)。欢迎 Fork、参考、交流。

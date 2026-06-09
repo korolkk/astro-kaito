@@ -79,7 +79,7 @@ async function runDeploy() {
   run('BASE_URL=/ npm run build', REPO_DIR);  // systemd 环境需显式传入
 
   // 4. Nginx 直接指向构建目录，仅需 SELinux 修复 + 重载
-  run('restorecon -R /var/www/kaitoblog/dist', REPO_DIR);
+  run('restorecon -R /var/www/kaitohub/dist', REPO_DIR);
   run('systemctl reload nginx', REPO_DIR);
 
   // 5. 最后才重启 API Bridge（部署全部完成，不怕杀进程）
@@ -90,7 +90,7 @@ async function runDeploy() {
 注意几个细节：
 - **`BASE_URL=/`**：systemd 启动的服务没有这个环境变量，必须显式传入，否则 Astro 不知道 `base` 该用啥
 - **步骤顺序**：API Bridge 依赖先装（不重启），博客构建部署完成后最后才 `restart`，避免中途杀进程
-- **不用 `cp`**：因为服务器上 `git clone` 的仓库就在 `/var/www/kaitoblog`，Nginx 的 `root` 直接指向它的 `dist/` 子目录，构建产物天然就在正确位置，不需要额外复制
+- **不用 `cp`**：因为服务器上 `git clone` 的仓库就在 `/var/www/kaitohub`，Nginx 的 `root` 直接指向它的 `dist/` 子目录，构建产物天然就在正确位置，不需要额外复制
 
 ### 2. CI 端：一个 curl 搞定
 

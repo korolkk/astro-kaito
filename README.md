@@ -176,7 +176,7 @@ Astro 会查找 `src/pages/` 目录下的 `.astro` 或 `.md` 文件，每个文�
 重新设计了首页，采用卡片式双栏布局、全新视觉风格和背景图片。
 
 **站点品牌**
-- `src/consts.ts`：`SITE_TITLE` → `"KaitoBlog"`，`SITE_DESCRIPTION` → 中文描述
+- `src/consts.ts`：`SITE_TITLE` → `"KaitoHub"`，`SITE_DESCRIPTION` → 中文描述
 - `src/components/Footer.astro`：简化为 `© YYYY kaito.`
 
 **首页布局**（`src/pages/index.astro`）
