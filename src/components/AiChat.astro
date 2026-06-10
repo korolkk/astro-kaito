@@ -5,7 +5,6 @@
 <div id="aiChatRoot">
 	<!-- Floating trigger button -->
 	<button id="aiChatBtn" class="ai-chat-btn" aria-label="AI 聊天">
-		<span class="ai-chat-btn-glow"></span>
 		<svg id="aiChatIcon" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
 			<path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.17L4 17.17V4h16v12z"/>
 			<circle fill="currentColor" cx="8" cy="10" r="1.5"/>
@@ -20,7 +19,7 @@
 	<!-- Chat dialog -->
 	<div id="aiChatDialog" class="ai-chat-dialog" aria-hidden="true">
 		<div class="ai-chat-header">
-			<span class="ai-chat-header-icon">💬</span>
+			<div class="ai-chat-avatar">🤖</div>
 			<div class="ai-chat-header-text">
 				<span class="ai-chat-title">Kaito AI</span>
 				<span class="ai-chat-subtitle">在线 · 随时可聊</span>
@@ -42,6 +41,7 @@
 				class="ai-chat-input"
 				placeholder="输入消息..."
 				rows="1"
+				maxlength="2000"
 				autocomplete="off"
 			></textarea>
 			<button id="aiChatSend" class="ai-chat-send" aria-label="发送">
@@ -54,7 +54,7 @@
 </div>
 
 <style>
-	/* ----- Trigger button ----- */
+	/* ----- Trigger button (Siri-like pulse) ----- */
 	.ai-chat-btn {
 		position: fixed;
 		bottom: 5.5em;
@@ -70,25 +70,49 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		box-shadow: 0 4px 20px rgba(99, 102, 241, 0.35);
-		transition: transform 0.25s ease, box-shadow 0.25s ease;
 		overflow: visible;
+		animation: ai-btn-breathe 3s ease-in-out infinite;
 	}
 	.ai-chat-btn:hover {
-		transform: scale(1.1);
-		box-shadow: 0 6px 28px rgba(99, 102, 241, 0.5);
+		animation: none;
+		transform: scale(1.12);
 	}
-	.ai-chat-btn-glow {
+
+	/* Breathing scale + hue shift on the orb itself */
+	@keyframes ai-btn-breathe {
+		0%, 100% { transform: scale(1);   box-shadow: 0 0 18px rgba(99, 102, 241, 0.3), 0 0 40px rgba(139, 92, 246, 0.12); }
+		33%       { transform: scale(1.06); box-shadow: 0 0 24px rgba(99, 102, 241, 0.45), 0 0 56px rgba(139, 92, 246, 0.2); }
+		66%       { transform: scale(0.96); box-shadow: 0 0 14px rgba(99, 102, 241, 0.25), 0 0 32px rgba(139, 92, 246, 0.08); }
+	}
+
+	/* Expanding ring 1 — slow, wide */
+	.ai-chat-btn::before {
+		content: '';
 		position: absolute;
-		inset: -5px;
+		inset: -8px;
 		border-radius: 50%;
-		border: 2px solid rgba(99, 102, 241, 0.3);
-		animation: ai-glow-pulse 2.5s ease-in-out infinite;
+		border: 2px solid rgba(99, 102, 241, 0.35);
+		animation: ai-ring-1 2.8s ease-out infinite;
 		pointer-events: none;
 	}
-	@keyframes ai-glow-pulse {
-		0%, 100% { transform: scale(1); opacity: 0.5; }
-		50% { transform: scale(1.18); opacity: 0; }
+	@keyframes ai-ring-1 {
+		0%   { transform: scale(0.85); opacity: 0.8; }
+		100% { transform: scale(1.55); opacity: 0; }
+	}
+
+	/* Expanding ring 2 — slightly faster, offset delay */
+	.ai-chat-btn::after {
+		content: '';
+		position: absolute;
+		inset: -8px;
+		border-radius: 50%;
+		border: 1.5px solid rgba(139, 92, 246, 0.4);
+		animation: ai-ring-2 2.4s ease-out 0.9s infinite;
+		pointer-events: none;
+	}
+	@keyframes ai-ring-2 {
+		0%   { transform: scale(0.85); opacity: 0.7; }
+		100% { transform: scale(1.6); opacity: 0; }
 	}
 
 	/* ----- Dialog shell ----- */
@@ -123,13 +147,20 @@
 	.ai-chat-header {
 		display: flex;
 		align-items: center;
-		gap: 0.5em;
+		gap: 0.6em;
 		padding: 0.85em 1em;
 		border-bottom: 1px solid rgb(var(--gray-light));
 		flex-shrink: 0;
 	}
-	.ai-chat-header-icon {
-		font-size: 1.3em;
+	.ai-chat-avatar {
+		width: 36px;
+		height: 36px;
+		border-radius: 50%;
+		background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 1.1em;
 		flex-shrink: 0;
 	}
 	.ai-chat-header-text {
@@ -170,11 +201,11 @@
 		padding: 1em;
 		display: flex;
 		flex-direction: column;
-		gap: 0.7em;
+		gap: 0.6em;
 		scroll-behavior: smooth;
 	}
 
-	/* Message row: controls left/right alignment */
+	/* Message row — bubbles only, no avatar/label in body */
 	.ai-msg {
 		display: flex;
 		max-width: 85%;
@@ -189,7 +220,7 @@
 		to   { opacity: 1; transform: translateY(0); }
 	}
 
-	/* Bubble itself */
+	/* Bubble — distinguishes user from AI by color + alignment */
 	.ai-chat-bubble {
 		padding: 0.65em 0.9em;
 		border-radius: 16px;
@@ -197,7 +228,7 @@
 		line-height: 1.55;
 		word-break: break-word;
 	}
-	.ai-bot  .ai-chat-bubble {
+	.ai-bot .ai-chat-bubble {
 		background: rgb(var(--gray-light));
 		color: rgb(var(--gray-dark));
 		border-bottom-left-radius: 4px;
@@ -317,6 +348,19 @@
 
 		if (!btn || !dialog) return;
 
+		// Astro scoped styles require data-astro-cid-HASH on every element.
+		// Static HTML has it, but JS-created elements don't — find the actual
+		// attribute name (hash varies per build) and apply it.
+		var CID = '';
+		(function () {
+			var root = document.getElementById('aiChatRoot');
+			if (!root) return;
+			for (var i = 0; i < root.attributes.length; i++) {
+				if (root.attributes[i].name.indexOf('data-astro-cid') === 0) { CID = root.attributes[i].name; break; }
+			}
+		})();
+		function cid(el) { if (CID) el.setAttribute(CID, ''); return el; }
+
 		var isOpen = false;
 		var isSending = false;
 		var apiBase = '';
@@ -369,10 +413,11 @@
 			messagesEl.scrollTop = messagesEl.scrollHeight;
 		}
 
+		// Pure-bubble message — avatar/label only in header, not per-message
 		function addMsg(text, type) {
-			var row = document.createElement('div');
+			var row = cid(document.createElement('div'));
 			row.className = 'ai-msg ai-' + type;
-			var bubble = document.createElement('div');
+			var bubble = cid(document.createElement('div'));
 			bubble.className = 'ai-chat-bubble';
 			bubble.textContent = text;
 			row.appendChild(bubble);
@@ -382,12 +427,12 @@
 		}
 
 		function addTyping() {
-			var row = document.createElement('div');
+			var row = cid(document.createElement('div'));
 			row.className = 'ai-msg ai-bot ai-typing';
 			row.id = 'aiTyping';
-			var bubble = document.createElement('div');
+			var bubble = cid(document.createElement('div'));
 			bubble.className = 'ai-chat-bubble';
-			bubble.innerHTML = '<span></span><span></span><span></span>';
+			for (var i = 0; i < 3; i++) { bubble.appendChild(cid(document.createElement('span'))); }
 			row.appendChild(bubble);
 			messagesEl.appendChild(row);
 			scrollToBottom();
@@ -408,6 +453,7 @@
 		async function sendMessage() {
 			var text = input.value.trim();
 			if (!text || isSending) return;
+			if (text.length > 2000) { text = text.substring(0, 2000); }
 			input.value = '';
 			input.style.height = 'auto';
 
@@ -455,9 +501,9 @@
 
 		sendBtn.addEventListener('click', sendMessage);
 
+		// Enter = send; Shift+Enter or Ctrl+Enter = newline
 		input.addEventListener('keydown', function (e) {
-			if (e.key === 'Enter' && !e.shiftKey) {
-				if (window.innerWidth < 768) return;
+			if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey) {
 				e.preventDefault();
 				sendMessage();
 			}

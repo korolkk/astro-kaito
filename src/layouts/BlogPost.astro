@@ -335,36 +335,76 @@ const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nex
 				opacity: 0.4;
 				cursor: not-allowed;
 			}
-			.ai-qa-response {
+			/* AI Q&A conversation thread */
+			.ai-qa-conversation {
 				margin-top: 1em;
-				padding: 1em;
-				background: rgb(var(--gray-light));
-				border-radius: 12px;
-				font-size: 0.9em;
-				line-height: 1.65;
-				color: rgb(var(--gray-dark));
-				animation: ai-bubble-in 0.25s ease-out;
+				display: flex;
+				flex-direction: column;
+				gap: 0.9em;
 			}
-			@keyframes ai-bubble-in {
+			/* Each Q&A group */
+			.ai-qa-group {
+				animation: ai-qa-in 0.25s ease-out;
+			}
+			@keyframes ai-qa-in {
 				from { opacity: 0; transform: translateY(8px); }
 				to { opacity: 1; transform: translateY(0); }
 			}
-			.ai-qa-response .ai-qa-loading {
+			/* Question bubble — right-aligned, accent background */
+			.ai-qa-q {
+				display: flex;
+				flex-direction: column;
+				align-items: flex-end;
+				margin-bottom: 0.5em;
+			}
+			.ai-qa-q .ai-qa-bubble {
+				padding: 0.6em 0.85em;
+				border-radius: 14px 14px 4px 14px;
+				font-size: 0.88em;
+				line-height: 1.55;
+				max-width: 88%;
+				background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+				color: #fff;
+				box-shadow: 0 2px 8px rgba(99, 102, 241, 0.18);
+			}
+			/* Answer bubble — left-aligned, gray background */
+			.ai-qa-a {
+				display: flex;
+				flex-direction: column;
+				align-items: flex-start;
+			}
+			.ai-qa-a .ai-qa-bubble {
+				padding: 0.6em 0.85em;
+				border-radius: 14px 14px 14px 4px;
+				font-size: 0.88em;
+				line-height: 1.65;
+				max-width: 95%;
+				background: rgb(var(--gray-light));
+				color: rgb(var(--gray-dark));
+			}
+			/* Error in answer position */
+			.ai-qa-a.ai-qa-error .ai-qa-bubble {
+				background: rgba(220, 53, 69, 0.07);
+				color: #dc3545;
+				font-size: 0.82em;
+			}
+			/* Loading dots */
+			.ai-qa-loading {
 				display: flex;
 				align-items: center;
 				gap: 4px;
-				padding: 0.3em 0;
+				padding: 0.5em 0.85em;
 			}
-			.ai-qa-response .ai-qa-loading span {
+			.ai-qa-loading span {
 				width: 7px;
 				height: 7px;
 				border-radius: 50%;
 				background: rgb(var(--gray));
-				animation: ai-bounce 1.2s ease-in-out infinite;
+				animation: ai-qa-bounce 1.2s ease-in-out infinite;
 			}
-			.ai-qa-response .ai-qa-loading span:nth-child(2) { animation-delay: 0.15s; }
-			.ai-qa-response .ai-qa-loading span:nth-child(3) { animation-delay: 0.3s; }
-			@keyframes ai-bounce {
+			.ai-qa-loading span:nth-child(2) { animation-delay: 0.15s; }
+			.ai-qa-loading span:nth-child(3) { animation-delay: 0.3s; }
+			@keyframes ai-qa-bounce {
 				0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
 				30% { transform: translateY(-6px); opacity: 1; }
 			}
@@ -449,13 +489,14 @@ const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nex
 								<input
 									type="text"
 									id="aiQaInput"
+										maxlength="500"
 									class="ai-qa-input"
 									placeholder="输入你的问题..."
 									autocomplete="off"
 								/>
 								<button id="aiQaSend" class="ai-qa-send">发送</button>
 							</div>
-							<div id="aiQaResponse" class="ai-qa-response" style="display:none;"></div>
+							<div id="aiQaConversation" class="ai-qa-conversation"></div>
 						</div>
 
 						<!-- Comments -->
@@ -597,10 +638,22 @@ const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nex
 		var section = document.getElementById('aiQaSection');
 		var input = document.getElementById('aiQaInput');
 		var sendBtn = document.getElementById('aiQaSend');
-		var responseEl = document.getElementById('aiQaResponse');
+		var convEl = document.getElementById('aiQaConversation');
 		var presetBtns = document.querySelectorAll('.ai-qa-preset');
 
-		if (!section || !input || !sendBtn) return;
+		if (!section || !input || !sendBtn || !convEl) return;
+
+		// Astro scoped styles require data-astro-cid-HASH on dynamic elements.
+		// Find the actual attribute name (hash varies per build) and apply it.
+		var CID = '';
+		(function () {
+			var el = section;
+			if (!el) return;
+			for (var i = 0; i < el.attributes.length; i++) {
+				if (el.attributes[i].name.indexOf('data-astro-cid') === 0) { CID = el.attributes[i].name; break; }
+			}
+		})();
+		function cid(el) { if (CID) el.setAttribute(CID, ''); return el; }
 
 		var isSending = false;
 		var apiBase = '';
@@ -614,7 +667,6 @@ const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nex
 			return apiBase + path;
 		}
 
-		// Get article content from the prose section
 		function getArticleContent() {
 			var prose = document.querySelector('.prose');
 			if (!prose) return '';
@@ -627,28 +679,65 @@ const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nex
 			return h1 ? h1.textContent.trim() : document.title;
 		}
 
-		function showLoading() {
-			responseEl.style.display = 'block';
-			responseEl.innerHTML = '<div class="ai-qa-loading"><span></span><span></span><span></span></div>';
+		// Create a Q&A group in the conversation: question bubble + loading/answer slot
+		function addQaGroup(question) {
+			var group = cid(document.createElement('div'));
+			group.className = 'ai-qa-group';
+
+			// Question bubble (right-aligned)
+			var qDiv = cid(document.createElement('div'));
+			qDiv.className = 'ai-qa-q';
+			var qLabel = cid(document.createElement('span'));
+			var qBubble = cid(document.createElement('div'));
+			qBubble.className = 'ai-qa-bubble';
+			qBubble.textContent = question;
+			qDiv.appendChild(qBubble);
+			group.appendChild(qDiv);
+
+			// Answer slot (starts as loading)
+			var aDiv = cid(document.createElement('div'));
+			aDiv.className = 'ai-qa-a';
+			group._answerSlot = aDiv;
+			group.appendChild(aDiv);
+
+			convEl.appendChild(group);
+			convEl.scrollIntoView({ behavior: 'smooth', block: 'end' });
+			return group;
 		}
 
-		function showResponse(text) {
-			responseEl.style.display = 'block';
-			responseEl.innerHTML = '';
-			var p = document.createElement('p');
-			p.style.margin = '0';
-			p.textContent = text;
-			responseEl.appendChild(p);
+		function showLoading(group) {
+			var slot = group._answerSlot;
+			slot.className = 'ai-qa-a';
+			slot.innerHTML = '';
+			var bubble = cid(document.createElement('div'));
+			bubble.className = 'ai-qa-bubble';
+			var loading = cid(document.createElement('div'));
+			loading.className = 'ai-qa-loading';
+			for (var i = 0; i < 3; i++) { loading.appendChild(cid(document.createElement('span'))); }
+			bubble.appendChild(loading);
+			slot.appendChild(bubble);
 		}
 
-		function showError(msg) {
-			responseEl.style.display = 'block';
-			responseEl.innerHTML = '';
-			var p = document.createElement('p');
-			p.style.margin = '0';
-			p.style.color = '#dc3545';
-			p.textContent = msg;
-			responseEl.appendChild(p);
+		function showAnswer(group, text) {
+			var slot = group._answerSlot;
+			slot.className = 'ai-qa-a';
+			slot.innerHTML = '';
+			var label = cid(document.createElement('span'));
+			var bubble = cid(document.createElement('div'));
+			bubble.className = 'ai-qa-bubble';
+			bubble.textContent = text;
+			slot.appendChild(bubble);
+		}
+
+		function showError(group, msg) {
+			var slot = group._answerSlot;
+			slot.className = 'ai-qa-a ai-qa-error';
+			slot.innerHTML = '';
+			var label = cid(document.createElement('span'));
+			var bubble = cid(document.createElement('div'));
+			bubble.className = 'ai-qa-bubble';
+			bubble.textContent = msg;
+			slot.appendChild(bubble);
 		}
 
 		function setSending(state) {
@@ -661,10 +750,13 @@ const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nex
 			if (isSending) return;
 			var q = question || input.value.trim();
 			if (!q) return;
+		if (q.length > 500) { q = q.substring(0, 500); }
 
 			if (!question) input.value = '';
 			setSending(true);
-			showLoading();
+
+			var group = addQaGroup(q);
+			showLoading(group);
 
 			try {
 				var resp = await fetch(getApiUrl('/api/article-qa'), {
@@ -686,17 +778,17 @@ const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nex
 					} else {
 						msg = '请求失败（HTTP ' + resp.status + '）';
 					}
-					showError(msg);
+					showError(group, msg);
 				} else {
 					var data = await resp.json();
 					if (data.error) {
-						showError(data.error);
+						showError(group, data.error);
 					} else {
-						showResponse(data.reply || '（AI 没有返回内容）');
+						showAnswer(group, data.reply || '（AI 没有返回内容）');
 					}
 				}
 			} catch (err) {
-				showError('无法连接到 AI 服务，请稍后重试');
+				showError(group, '无法连接到 AI 服务，请稍后重试');
 			}
 
 			setSending(false);
