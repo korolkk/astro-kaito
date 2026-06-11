@@ -83,13 +83,12 @@ const stats = {
 				padding: 0;
 			}
 
-			/* Left column */
-			.left-col {
-				display: flex;
-				flex-direction: column;
-				gap: 2em;
-				min-width: 0;
-			}
+/* Desktop: explicit grid placement */
+		.profile      { grid-column: 1; grid-row: 1; }
+		.stats-card   { grid-column: 1; grid-row: 2; }
+		.github-card  { grid-column: 1; grid-row: 3; }
+		.friends-card { grid-column: 1; grid-row: 4; }
+		.post-feed    { grid-column: 2; grid-row: 1 / 5; }
 			.profile {
 				text-align: center;
 				background: var(--card-bg);
@@ -398,6 +397,12 @@ const stats = {
 					gap: 1.5em;
 					margin: 1.5em auto;
 				}
+			.profile, .post-feed, .stats-card, .github-card, .friends-card { grid-column: 1; grid-row: auto; }
+				.profile      { order: 1; }
+				.post-feed    { order: 2; }
+				.stats-card   { order: 3; }
+				.github-card  { order: 4; }
+				.friends-card { order: 5; }
 			}
 		</style>
 	</head>
@@ -405,8 +410,7 @@ const stats = {
 		<Header />
 		<main>
 			<div class="hero">
-				<div class="left-col">
-					<aside class="profile">
+				<aside class="profile">
 						<Image
 							class="avatar"
 							src={avatarPlaceholder}
@@ -533,8 +537,6 @@ const stats = {
 							</a>
 						</div>
 					</section>
-				</div>
-
 				<section class="post-feed">
 					<h2 class="section-title">最新文章</h2>
 					<ul class="post-list">
