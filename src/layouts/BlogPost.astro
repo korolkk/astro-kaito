@@ -158,6 +158,132 @@ const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nex
 				padding-top: 1.5em;
 				border-top: 1px solid rgb(var(--gray-light));
 			}
+			.comment-form {
+				display: flex;
+				flex-direction: column;
+				gap: 0.6em;
+				margin-bottom: 1.5em;
+			}
+			.comment-form input,
+			.comment-form textarea {
+				padding: 0.6em 0.85em;
+				border: 1px solid rgb(var(--gray-light));
+				border-radius: 10px;
+				font-family: inherit;
+				font-size: 0.88em;
+				background: rgb(var(--gray-light));
+				color: rgb(var(--black));
+				outline: none;
+				transition: border-color 0.15s ease;
+				resize: vertical;
+			}
+			.comment-form input:focus,
+			.comment-form textarea:focus {
+				border-color: var(--accent);
+			}
+			.comment-form textarea {
+				min-height: 80px;
+			}
+			.comment-form input::placeholder,
+			.comment-form textarea::placeholder {
+				color: rgb(var(--gray));
+			}
+			.comment-submit {
+				align-self: flex-end;
+				padding: 0.5em 1.2em;
+				border: none;
+				border-radius: 10px;
+				background: var(--accent);
+				color: #fff;
+				font-family: inherit;
+				font-size: 0.88em;
+				font-weight: 600;
+				cursor: pointer;
+				transition: opacity 0.15s ease;
+			}
+			.comment-submit:hover {
+				opacity: 0.85;
+			}
+			.comment-submit:disabled {
+				opacity: 0.4;
+				cursor: not-allowed;
+			}
+			.comment-status {
+				font-size: 0.82em;
+				text-align: center;
+				padding: 0.3em 0;
+			}
+			.comment-status.success { color: var(--accent); }
+			.comment-status.error { color: #dc3545; }
+			/* Comment list */
+			.comment-list {
+				display: flex;
+				flex-direction: column;
+				gap: 1em;
+			}
+			.comment-item {
+				display: flex;
+				gap: 0.65em;
+				animation: comment-in 0.25s ease-out;
+			}
+			@keyframes comment-in {
+				from { opacity: 0; transform: translateY(8px); }
+				to { opacity: 1; transform: translateY(0); }
+			}
+			.comment-avatar {
+				flex-shrink: 0;
+				width: 36px;
+				height: 36px;
+				border-radius: 50%;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				font-size: 0.82em;
+				font-weight: 700;
+				color: #fff;
+				background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+				user-select: none;
+			}
+			.comment-body {
+				flex: 1;
+				min-width: 0;
+			}
+			.comment-meta {
+				display: flex;
+				align-items: baseline;
+				gap: 0.6em;
+				margin-bottom: 0.35em;
+			}
+			.comment-author {
+				font-size: 0.85em;
+				font-weight: 600;
+				color: rgb(var(--black));
+			}
+			.comment-time {
+				font-size: 0.75em;
+				color: rgb(var(--gray));
+			}
+			.comment-content {
+				padding: 0.55em 0.85em;
+				border-radius: 4px 14px 14px 14px;
+				font-size: 0.88em;
+				line-height: 1.6;
+				background: rgb(var(--gray-light));
+				color: rgb(var(--gray-dark));
+				word-break: break-word;
+			}
+			.comment-empty {
+				text-align: center;
+				color: rgb(var(--gray));
+				font-size: 0.88em;
+				padding: 1.5em 0;
+			}
+			.comment-unavailable {
+				text-align: center;
+				color: rgb(var(--gray));
+				font-size: 0.82em;
+				padding: 1.5em 0;
+			}
 
 			/* Post navigation */
 			.post-nav {
@@ -502,12 +628,13 @@ const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nex
 						<!-- Comments -->
 						<div class="comments-section" id="comments">
 							<h3>评论</h3>
-							<div id="giscus-container" style="margin-top: 1em;">
-								<p style="color: rgb(var(--gray)); font-size: 0.88em; text-align: center; padding: 2em;">
-									评论功能需要在 GitHub Discussions 中配置 Giscus。<br />
-									<a href="https://giscus.app/zh-CN" target="_blank" style="color: var(--accent);">前往 giscus.app 配置 →</a>
-								</p>
+							<div class="comment-form" id="commentForm">
+								<input type="text" id="commentAuthor" maxlength="50" placeholder="昵称（选填）" autocomplete="off" />
+								<textarea id="commentContent" maxlength="2000" placeholder="写下你的想法..." rows="3"></textarea>
+								<button class="comment-submit" id="commentSubmit">提交评论</button>
+								<div class="comment-status" id="commentStatus"></div>
 							</div>
+							<div class="comment-list" id="commentList"></div>
 						</div>
 
 						{
@@ -819,25 +946,228 @@ const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nex
 </script>
 
 
-<!--
-	启用 Giscus 评论：
-	1. 访问 https://giscus.app/zh-CN 配置你的仓库
-	2. 将生成的 <script> 标签替换下面的占位代码
-	3. 删除上面的占位提示 HTML
-	示例：
-	<script src="https://giscus.app/client.js"
-		data-repo="korolkk/astro-kaito"
-		data-repo-id="R_kgDO..."
-		data-category="Announcements"
-		data-category-id="DIC_kwDO..."
-		data-mapping="pathname"
-		data-strict="0"
-		data-reactions-enabled="1"
-		data-emit-metadata="0"
-		data-input-position="bottom"
-		data-theme="preferred_color_scheme"
-		data-lang="zh-CN"
-		crossorigin="anonymous"
-		async>
-	</script>
--->
+<script is:inline>
+	(function () {
+		var commentsSection = document.getElementById('comments');
+		var commentForm = document.getElementById('commentForm');
+		var commentList = document.getElementById('commentList');
+		var authorInput = document.getElementById('commentAuthor');
+		var contentInput = document.getElementById('commentContent');
+		var submitBtn = document.getElementById('commentSubmit');
+		var statusEl = document.getElementById('commentStatus');
+
+		if (!commentsSection || !commentForm || !commentList) return;
+
+		// Astro scoped styles: find cid attribute
+		var CID = '';
+		(function () {
+			var el = commentsSection;
+			if (!el) return;
+			for (var i = 0; i < el.attributes.length; i++) {
+				if (el.attributes[i].name.indexOf('data-astro-cid') === 0) { CID = el.attributes[i].name; break; }
+			}
+		})();
+		function cid(el) { if (CID) el.setAttribute(CID, ''); return el; }
+
+		var apiBase = '';
+		function getApiUrl(path) {
+			if (!apiBase) {
+				var header = document.querySelector('header');
+				var base = (header && header.dataset.baseUrl) || '/';
+				apiBase = base.replace(/\/?$/, '');
+			}
+			return apiBase + path;
+		}
+
+		function getSlug() {
+			var path = window.location.pathname;
+			path = path.replace(/\/+$/, '');
+			if (path === '') return 'home';
+			var parts = path.split('/');
+			return parts[parts.length - 1] || parts[parts.length - 2] || 'unknown';
+		}
+
+		var isSubmitting = false;
+
+		function setStatus(msg, type) {
+			if (!statusEl) return;
+			statusEl.textContent = msg;
+			statusEl.className = 'comment-status ' + (type || '');
+			if (type === 'success') {
+				setTimeout(function () { statusEl.textContent = ''; statusEl.className = 'comment-status'; }, 4000);
+			}
+		}
+
+		function formatTime(dateStr) {
+			try {
+				var d = new Date(dateStr + 'Z');
+				if (isNaN(d.getTime())) { d = new Date(dateStr); }
+				if (isNaN(d.getTime())) return dateStr;
+				var now = new Date();
+				var diff = now - d;
+				if (diff < 60000) return '刚刚';
+				if (diff < 3600000) return Math.floor(diff / 60000) + ' 分钟前';
+				if (diff < 86400000) return Math.floor(diff / 3600000) + ' 小时前';
+				if (diff < 604800000) return Math.floor(diff / 86400000) + ' 天前';
+				return d.getFullYear() + '-' +
+					String(d.getMonth() + 1).padStart(2, '0') + '-' +
+					String(d.getDate()).padStart(2, '0') + ' ' +
+					String(d.getHours()).padStart(2, '0') + ':' +
+					String(d.getMinutes()).padStart(2, '0');
+			} catch (e) { return dateStr; }
+		}
+
+		function avatarChar(name) {
+			if (!name || !name.trim()) return '匿';
+			var ch = name.trim().charAt(0);
+			return ch;
+		}
+
+		function renderComment(c) {
+			var item = cid(document.createElement('div'));
+			item.className = 'comment-item';
+
+			var avatar = cid(document.createElement('div'));
+			avatar.className = 'comment-avatar';
+			avatar.textContent = avatarChar(c.author);
+
+			var body = cid(document.createElement('div'));
+			body.className = 'comment-body';
+
+			var meta = cid(document.createElement('div'));
+			meta.className = 'comment-meta';
+
+			var authorSpan = cid(document.createElement('span'));
+			authorSpan.className = 'comment-author';
+			authorSpan.textContent = (c.author && c.author.trim()) ? c.author.trim() : '匿名';
+
+			var timeSpan = cid(document.createElement('span'));
+			timeSpan.className = 'comment-time';
+			timeSpan.textContent = formatTime(c.created_at);
+
+			meta.appendChild(authorSpan);
+			meta.appendChild(timeSpan);
+
+			var contentDiv = cid(document.createElement('div'));
+			contentDiv.className = 'comment-content';
+			contentDiv.textContent = c.content;
+
+			body.appendChild(meta);
+			body.appendChild(contentDiv);
+			item.appendChild(avatar);
+			item.appendChild(body);
+			return item;
+		}
+
+		function renderEmpty() {
+			var div = cid(document.createElement('div'));
+			div.className = 'comment-empty';
+			div.textContent = '暂无评论，来抢沙发吧～';
+			return div;
+		}
+
+		function renderUnavailable(msg) {
+			var div = cid(document.createElement('div'));
+			div.className = 'comment-unavailable';
+			div.textContent = msg || '评论功能暂不可用';
+			return div;
+		}
+
+		async function loadComments() {
+			commentList.innerHTML = '';
+			try {
+				var resp = await fetch(getApiUrl('/api/comments?slug=' + encodeURIComponent(getSlug())));
+				if (!resp.ok) {
+					if (resp.status === 404) {
+						commentList.appendChild(renderUnavailable('评论服务未配置'));
+					} else {
+						commentList.appendChild(renderUnavailable('加载评论失败'));
+					}
+					return;
+				}
+				var comments = await resp.json();
+				if (!Array.isArray(comments) || comments.length === 0) {
+					commentList.appendChild(renderEmpty());
+				} else {
+					comments.forEach(function (c) {
+						commentList.appendChild(renderComment(c));
+					});
+				}
+			} catch (e) {
+				commentList.appendChild(renderUnavailable('评论服务不可用'));
+			}
+		}
+
+		function setSubmitting(state) {
+			isSubmitting = state;
+			submitBtn.disabled = state;
+			submitBtn.textContent = state ? '提交中...' : '提交评论';
+		}
+
+		async function submitComment() {
+			if (isSubmitting) return;
+			var content = contentInput.value.trim();
+			if (!content) {
+				setStatus('请输入评论内容', 'error');
+				return;
+			}
+			if (content.length > 2000) { content = content.substring(0, 2000); }
+			var author = (authorInput.value || '').trim();
+			if (author.length > 50) { author = author.substring(0, 50); }
+
+			setSubmitting(true);
+			setStatus('', '');
+
+			try {
+				var resp = await fetch(getApiUrl('/api/comments'), {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						slug: getSlug(),
+						author: author,
+						content: content,
+					}),
+				});
+
+				if (!resp.ok) {
+					var data;
+					try { data = await resp.json(); } catch (e) { data = {}; }
+					if (resp.status === 429) {
+						setStatus('请求太频繁了，请稍后再试 🌊', 'error');
+					} else {
+						setStatus(data.error || '提交失败，请重试', 'error');
+					}
+				} else {
+					var comment = await resp.json();
+					setStatus('评论发表成功！', 'success');
+					contentInput.value = '';
+					// Insert new comment at the top of the list
+					var emptyEl = commentList.querySelector('.comment-empty');
+					if (emptyEl) emptyEl.remove();
+					var unavailableEl = commentList.querySelector('.comment-unavailable');
+					if (unavailableEl) unavailableEl.remove();
+					commentList.insertBefore(renderComment(comment), commentList.firstChild);
+					commentList.firstChild.scrollIntoView({ behavior: 'smooth', block: 'center' });
+				}
+			} catch (e) {
+				setStatus('评论服务不可用，请稍后重试', 'error');
+			}
+
+			setSubmitting(false);
+		}
+
+		// Load comments on page load
+		loadComments();
+
+		// Submit button
+		submitBtn.addEventListener('click', submitComment);
+
+		// Ctrl/Cmd+Enter to submit, Enter for newline
+		contentInput.addEventListener('keydown', function (e) {
+			if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+				e.preventDefault();
+				submitComment();
+			}
+		});
+	})();
+</script>

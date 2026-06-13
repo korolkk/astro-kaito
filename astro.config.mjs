@@ -9,6 +9,13 @@ export default defineConfig({
 	site: 'https://kaitolab.net',
 	base: process.env.BASE_URL || '/',
 	integrations: [mdx(), sitemap()],
+	vite: {
+		server: {
+			proxy: {
+				'/api': 'http://localhost:3001',
+			},
+		},
+	},
 	fonts: [
 		{
 			provider: fontProviders.local(),

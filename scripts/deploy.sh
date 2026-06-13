@@ -56,6 +56,8 @@ ok "Nginx 已重载"
 # --------------- 4. 更新 API Bridge ---------------
 step "4/4  更新 API Bridge"
 cd "$API_DIR" || fail "无法进入 $API_DIR"
+echo ">> mkdir -p /opt/api-bridge/data ..."
+mkdir -p /opt/api-bridge/data
 cp -n .env.example .env 2>/dev/null || true
 echo ">> npm install --omit=dev ..."
 npm install --omit=dev
