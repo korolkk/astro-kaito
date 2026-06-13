@@ -420,10 +420,15 @@ async function runDeploy() {
     console.log('[deploy] === 同步部署脚本 ===');
     run(`cp ${REPO_DIR}/scripts/deploy.sh /opt/deploy.sh`, REPO_DIR);
 
+    // 清理残留进程 + 释放页缓存，防止 OOM
+    console.log('[deploy] === 清理内存 ===');
+    run('pkill -f "npm" 2>/dev/null || true', REPO_DIR);
+    run('sync && echo 3 > /proc/sys/vm/drop_caches 2>/dev/null || true', REPO_DIR);
+
     console.log('[deploy] === 安装依赖 ===');
-    run('NODE_OPTIONS="--max-old-space-size=512" npm ci', REPO_DIR);
+    run('NODE_OPTIONS="--max-old-space-size=384" npm install', REPO_DIR);
     console.log('[deploy] === 构建站点 ===');
-    run('NODE_OPTIONS="--max-old-space-size=512" BASE_URL=/ npm run build', REPO_DIR);
+    run('NODE_OPTIONS="--max-old-space-size=384" BASE_URL=/ npm run build', REPO_DIR);
     const distCheck = execSync(`ls ${REPO_DIR}/dist/ | wc -l`, { encoding: 'utf8' }).trim();
     if (distCheck === '0') {
       throw new Error(`构建失败：${REPO_DIR}/dist/ 目录为空`);

@@ -34,11 +34,18 @@ ok "代码已更新到 $(git log --oneline -1)"
 # --------------- 2. 安装依赖 + 构建 ---------------
 step "2/4  安装依赖 + 构建站点"
 
-# 限制 Node 内存，防止小内存服务器 OOM
-export NODE_OPTIONS="--max-old-space-size=512"
+# 清理残留进程 + 释放缓存，防止小内存服务器 OOM
+echo ">> 清理残留进程..."
+pkill -f "npm" 2>/dev/null || true
+sleep 2
+sync && echo 3 > /proc/sys/vm/drop_caches 2>/dev/null || true
 
-echo ">> npm ci ..."
-npm ci
+# 限制 Node 堆内存 384MB（服务器只有 1.8GB）
+export NODE_OPTIONS="--max-old-space-size=384"
+
+# 用 npm install 而非 npm ci —— ci 会全量重装，内存峰值太高
+echo ">> npm install ..."
+npm install
 echo ">> BASE_URL=/ npm run build ..."
 BASE_URL=/ npm run build
 
