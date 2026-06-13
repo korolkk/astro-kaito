@@ -417,6 +417,9 @@ async function runDeploy() {
     run('git fetch origin main', REPO_DIR);
     run('git reset --hard origin/main', REPO_DIR);
 
+    console.log('[deploy] === 同步部署脚本 ===');
+    run(`cp ${REPO_DIR}/scripts/deploy.sh /opt/deploy.sh`, REPO_DIR);
+
     console.log('[deploy] === 安装依赖 ===');
     run('npm ci', REPO_DIR);
     console.log('[deploy] === 构建站点 ===');

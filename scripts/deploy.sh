@@ -65,6 +65,11 @@ echo ">> systemctl restart api-bridge ..."
 systemctl restart api-bridge
 ok "API Bridge 已重启"
 
+# --------------- 5. 同步部署脚本到 /opt/ ---------------
+echo ">> cp scripts/deploy.sh /opt/deploy.sh ..."
+cp "$REPO_DIR/scripts/deploy.sh" /opt/deploy.sh
+ok "deploy.sh 已同步到 /opt/deploy.sh"
+
 # --------------- 完成 ---------------
 echo ""
 echo -e "${GREEN}╔════════════════════════════════╗${NC}"
