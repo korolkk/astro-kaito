@@ -421,9 +421,9 @@ async function runDeploy() {
     run(`cp ${REPO_DIR}/scripts/deploy.sh /opt/deploy.sh`, REPO_DIR);
 
     console.log('[deploy] === 安装依赖 ===');
-    run('npm ci', REPO_DIR);
+    run('NODE_OPTIONS="--max-old-space-size=512" npm ci', REPO_DIR);
     console.log('[deploy] === 构建站点 ===');
-    run('BASE_URL=/ npm run build', REPO_DIR);
+    run('NODE_OPTIONS="--max-old-space-size=512" BASE_URL=/ npm run build', REPO_DIR);
     const distCheck = execSync(`ls ${REPO_DIR}/dist/ | wc -l`, { encoding: 'utf8' }).trim();
     if (distCheck === '0') {
       throw new Error(`构建失败：${REPO_DIR}/dist/ 目录为空`);
@@ -437,7 +437,7 @@ async function runDeploy() {
     console.log('[deploy] === 更新 API Bridge ===');
     run('mkdir -p /opt/api-bridge/data', REPO_DIR);
     run('cp -n .env.example .env 2>/dev/null || true', '/opt/api-bridge');
-    run('npm install --omit=dev', '/opt/api-bridge');
+    run('NODE_OPTIONS="--max-old-space-size=512" npm install --omit=dev', '/opt/api-bridge');
     run('systemctl restart api-bridge', REPO_DIR);
 
     console.log('[deploy] ✅ 部署完成');

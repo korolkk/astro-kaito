@@ -33,6 +33,10 @@ ok "代码已更新到 $(git log --oneline -1)"
 
 # --------------- 2. 安装依赖 + 构建 ---------------
 step "2/4  安装依赖 + 构建站点"
+
+# 限制 Node 内存，防止小内存服务器 OOM
+export NODE_OPTIONS="--max-old-space-size=512"
+
 echo ">> npm ci ..."
 npm ci
 echo ">> BASE_URL=/ npm run build ..."
@@ -60,7 +64,7 @@ echo ">> mkdir -p /opt/api-bridge/data ..."
 mkdir -p /opt/api-bridge/data
 cp -n .env.example .env 2>/dev/null || true
 echo ">> npm install --omit=dev ..."
-npm install --omit=dev
+NODE_OPTIONS="--max-old-space-size=512" npm install --omit=dev
 echo ">> systemctl restart api-bridge ..."
 systemctl restart api-bridge
 ok "API Bridge 已重启"
