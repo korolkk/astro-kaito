@@ -44,6 +44,13 @@ pkill -f "npm" 2>/dev/null || true
 sleep 1
 sync && echo 3 > /proc/sys/vm/drop_caches 2>/dev/null || true
 
+# 检查内存是否充足（VS Code Server 常占 ~1GB，构建前请关闭 VS Code 远程连接）
+AVAIL_MEM=$(awk '/MemAvailable/ {printf "%d", $2/1024}' /proc/meminfo)
+if [ "$AVAIL_MEM" -lt 800 ]; then
+    warn "可用内存仅 ${AVAIL_MEM}MB，构建可能失败"
+    echo "  建议：关闭 VS Code 远程连接后再执行部署"
+fi
+
 # 限制 Node 堆内存 256MB（服务器只有 1.8GB，构建时 API Bridge 已停）
 export NODE_OPTIONS="--max-old-space-size=256"
 
