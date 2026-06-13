@@ -441,6 +441,8 @@ async function runDeploy() {
     run('systemctl reload nginx', REPO_DIR);
 
     console.log('[deploy] === 更新 API Bridge ===');
+    // 同步 repo 中的 api-bridge 目录到 /opt/api-bridge/（排除 node_modules）
+    run(`rsync -a --exclude='node_modules' ${REPO_DIR}/api-bridge/ /opt/api-bridge/`, REPO_DIR);
     run('mkdir -p /opt/api-bridge/data', REPO_DIR);
     run('cp -n .env.example .env 2>/dev/null || true', '/opt/api-bridge');
     run('NODE_OPTIONS="--max-old-space-size=512" npm install --omit=dev', '/opt/api-bridge');

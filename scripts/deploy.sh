@@ -77,6 +77,11 @@ ok "Nginx 已重载"
 
 # --------------- 4. 更新 API Bridge ---------------
 step "4/4  更新 API Bridge"
+
+# 同步 repo 中的 api-bridge 目录到 /opt/api-bridge/（排除 node_modules）
+echo ">> rsync $REPO_DIR/api-bridge/ → $API_DIR/ ..."
+rsync -a --exclude='node_modules' "$REPO_DIR/api-bridge/" "$API_DIR/"
+
 cd "$API_DIR" || fail "无法进入 $API_DIR"
 echo ">> mkdir -p /opt/api-bridge/data ..."
 mkdir -p /opt/api-bridge/data
