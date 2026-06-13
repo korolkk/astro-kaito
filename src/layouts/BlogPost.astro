@@ -535,6 +535,154 @@ const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nex
 				30% { transform: translateY(-6px); opacity: 1; }
 			}
 
+			/* ----- Markdown content inside bubbles ----- */
+			.ai-qa-bubble h1,
+			.ai-qa-bubble h2,
+			.ai-qa-bubble h3,
+			.ai-qa-bubble h4,
+			.ai-qa-bubble h5,
+			.ai-qa-bubble h6,
+			.comment-content h1,
+			.comment-content h2,
+			.comment-content h3,
+			.comment-content h4,
+			.comment-content h5,
+			.comment-content h6 {
+				margin: 0.8em 0 0.4em 0;
+				line-height: 1.3;
+				color: inherit;
+			}
+			.ai-qa-bubble h1, .comment-content h1 { font-size: 1.4em; }
+			.ai-qa-bubble h2, .comment-content h2 { font-size: 1.25em; }
+			.ai-qa-bubble h3, .comment-content h3 { font-size: 1.1em; }
+			.ai-qa-bubble h4, .comment-content h4 { font-size: 1em; }
+
+			.ai-qa-bubble p,
+			.comment-content p {
+				margin: 0.5em 0;
+			}
+			.ai-qa-bubble p:first-child,
+			.comment-content p:first-child {
+				margin-top: 0;
+			}
+			.ai-qa-bubble p:last-child,
+			.comment-content p:last-child {
+				margin-bottom: 0;
+			}
+
+			/* Inline code */
+			.ai-qa-bubble code,
+			.comment-content code {
+				padding: 0.15em 0.4em;
+				font-size: 0.88em;
+				background: rgba(var(--accent-rgb), 0.1);
+				border-radius: 3px;
+				font-family: 'Courier New', Courier, monospace;
+				word-break: break-word;
+			}
+
+			/* Fenced code blocks */
+			.ai-qa-bubble pre,
+			.comment-content pre {
+				margin: 0.6em 0;
+				padding: 0.8em 1em;
+				background: rgba(var(--black), 0.06);
+				border-radius: 8px;
+				overflow-x: auto;
+				font-size: 0.82em;
+				line-height: 1.5;
+			}
+			[data-theme='dark'] .ai-qa-bubble pre,
+			[data-theme='dark'] .comment-content pre {
+				background: rgba(255, 255, 255, 0.06);
+			}
+			.ai-qa-bubble pre code,
+			.comment-content pre code {
+				padding: 0;
+				background: none;
+				font-size: inherit;
+				border-radius: 0;
+			}
+
+			/* Lists */
+			.ai-qa-bubble ul,
+			.ai-qa-bubble ol,
+			.comment-content ul,
+			.comment-content ol {
+				margin: 0.4em 0;
+				padding-left: 1.5em;
+			}
+			.ai-qa-bubble li,
+			.comment-content li {
+				margin: 0.2em 0;
+				line-height: 1.55;
+			}
+
+			/* Blockquotes */
+			.ai-qa-bubble blockquote,
+			.comment-content blockquote {
+				margin: 0.5em 0;
+				padding: 0.3em 0 0.3em 0.8em;
+				border-left: 3px solid var(--accent);
+				color: inherit;
+				opacity: 0.85;
+				font-size: 0.92em;
+			}
+
+			/* Links */
+			.ai-qa-bubble a,
+			.comment-content a {
+				color: var(--accent);
+				text-decoration: underline;
+				word-break: break-all;
+			}
+
+			/* Tables */
+			.ai-qa-bubble table,
+			.comment-content table {
+				width: 100%;
+				margin: 0.5em 0;
+				border-collapse: collapse;
+				font-size: 0.85em;
+			}
+			.ai-qa-bubble th,
+			.ai-qa-bubble td,
+			.comment-content th,
+			.comment-content td {
+				padding: 0.4em 0.7em;
+				border: 1px solid rgb(var(--gray-light));
+				text-align: left;
+			}
+			.ai-qa-bubble th,
+			.comment-content th {
+				background: rgba(var(--accent-rgb), 0.08);
+				font-weight: 600;
+			}
+
+			/* Horizontal rule */
+			.ai-qa-bubble hr,
+			.comment-content hr {
+				border: none;
+				border-top: 1px solid rgb(var(--gray-light));
+				margin: 0.8em 0;
+			}
+
+			/* Task lists */
+			.ai-qa-bubble input[type='checkbox'],
+			.comment-content input[type='checkbox'] {
+				margin-right: 0.35em;
+				vertical-align: middle;
+			}
+
+			.ai-qa-bubble strong,
+			.comment-content strong {
+				font-weight: 700;
+			}
+			.ai-qa-bubble em,
+			.comment-content em {
+				font-style: italic;
+			}
+
 			@media (max-width: 600px) {
 				.post-nav {
 					flex-direction: column;
@@ -679,6 +827,77 @@ const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nex
 		<Footer />
 	</body>
 </html>
+
+<script is:inline src="https://cdn.jsdelivr.net/npm/marked@15.0.4/marked.min.js">
+</script>
+
+<script is:inline>
+	// Shared markdown rendering utilities (available to subsequent scripts via window.__mdUtils)
+	window.__mdUtils = (function () {
+		'use strict';
+
+		function escapeHtml(text) {
+			return String(text)
+				.replace(/&/g, '&amp;')
+				.replace(/</g, '&lt;')
+				.replace(/>/g, '&gt;')
+				.replace(/"/g, '&quot;')
+				.replace(/'/g, '&#39;');
+		}
+
+		function sanitizeMarkdownSource(text) {
+			if (!text) return '';
+			// Protect fenced code blocks
+			var blocks = [];
+			text = text.replace(/```[\s\S]*?```/g, function (m) {
+				blocks.push(m);
+				return '\x00CB' + (blocks.length - 1) + '\x00';
+			});
+			// Protect inline code
+			var inlines = [];
+			text = text.replace(/`[^`]+`/g, function (m) {
+				inlines.push(m);
+				return '\x00IC' + (inlines.length - 1) + '\x00';
+			});
+			// Escape HTML in the rest
+			text = text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+			// Restore
+			text = text.replace(/\x00CB(\d+)\x00/g, function (_, i) { return blocks[+i]; });
+			text = text.replace(/\x00IC(\d+)\x00/g, function (_, i) { return inlines[+i]; });
+			return text;
+		}
+
+		// Configure marked for safe links
+		if (typeof marked !== 'undefined') {
+			marked.use({
+				extensions: [{
+					name: 'safe-link',
+					renderer: {
+						link: function (token) {
+							var href = token.href || '';
+							if (/^(https?:|mailto:|\/|#)/i.test(href)) return false;
+							return token.text || href;
+						}
+					}
+				}]
+			});
+		}
+
+		function renderMarkdown(text) {
+			if (!text) return '';
+			if (typeof marked === 'undefined') {
+				return escapeHtml(text).replace(/\n/g, '<br>');
+			}
+			try {
+				return marked.parse(sanitizeMarkdownSource(text), { breaks: true, gfm: true });
+			} catch (e) {
+				return escapeHtml(text).replace(/\n/g, '<br>');
+			}
+		}
+
+		return { renderMarkdown: renderMarkdown, escapeHtml: escapeHtml };
+	})();
+</script>
 
 <script is:inline>
 	(function () {
@@ -852,7 +1071,7 @@ const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nex
 			var label = cid(document.createElement('span'));
 			var bubble = cid(document.createElement('div'));
 			bubble.className = 'ai-qa-bubble';
-			bubble.textContent = text;
+			bubble.innerHTML = window.__mdUtils.renderMarkdown(text);
 			slot.appendChild(bubble);
 		}
 
@@ -1050,7 +1269,7 @@ const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nex
 
 			var contentDiv = cid(document.createElement('div'));
 			contentDiv.className = 'comment-content';
-			contentDiv.textContent = c.content;
+			contentDiv.innerHTML = window.__mdUtils.renderMarkdown(c.content);
 
 			body.appendChild(meta);
 			body.appendChild(contentDiv);
