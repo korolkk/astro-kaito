@@ -119,6 +119,80 @@ Astro 6 默认将 `.astro` 组件中的 `<script>` 处理为 `<script type="modu
 - **响应式**：≤800px 隐藏封面列，≤500px 缩窄日期列
 - 标签数据从 `getCollection('blog')` 的结果中提取：`[...new Set(posts.flatMap(p => p.data.tags || []))].sort()`
 
+### 13. Astro Scoped CSS 与动态 DOM 元素（关键坑）
+Astro 的 `<style>` 标签编译后会生成 `data-astro-cid-HASH` 属性选择器，但 `document.createElement()` 创建的元素**不会自动获得**这个属性，导致 scoped 样式对动态元素**完全不生效**。
+
+- **判断方法**：scoped 的 class 写在 CSS 里但浏览器 DevTools 中元素没有对应样式 → 一定是缺了 cid 属性
+- **修复**：遍历父元素的 attributes，找到以 `data-astro-cid` 开头的属性名，然后用 `setAttribute` 应用到所有动态元素
+
+```js
+var CID = '';
+(function () {
+    var root = document.getElementById('mySection');
+    if (!root) return;
+    for (var i = 0; i < root.attributes.length; i++) {
+        if (root.attributes[i].name.indexOf('data-astro-cid') === 0) {
+            CID = root.attributes[i].name; break;
+        }
+    }
+})();
+function cid(el) { if (CID) el.setAttribute(CID, ''); return el; }
+
+// 所有动态创建的元素都包一层 cid()
+var div = cid(document.createElement('div'));
+div.className = 'my-scoped-class'; // 现在样式会生效
+```
+
+- **注意**：不能用 `getAttribute('data-astro-cid')` 直接读取，因为实际属性名是 `data-astro-cid-xxxxx`（带随机后缀），必须遍历查找前缀匹配
+
+### 14. 评论系统与动态功能的架构模式
+站点是纯 SSG（`output: 'static'`），所有需要服务端的功能（评论、AI 聊天、问答、部署 webhook）必须走独立的 **API Bridge**：
+
+- **API Bridge**：Express.js 服务，部署在 `/opt/api-bridge/`，监听 `127.0.0.1:3001`
+- **生产环境**：Nginx 将 `/api/*` 代理到 `http://127.0.0.1:3001`
+- **本地开发**：Astro dev server（:4321）和 API Bridge（:3001）端口不同，需在 `astro.config.mjs` 中添加 Vite proxy：
+
+```js
+vite: {
+    server: {
+        proxy: { '/api': 'http://localhost:3001' },
+    },
+},
+```
+
+- **API 不可用处理**：前端 fetch 必须处理 404（`resp.status === 404` → 显示"服务未配置"）、429（限流）、网络异常（`catch` → "服务不可用"）
+- **安全**：所有 API 端点独立限流（`express-rate-limit`），评论内容用 `textContent` 渲染防 XSS，服务端做长度截断兜底
+- **新增 API 端点**：在 `api-bridge/server.js` 中添加路由 + 限流器，部署脚本已自动处理依赖安装和服务重启
+
+### 15. SQLite 选型：sql.js vs better-sqlite3
+- **`better-sqlite3`**：Node 原生扩展，同步 API，性能好，但需要本地编译（node-gyp + C++ 工具链）。预编译二进制不一定覆盖所有 Node 版本/平台（比如 Node 24 on Windows 就没有）
+- **`sql.js`**：纯 WASM 实现，零编译，跨平台通吃。代价是整个数据库加载到内存，写操作后需手动持久化：
+
+```js
+import initSqlJs from 'sql.js';
+const SQL = await initSqlJs();
+const db = new SQL.Database(buffer); // 从磁盘加载
+// ... 操作 ...
+const data = db.export();
+writeFileSync(dbPath, Buffer.from(data)); // 写回磁盘
+```
+
+- **本项目选择 sql.js**：优先保证"任何环境 clone 下来都能跑"，牺牲一点性能换取零配置。评论量不大的场景完全够用
+
+### 16. `mkdir -p` 幂等性（部署脚本安全）
+`mkdir -p`（Linux）和 `mkdirSync(path, { recursive: true })`（Node.js）在目录已存在时静默跳过，不报错。部署脚本中放心使用，不会因为重复执行产生冲突。
+
+### 17. Windows 下 node_modules 文件锁定
+Windows 上 `rm -rf node_modules` 经常失败（`EBUSY: resource busy or locked`），原因是后台 Node 进程或杀毒软件持有文件句柄。
+- **修复**：先 `taskkill /F /IM node.exe` 关闭所有 Node 进程，再删除
+- **验证安装**：`npm install` 超时或无响应时，检查是否有残留 node 进程
+
+### 18. Git 提交前检查清单
+- `api-bridge/data/` 目录（测试数据库文件）**不能提交**，已在 `.gitignore` 中排除
+- 构建产物 `dist/` 不能提交
+- `node_modules/` 不能提交
+- `.env` 文件（含真实密钥）不能提交，只提交 `.env.example` 模板
+
 ## 站点配置
 
 全局常量（`SITE_TITLE`、`SITE_DESCRIPTION`）定义在 `src/consts.ts` 中。`astro.config.mjs` 中的 `site` URL 应在上线前从 `https://example.com` 改为实际域名。
