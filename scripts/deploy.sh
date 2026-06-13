@@ -34,14 +34,18 @@ ok "代码已更新到 $(git log --oneline -1)"
 # --------------- 2. 安装依赖 + 构建 ---------------
 step "2/4  安装依赖 + 构建站点"
 
-# 清理残留进程 + 释放缓存，防止小内存服务器 OOM
-echo ">> 清理残留进程..."
-pkill -f "npm" 2>/dev/null || true
+# 暂停 API Bridge，释放 Node 内存给构建用
+echo ">> 暂停 API Bridge..."
+systemctl stop api-bridge 2>/dev/null || true
 sleep 2
+
+# 清理残留 + 释放页缓存
+pkill -f "npm" 2>/dev/null || true
+sleep 1
 sync && echo 3 > /proc/sys/vm/drop_caches 2>/dev/null || true
 
-# 限制 Node 堆内存 384MB（服务器只有 1.8GB）
-export NODE_OPTIONS="--max-old-space-size=384"
+# 限制 Node 堆内存 256MB（服务器只有 1.8GB，构建时 API Bridge 已停）
+export NODE_OPTIONS="--max-old-space-size=256"
 
 # 用 npm install 而非 npm ci —— ci 会全量重装，内存峰值太高
 echo ">> npm install ..."
@@ -73,8 +77,8 @@ cp -n .env.example .env 2>/dev/null || true
 echo ">> npm install --omit=dev ..."
 NODE_OPTIONS="--max-old-space-size=512" npm install --omit=dev
 echo ">> systemctl restart api-bridge ..."
-systemctl restart api-bridge
-ok "API Bridge 已重启"
+systemctl restart api-bridge 2>/dev/null || systemctl start api-bridge
+ok "API Bridge 已启动"
 
 # --------------- 5. 同步部署脚本到 /opt/ ---------------
 echo ">> cp scripts/deploy.sh /opt/deploy.sh ..."
