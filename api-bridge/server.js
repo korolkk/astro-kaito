@@ -18,7 +18,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'fs';
 import express from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
-import { execSync } from 'child_process';
+import { execSync, spawn } from 'child_process';
 
 const app = express();
 const PORT = parseInt(process.env.PORT, 10) || 3001;
@@ -174,6 +174,29 @@ const SYSTEM_PROMPT = `你是 Kaito 的 AI 分身，运行在 KaitoHub（kaitohu
 app.use(cors());
 app.use(express.json({ limit: '50kb' }));
 app.use(globalLimiter);
+
+// ======================
+// 微信通知（通过 OpenClaw CLI 发送，需在服务器上设置 ENABLE_WEIXIN_NOTIFY=true）
+// ======================
+const ENABLE_WEIXIN_NOTIFY = process.env.ENABLE_WEIXIN_NOTIFY === 'true';
+const WEIXIN_TARGET = process.env.WEIXIN_TARGET || '';
+
+function notifyWeChat(msg) {
+  if (!ENABLE_WEIXIN_NOTIFY) return;
+  try {
+    const args = ['message', 'send', '--channel', 'openclaw-weixin', '--target', WEIXIN_TARGET, '--message', msg];
+    const child = spawn('openclaw', args, { stdio: 'ignore' });
+    const timer = setTimeout(() => { child.kill('SIGTERM'); }, 10_000);
+    child.on('error', (err) => console.error('[notify] 微信通知失败:', err.message));
+    child.on('close', (code) => {
+      clearTimeout(timer);
+      if (code === 0) console.log('[notify] 微信通知已发送');
+      else console.error('[notify] 微信通知失败, exit code:', code);
+    });
+  } catch (err) {
+    console.error('[notify] 微信通知异常:', err.message);
+  }
+}
 
 // ======================
 // GET /api/health
@@ -373,6 +396,11 @@ app.post('/api/comments', commentLimiter, (req, res) => {
     );
 
     res.status(201).json(rows[0]);
+
+    // 异步通知有新评论（仅 ENABLE_WEIXIN_NOTIFY=true 时生效）
+    const articleSlug = rows[0].slug || slug;
+    const preview = trimmedContent.length > 100 ? trimmedContent.substring(0, 100) + '…' : trimmedContent;
+    notifyWeChat('\u{1F4AC} 新评论\n' + (trimmedAuthor || '匿名') + ' 在 kaitohub.com/' + articleSlug + ' 留言：\n' + preview);
   } catch (err) {
     console.error('[comments] error:', err.message);
     res.status(500).json({ error: '提交评论失败' });
