@@ -984,9 +984,8 @@ async function runDeploy() {
     console.log('[deploy] === 同步部署脚本 ===');
     run(`cp ${REPO_DIR}/scripts/deploy.sh /opt/deploy.sh`, REPO_DIR);
 
-    // 暂停 API Bridge 释放内存 + 清理残留 + 释放页缓存
+    // 清理残留进程 + 释放页缓存
     console.log('[deploy] === 清理内存 ===');
-    run('systemctl stop api-bridge 2>/dev/null || true', REPO_DIR);
     run('pkill -f "npm" 2>/dev/null || true', REPO_DIR);
     run('sync && echo 3 > /proc/sys/vm/drop_caches 2>/dev/null || true', REPO_DIR);
 

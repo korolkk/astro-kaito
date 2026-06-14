@@ -34,10 +34,6 @@ ok "代码已更新到 $(git log --oneline -1)"
 # --------------- 2. 安装依赖 + 构建 ---------------
 step "2/4  安装依赖 + 构建站点"
 
-# 暂停 API Bridge，释放 Node 内存给构建用
-echo ">> 暂停 API Bridge..."
-systemctl stop api-bridge 2>/dev/null || true
-sleep 2
 
 # 清理残留 + 释放页缓存
 pkill -f "npm" 2>/dev/null || true
