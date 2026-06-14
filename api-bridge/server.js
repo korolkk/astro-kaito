@@ -161,12 +161,12 @@ const GLOBAL_LIMIT = parseInt(process.env.GLOBAL_RATE_LIMIT, 10) || 60;
 const rateLimitMessage = (limit) =>
   `请求太频繁了，每分钟最多 ${limit} 次，请稍后再试 🌊`;
 
-const globalLimiter = rateLimit({
+const adminLimiter = rateLimit({
   windowMs: 60_000,
-  max: GLOBAL_LIMIT,
+  max: 120,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: rateLimitMessage(GLOBAL_LIMIT) },
+  message: { error: '操作太频繁，请稍后再试' },
 });
 
 const chatLimiter = rateLimit({
@@ -341,7 +341,14 @@ const SYSTEM_PROMPT = `你是 Kaito 的 AI 分身，运行在 KaitoHub（kaitohu
 // ======================
 app.use(cors());
 app.use(express.json({ limit: '50kb' }));
-app.use(globalLimiter);
+app.use(/^\/api\/(?!admin|auth)/, rateLimit({
+  windowMs: 60_000,
+  max: GLOBAL_LIMIT,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: rateLimitMessage(GLOBAL_LIMIT) },
+}));
+app.use('/api/admin', adminLimiter);
 app.use(parseCookies);
 
 // 定期清理过期 session
