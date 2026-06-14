@@ -548,6 +548,15 @@ A.esc = function (s) {
 };
 
 console.log('[admin] shared utils initialized');
+
+// 统一 API 错误处理：429/401 时给明确提示
+A.apiFetch = function (url, opts) {
+	return fetch(url, opts).then(function (r) {
+		if (r.status === 429) { A.toast('操作太频繁，请稍后再试', 'error'); throw new Error('rate_limited'); }
+		if (r.status === 401) { A.toast('会话已过期，请刷新页面重新登录', 'error'); throw new Error('unauthorized'); }
+		return r;
+	});
+};
 </script>
 
 <script is:inline>
@@ -648,7 +657,7 @@ console.log('[admin] shared utils initialized');
 // ===== Stats Tab =====
 (function () {
 	A.loadStats = function () {
-		fetch(A.api('/api/admin/stats')).then(function (r) { return r.json(); }).then(function (d) {
+		A.apiFetch(A.api('/api/admin/stats')).then(function (r) { return r.json(); }).then(function (d) {
 			var grid = document.getElementById('statsGrid');
 			grid.innerHTML = '';
 			var cards = [
@@ -695,7 +704,7 @@ console.log('[admin] shared utils initialized');
 	function _load() {
 		var params = 'page=' + page + '&limit=20&sort=' + sort + '&order=' + order + '&filter=' + filter;
 		if (slugFilter) params += '&slug=' + encodeURIComponent(slugFilter);
-		fetch(A.api('/api/admin/comments?' + params)).then(function (r) { return r.json(); }).then(function (d) {
+		A.apiFetch(A.api('/api/admin/comments?' + params)).then(function (r) { return r.json(); }).then(function (d) {
 			_renderTable(d.comments);
 			_renderPagination(d);
 		}).catch(function () { A.toast('加载评论失败', 'error'); });
@@ -792,7 +801,7 @@ console.log('[admin] shared utils initialized');
 	A.loadArticles = function () { closeEditor(); _loadList(); };
 
 	function _loadList() {
-		fetch(A.api('/api/admin/articles')).then(function (r) { return r.json(); }).then(function (d) {
+		A.apiFetch(A.api('/api/admin/articles')).then(function (r) { return r.json(); }).then(function (d) {
 			var tbody = document.querySelector('#articlesTbl tbody');
 			tbody.innerHTML = '';
 			if (!d.articles || !d.articles.length) {
@@ -885,7 +894,7 @@ console.log('[admin] shared utils initialized');
 	function _load() {
 		var params = 'page=' + page + '&limit=50';
 		if (typeFilter) params += '&type=' + typeFilter;
-		fetch(A.api('/api/admin/chat-logs?' + params)).then(function (r) { return r.json(); }).then(function (d) {
+		A.apiFetch(A.api('/api/admin/chat-logs?' + params)).then(function (r) { return r.json(); }).then(function (d) {
 			_renderTable(d.logs); _renderPagination(d);
 		}).catch(function () { A.toast('加载对话记录失败', 'error'); });
 	}
