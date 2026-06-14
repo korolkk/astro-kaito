@@ -1,0 +1,953 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+---
+
+<!doctype html>
+<html lang="zh-CN">
+	<head>
+		<BaseHead title="管理后台" description="KaitoHub Admin Panel" />
+		<style>
+			main {
+				width: calc(100% - 2em);
+				max-width: 1140px;
+				margin: 0 auto;
+				padding: 2em 1em;
+			}
+			/* Login form */
+			.admin-login {
+				max-width: 380px;
+				margin: 4em auto;
+				text-align: center;
+			}
+			.admin-login h1 {
+				font-size: 1.5em;
+				margin-bottom: 1em;
+				color: rgb(var(--black));
+			}
+			.admin-login input {
+				width: 100%;
+				padding: 0.7em 1em;
+				border: 1px solid rgb(var(--gray-light));
+				border-radius: 12px;
+				font-family: inherit;
+				font-size: 0.95em;
+				background: rgb(var(--gray-light));
+				color: rgb(var(--black));
+				outline: none;
+				transition: border-color 0.15s ease;
+				margin-bottom: 0.8em;
+				box-sizing: border-box;
+			}
+			.admin-login input:focus {
+				border-color: var(--accent);
+			}
+			.admin-login .login-btn {
+				width: 100%;
+				padding: 0.7em;
+				border: none;
+				border-radius: 12px;
+				background: var(--accent);
+				color: #fff;
+				font-family: inherit;
+				font-size: 0.95em;
+				font-weight: 600;
+				cursor: pointer;
+				transition: opacity 0.15s ease;
+			}
+			.admin-login .login-btn:hover { opacity: 0.85; }
+			.admin-login .login-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+			.login-error {
+				color: #dc3545;
+				font-size: 0.85em;
+				margin-top: 0.5em;
+				min-height: 1.2em;
+			}
+
+			/* Admin panel */
+			.admin-panel { display: none; }
+
+			/* Tabs */
+			.admin-tabs {
+				display: flex;
+				gap: 0;
+				border-bottom: 2px solid rgb(var(--gray-light));
+				margin-bottom: 1.5em;
+				flex-wrap: wrap;
+				align-items: flex-end;
+			}
+			.admin-tab {
+				padding: 0.7em 1.3em;
+				border: none;
+				background: none;
+				color: rgb(var(--gray));
+				font-family: inherit;
+				font-size: 0.95em;
+				cursor: pointer;
+				border-bottom: 3px solid transparent;
+				margin-bottom: -2px;
+				transition: all 0.2s ease;
+			}
+			.admin-tab:hover { color: rgb(var(--black)); }
+			.admin-tab.active {
+				color: var(--accent);
+				border-bottom-color: var(--accent);
+				font-weight: 600;
+			}
+			.admin-logout-btn {
+				margin-left: auto;
+				padding: 0.4em 1em !important;
+				border: 1px solid rgb(var(--gray-light)) !important;
+				border-radius: 8px;
+				background: var(--card-bg);
+				color: rgb(var(--gray-dark));
+				font-family: inherit;
+				font-size: 0.85em;
+				cursor: pointer;
+				transition: all 0.2s ease;
+				border-bottom: 1px solid rgb(var(--gray-light)) !important;
+				margin-bottom: 0 !important;
+			}
+			.admin-logout-btn:hover {
+				border-color: #dc3545 !important;
+				color: #dc3545;
+			}
+
+			/* Tables */
+			.admin-table-wrap { overflow-x: auto; }
+			.admin-table {
+				width: 100%;
+				border-collapse: collapse;
+				font-size: 0.85em;
+			}
+			.admin-table th {
+				text-align: left;
+				padding: 0.7em 0.8em;
+				color: rgb(var(--gray));
+				font-weight: 600;
+				border-bottom: 2px solid rgb(var(--gray-light));
+				cursor: pointer;
+				user-select: none;
+				white-space: nowrap;
+			}
+			.admin-table th:hover { color: var(--accent); }
+			.admin-table th .sort-arrow { font-size: 0.75em; margin-left: 2px; }
+			.admin-table td {
+				padding: 0.6em 0.8em;
+				border-bottom: 1px solid rgb(var(--gray-light));
+				vertical-align: top;
+			}
+			.admin-table tr:hover td {
+				background: rgba(var(--accent-rgb), 0.03);
+			}
+			.admin-table .col-narrow { width: 1%; white-space: nowrap; }
+			.admin-table .col-content { max-width: 300px; }
+			.content-preview {
+				max-width: 300px;
+				overflow: hidden;
+				text-overflow: ellipsis;
+				white-space: nowrap;
+			}
+
+			/* Stats grid */
+			.admin-stats-grid {
+				display: grid;
+				grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+				gap: 1em;
+				margin-bottom: 2em;
+			}
+			.admin-stat-card {
+				background: var(--card-bg);
+				border-radius: 14px;
+				padding: 1.3em;
+				box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+				text-align: center;
+			}
+			.admin-stat-value {
+				font-size: 2em;
+				font-weight: 700;
+				color: var(--accent);
+			}
+			.admin-stat-label {
+				font-size: 0.82em;
+				color: rgb(var(--gray));
+				margin-top: 0.3em;
+			}
+
+			/* Badges */
+			.admin-badge {
+				display: inline-block;
+				padding: 0.2em 0.6em;
+				border-radius: 999px;
+				font-size: 0.78em;
+				font-weight: 600;
+			}
+			.admin-badge-ok {
+				background: rgba(40, 167, 69, 0.1);
+				color: #28a745;
+			}
+			.admin-badge-pending {
+				background: rgba(220, 53, 69, 0.08);
+				color: #dc3545;
+			}
+			.admin-badge-chat {
+				background: rgba(var(--accent-rgb), 0.1);
+				color: var(--accent);
+			}
+			.admin-badge-qa {
+				background: rgba(99, 102, 241, 0.1);
+				color: #6366f1;
+			}
+
+			/* Buttons */
+			.admin-btn {
+				padding: 0.35em 0.8em;
+				border: 1px solid rgb(var(--gray-light));
+				border-radius: 8px;
+				background: var(--card-bg);
+				color: rgb(var(--gray-dark));
+				font-family: inherit;
+				font-size: 0.82em;
+				cursor: pointer;
+				transition: all 0.15s ease;
+			}
+			.admin-btn:hover { border-color: var(--accent); color: var(--accent); }
+			.admin-btn-danger { color: #dc3545; }
+			.admin-btn-danger:hover { border-color: #dc3545; background: rgba(220,53,69,0.05); }
+			.admin-btn-sm { padding: 0.2em 0.5em; font-size: 0.75em; }
+			.admin-btn-accent {
+				background: var(--accent);
+				color: #fff;
+				border-color: var(--accent);
+			}
+			.admin-btn-accent:hover { opacity: 0.85; }
+
+			/* Filter bar */
+			.admin-filter-bar {
+				display: flex;
+				gap: 0.5em;
+				margin-bottom: 1em;
+				flex-wrap: wrap;
+				align-items: center;
+			}
+			.admin-filter-bar select,
+			.admin-filter-bar input {
+				padding: 0.4em 0.7em;
+				border: 1px solid rgb(var(--gray-light));
+				border-radius: 8px;
+				font-family: inherit;
+				font-size: 0.85em;
+				background: rgb(var(--gray-light));
+				color: rgb(var(--black));
+				outline: none;
+			}
+			.admin-filter-bar select:focus,
+			.admin-filter-bar input:focus {
+				border-color: var(--accent);
+			}
+
+			/* Pagination */
+			.admin-pagination {
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				gap: 0.4em;
+				margin-top: 1em;
+			}
+			.admin-page-btn {
+				padding: 0.35em 0.8em;
+				border: 1px solid rgb(var(--gray-light));
+				border-radius: 8px;
+				background: var(--card-bg);
+				color: rgb(var(--gray-dark));
+				cursor: pointer;
+				font-family: inherit;
+				font-size: 0.85em;
+				transition: all 0.15s ease;
+			}
+			.admin-page-btn:hover { border-color: var(--accent); color: var(--accent); }
+			.admin-page-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+			.admin-page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+			.admin-page-info { font-size: 0.85em; color: rgb(var(--gray)); }
+
+			/* Editor */
+			.admin-editor { display: none; }
+			.admin-editor label {
+				display: block;
+				font-size: 0.85em;
+				font-weight: 600;
+				color: rgb(var(--gray-dark));
+				margin-bottom: 0.3em;
+				margin-top: 0.8em;
+			}
+			.admin-editor input[type="text"],
+			.admin-editor textarea {
+				width: 100%;
+				padding: 0.55em 0.8em;
+				border: 1px solid rgb(var(--gray-light));
+				border-radius: 10px;
+				font-family: inherit;
+				font-size: 0.88em;
+				background: rgb(var(--gray-light));
+				color: rgb(var(--black));
+				outline: none;
+				box-sizing: border-box;
+				transition: border-color 0.15s ease;
+			}
+			.admin-editor input[type="text"]:focus,
+			.admin-editor textarea:focus { border-color: var(--accent); }
+			.admin-editor textarea {
+				min-height: 350px;
+				font-family: 'Courier New', Courier, monospace;
+				font-size: 0.85em;
+				line-height: 1.6;
+				resize: vertical;
+			}
+			.admin-editor-actions {
+				display: flex;
+				gap: 0.5em;
+				margin-top: 1em;
+				flex-wrap: wrap;
+			}
+
+			/* Chat log detail */
+			.admin-log-detail {
+				display: none;
+				background: rgb(var(--gray-light));
+				border-radius: 8px;
+				padding: 0.8em;
+				margin-top: 0.4em;
+				font-size: 0.83em;
+				line-height: 1.6;
+				white-space: pre-wrap;
+				word-break: break-word;
+				max-width: 600px;
+			}
+			.admin-log-detail.open { display: block; }
+			.admin-log-row { cursor: pointer; }
+
+			/* Section headers */
+			.admin-section-title {
+				font-size: 1.1em;
+				font-weight: 600;
+				color: rgb(var(--black));
+				margin-bottom: 0.8em;
+			}
+
+			/* Toast */
+			.admin-toast {
+				position: fixed;
+				bottom: 2em;
+				right: 2em;
+				z-index: 200;
+				padding: 0.7em 1.3em;
+				border-radius: 10px;
+				font-size: 0.88em;
+				color: #fff;
+				font-weight: 500;
+				transition: opacity 0.3s ease;
+				box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+				max-width: 350px;
+			}
+			.admin-toast-success { background: #28a745; }
+			.admin-toast-error { background: #dc3545; }
+			.admin-toast-info { background: var(--accent); }
+
+			/* Spinner */
+			.admin-spinner {
+				display: inline-block;
+				width: 1em;
+				height: 1em;
+				border: 2px solid rgb(var(--gray-light));
+				border-top-color: var(--accent);
+				border-radius: 50%;
+				animation: admin-spin 0.6s linear infinite;
+				vertical-align: middle;
+				margin-right: 0.3em;
+			}
+			@keyframes admin-spin { to { transform: rotate(360deg); } }
+
+			.admin-loading {
+				text-align: center;
+				padding: 3em 0;
+				color: rgb(var(--gray));
+				font-size: 0.9em;
+			}
+			.admin-empty {
+				text-align: center;
+				padding: 2em 0;
+				color: rgb(var(--gray));
+				font-size: 0.9em;
+			}
+
+			@media (max-width: 768px) {
+				main { padding: 1em 0.5em; }
+				.admin-tabs { gap: 0.2em; }
+				.admin-tab { padding: 0.5em 0.7em; font-size: 0.85em; }
+				.admin-logout-btn { margin-left: 0.3em; }
+				.admin-stats-grid { grid-template-columns: repeat(2, 1fr); }
+				.admin-table { font-size: 0.78em; }
+				.admin-table th, .admin-table td { padding: 0.4em 0.5em; }
+			}
+		</style>
+	</head>
+	<body>
+		<Header />
+		<main id="adminRoot">
+			<div id="adminLogin" class="admin-login">
+				<h1>管理后台</h1>
+				<input type="password" id="loginPassword" placeholder="请输入管理密码" autocomplete="current-password" />
+				<button class="login-btn" id="loginBtn">登 录</button>
+				<div class="login-error" id="loginError"></div>
+				<button class="admin-btn" id="clearSessionBtn" style="margin-top:1em;display:none;">清除会话重新登录</button>
+			</div>
+
+			<div id="adminPanel" class="admin-panel">
+				<nav class="admin-tabs" id="adminTabs">
+					<button class="admin-tab active" data-tab="stats">统计</button>
+					<button class="admin-tab" data-tab="comments">评论</button>
+					<button class="admin-tab" data-tab="articles">文章</button>
+					<button class="admin-tab" data-tab="chatlogs">对话记录</button>
+					<button class="admin-logout-btn" id="adminLogout">登出</button>
+				</nav>
+
+				<!-- Stats Tab -->
+				<div id="tabStats" class="admin-tab-content">
+					<div class="admin-stats-grid" id="statsGrid"></div>
+					<div class="admin-section-title">近期评论</div>
+					<div class="admin-table-wrap">
+						<table class="admin-table" id="recentCommentsTbl">
+							<thead><tr><th>文章</th><th>作者</th><th>内容</th><th>时间</th><th>状态</th></tr></thead>
+							<tbody></tbody>
+						</table>
+					</div>
+				</div>
+
+				<!-- Comments Tab -->
+				<div id="tabComments" class="admin-tab-content" style="display:none;">
+					<div class="admin-filter-bar">
+						<select id="commentFilter"><option value="all">全部</option><option value="approved">已通过</option><option value="pending">待审核</option></select>
+						<input type="text" id="commentSlugFilter" placeholder="按 slug 筛选" />
+						<button class="admin-btn" id="commentFilterBtn">筛选</button>
+					</div>
+					<div class="admin-table-wrap">
+						<table class="admin-table" id="commentsTbl">
+							<thead><tr>
+								<th data-sort="slug">文章 <span class="sort-arrow"></span></th>
+								<th data-sort="author">作者 <span class="sort-arrow"></span></th>
+								<th>内容</th>
+								<th data-sort="created_at">时间 <span class="sort-arrow"></span></th>
+								<th>状态</th>
+								<th>操作</th>
+							</tr></thead>
+							<tbody></tbody>
+						</table>
+					</div>
+					<div class="admin-pagination" id="commentsPagination"></div>
+				</div>
+
+				<!-- Articles Tab -->
+				<div id="tabArticles" class="admin-tab-content" style="display:none;">
+					<div class="admin-table-wrap" id="articleListWrap">
+						<table class="admin-table" id="articlesTbl">
+							<thead><tr><th>标题</th><th>Slug</th><th>日期</th><th>标签</th><th>操作</th></tr></thead>
+							<tbody></tbody>
+						</table>
+					</div>
+					<div class="admin-editor" id="articleEditor">
+						<label for="editTitle">标题</label>
+						<input type="text" id="editTitle" />
+						<label for="editSlug">Slug（不可修改）</label>
+						<input type="text" id="editSlug" readonly style="opacity:0.6;" />
+						<label for="editDesc">描述</label>
+						<input type="text" id="editDesc" />
+						<label for="editDate">发布日期</label>
+						<input type="text" id="editDate" placeholder="YYYY-MM-DD 或原始格式" />
+						<label for="editTags">标签（逗号分隔）</label>
+						<input type="text" id="editTags" />
+						<label for="editContent">正文（Markdown）</label>
+						<textarea id="editContent"></textarea>
+						<div class="admin-editor-actions">
+							<button class="admin-btn admin-btn-accent" id="saveArticleBtn">保存文章</button>
+							<button class="admin-btn" id="cancelEditBtn">取消</button>
+							<button class="admin-btn admin-btn-accent" id="deploySiteBtn" style="margin-left:auto;">🚀 触发部署</button>
+						</div>
+					</div>
+				</div>
+
+				<!-- Chat Logs Tab -->
+				<div id="tabChatLogs" class="admin-tab-content" style="display:none;">
+					<div class="admin-filter-bar">
+						<select id="chatLogTypeFilter"><option value="">全部</option><option value="chat">自由聊天</option><option value="article-qa">文章问答</option></select>
+						<button class="admin-btn" id="chatLogFilterBtn">筛选</button>
+					</div>
+					<div class="admin-table-wrap">
+						<table class="admin-table" id="chatLogsTbl">
+							<thead><tr><th>类型</th><th>文章</th><th>用户消息</th><th>AI 回复</th><th>IP</th><th>时间</th></tr></thead>
+							<tbody></tbody>
+						</table>
+					</div>
+					<div class="admin-pagination" id="chatLogsPagination"></div>
+				</div>
+			</div>
+		</main>
+		<Footer />
+	</body>
+</html>
+
+<script is:inline>
+// ===== 全局 admin 命名空间 =====
+window.__admin = window.__admin || {};
+var A = window.__admin;
+
+// CID helper for Astro scoped styles
+(function () {
+	var root = document.getElementById('adminRoot');
+	if (!root) return;
+	for (var i = 0; i < root.attributes.length; i++) {
+		if (root.attributes[i].name.indexOf('data-astro-cid') === 0) { A._cid = root.attributes[i].name; break; }
+	}
+})();
+A.cid = function (el) { if (A._cid) el.setAttribute(A._cid, ''); return el; };
+
+// API URL helper
+A._apiBase = '';
+A.api = function (path) {
+	if (!A._apiBase) {
+		var header = document.querySelector('header');
+		var base = (header && header.dataset.baseUrl) || '/';
+		A._apiBase = base.replace(/\/?$/, '');
+	}
+	return A._apiBase + path;
+};
+
+// Toast
+A.toast = function (msg, type) {
+	var toast = A.cid(document.createElement('div'));
+	toast.className = 'admin-toast admin-toast-' + (type || 'info');
+	toast.textContent = msg;
+	document.body.appendChild(toast);
+	setTimeout(function () { toast.style.opacity = '0'; setTimeout(function () { toast.remove(); }, 300); }, 3000);
+};
+
+// Time formatter
+A.fmtTime = function (dateStr) {
+	try {
+		var d = new Date(dateStr.replace(' ', 'T'));
+		if (isNaN(d.getTime())) return dateStr;
+		return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0') + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+	} catch(e) { return dateStr; }
+};
+
+// HTML escape
+A.esc = function (s) {
+	var d = A.cid(document.createElement('div'));
+	d.textContent = s || '';
+	return d.innerHTML;
+};
+
+console.log('[admin] shared utils initialized');
+</script>
+
+<script is:inline>
+// ===== Auth =====
+(function () {
+	var loginDiv = document.getElementById('adminLogin');
+	var panel = document.getElementById('adminPanel');
+	var pwInput = document.getElementById('loginPassword');
+	var loginBtn = document.getElementById('loginBtn');
+	var loginErr = document.getElementById('loginError');
+	var logoutBtn = document.getElementById('adminLogout');
+
+	console.log('[admin] auth elements:', {loginDiv: !!loginDiv, panel: !!panel, loginBtn: !!loginBtn});
+
+	A.showLogin = function () {
+		loginDiv.style.display = '';
+		panel.style.display = 'none';
+		document.getElementById('clearSessionBtn').style.display = '';
+			console.log('[admin] showLogin called');
+	};
+	A.showPanel = function () {
+		loginDiv.style.display = 'none';
+		panel.style.display = '';
+		document.getElementById('clearSessionBtn').style.display = 'none';
+			console.log('[admin] showPanel called, panel.style.display =', panel.style.display);
+	};
+
+	// Check auth on load
+	fetch(A.api('/api/auth/check')).then(function (r) {
+		console.log('[admin] auth check status:', r.status);
+		if (r.ok) { A.showPanel(); A.switchTab('stats'); }
+		else { A.showLogin(); }
+	}).catch(function (e) { console.log('[admin] auth check error:', e); A.showLogin(); });
+
+	// Login
+	loginBtn.addEventListener('click', function () {
+		var pw = pwInput.value;
+		if (!pw) { loginErr.textContent = '请输入密码'; return; }
+		loginBtn.disabled = true;
+		loginErr.textContent = '';
+		console.log('[admin] sending login request...');
+		fetch(A.api('/api/auth/login'), {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ password: pw }),
+		}).then(function (r) { return r.json().then(function (d) { return {ok: r.ok, data: d}; }); })
+		.then(function (r) {
+			console.log('[admin] login response:', r.ok, r.data);
+			if (r.ok) { A.showPanel(); A.switchTab('stats'); }
+			else { loginErr.textContent = r.data.error || '登录失败'; }
+		}).catch(function (e) { console.log('[admin] login error:', e); loginErr.textContent = '网络错误'; })
+		.finally(function () { loginBtn.disabled = false; });
+	});
+
+	pwInput.addEventListener('keydown', function (e) {
+		if (e.key === 'Enter') loginBtn.click();
+		});
+
+		logoutBtn.addEventListener('click', function () {
+			fetch(A.api('/api/auth/logout'), { method: 'POST' }).then(function () { A.showLogin(); });
+		});
+
+		document.getElementById('clearSessionBtn').addEventListener('click', function () {
+			fetch(A.api('/api/auth/logout'), { method: 'POST' }).then(function () {
+				location.reload();
+			});
+		});
+	})();
+</script>
+
+<script is:inline>
+// ===== Tab switching =====
+(function () {
+	var tabs = document.querySelectorAll('#adminTabs .admin-tab');
+
+	A.switchTab = function (name) {
+		console.log('[admin] switchTab:', name);
+		document.querySelectorAll('.admin-tab-content').forEach(function (el) { el.style.display = 'none'; });
+		tabs.forEach(function (t) { t.classList.remove('active'); });
+		var cap = name.charAt(0).toUpperCase() + name.slice(1);
+		var tabEl = document.getElementById('tab' + cap);
+		if (tabEl) tabEl.style.display = '';
+		var btn = document.querySelector('#adminTabs [data-tab="' + name + '"]');
+		if (btn) btn.classList.add('active');
+		if (name === 'stats') A.loadStats();
+		if (name === 'comments') A.loadComments();
+		if (name === 'articles') A.loadArticles();
+		if (name === 'chatlogs') A.loadChatLogs();
+	};
+
+	tabs.forEach(function (tab) {
+		tab.addEventListener('click', function () { A.switchTab(tab.dataset.tab); });
+	});
+})();
+</script>
+
+<script is:inline>
+// ===== Stats Tab =====
+(function () {
+	A.loadStats = function () {
+		fetch(A.api('/api/admin/stats')).then(function (r) { return r.json(); }).then(function (d) {
+			var grid = document.getElementById('statsGrid');
+			grid.innerHTML = '';
+			var cards = [
+				{ v: d.commentTotal, l: '评论总数' },
+				{ v: d.commentApproved, l: '已通过' },
+				{ v: d.commentPending, l: '待审核' },
+				{ v: d.articleCount, l: '文章数' },
+				{ v: d.chatLogCount, l: '自由聊天' },
+				{ v: d.qaLogCount, l: '文章问答' },
+			];
+			cards.forEach(function (c) {
+				var card = A.cid(document.createElement('div'));
+				card.className = 'admin-stat-card';
+				card.innerHTML = '<div class="admin-stat-value">' + c.v + '</div><div class="admin-stat-label">' + c.l + '</div>';
+				grid.appendChild(card);
+			});
+
+			var tbody = document.querySelector('#recentCommentsTbl tbody');
+			tbody.innerHTML = '';
+			if (d.recentComments && d.recentComments.length) {
+				d.recentComments.forEach(function (c) {
+					var tr = A.cid(document.createElement('tr'));
+					var badge = c.approved ? '<span class="admin-badge admin-badge-ok">已通过</span>' : '<span class="admin-badge admin-badge-pending">待审核</span>';
+					tr.innerHTML = '<td>' + A.esc(c.slug) + '</td><td>' + A.esc(c.author || '匿名') + '</td><td><span class="content-preview">' + A.esc(c.content.substring(0,60)) + '</span></td><td class="col-narrow">' + A.fmtTime(c.created_at) + '</td><td class="col-narrow">' + badge + '</td>';
+					tbody.appendChild(tr);
+				});
+			} else {
+				var tr = A.cid(document.createElement('tr'));
+				tr.innerHTML = '<td colspan="5" class="admin-empty">暂无评论</td>';
+				tbody.appendChild(tr);
+			}
+		}).catch(function () { A.toast('加载统计数据失败', 'error'); });
+	};
+})();
+</script>
+
+<script is:inline>
+// ===== Comments Tab =====
+(function () {
+	var page = 1, sort = 'created_at', order = 'desc', filter = 'all', slugFilter = '';
+
+	A.loadComments = function () { page = 1; _load(); };
+
+	function _load() {
+		var params = 'page=' + page + '&limit=20&sort=' + sort + '&order=' + order + '&filter=' + filter;
+		if (slugFilter) params += '&slug=' + encodeURIComponent(slugFilter);
+		fetch(A.api('/api/admin/comments?' + params)).then(function (r) { return r.json(); }).then(function (d) {
+			_renderTable(d.comments);
+			_renderPagination(d);
+		}).catch(function () { A.toast('加载评论失败', 'error'); });
+	}
+
+	function _renderTable(comments) {
+		var tbody = document.querySelector('#commentsTbl tbody');
+		tbody.innerHTML = '';
+		if (!comments || !comments.length) {
+			var tr = A.cid(document.createElement('tr'));
+			tr.innerHTML = '<td colspan="6" class="admin-empty">暂无评论</td>';
+			tbody.appendChild(tr); return;
+		}
+		comments.forEach(function (c) {
+			var tr = A.cid(document.createElement('tr'));
+			var badge = c.approved ? '<span class="admin-badge admin-badge-ok">已通过</span>' : '<span class="admin-badge admin-badge-pending">待审核</span>';
+			var toggleLabel = c.approved ? '驳回' : '通过';
+			tr.innerHTML =
+				'<td>' + A.esc(c.slug) + '</td>' +
+				'<td class="col-narrow">' + A.esc(c.author || '匿名') + '</td>' +
+				'<td class="col-content"><span class="content-preview">' + A.esc(c.content.substring(0, 80)) + '</span></td>' +
+				'<td class="col-narrow">' + A.fmtTime(c.created_at) + '</td>' +
+				'<td class="col-narrow">' + badge + '</td>' +
+				'<td class="col-narrow">' +
+					'<button class="admin-btn admin-btn-sm toggle-btn" data-id="' + c.id + '" data-approve="' + (c.approved ? 0 : 1) + '">' + toggleLabel + '</button> ' +
+					'<button class="admin-btn admin-btn-sm admin-btn-danger delete-btn" data-id="' + c.id + '">删除</button>' +
+				'</td>';
+			tbody.appendChild(tr);
+		});
+		tbody.querySelectorAll('.toggle-btn').forEach(function (btn) {
+			btn.addEventListener('click', function () {
+				var id = btn.dataset.id, appr = parseInt(btn.dataset.approve, 10);
+				fetch(A.api('/api/admin/comments/' + id), {
+					method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ approved: appr }),
+				}).then(function (r) { return r.json(); }).then(function (d) {
+					if (d.error) { A.toast(d.error, 'error'); return; }
+					A.toast(appr ? '评论已通过' : '评论已驳回', 'success'); _load();
+				}).catch(function () { A.toast('操作失败', 'error'); });
+			});
+		});
+		tbody.querySelectorAll('.delete-btn').forEach(function (btn) {
+			btn.addEventListener('click', function () {
+				if (!confirm('确定要删除这条评论吗？')) return;
+				fetch(A.api('/api/admin/comments/' + btn.dataset.id), { method: 'DELETE' })
+				.then(function (r) { return r.json(); }).then(function (d) {
+					if (d.error) { A.toast(d.error, 'error'); return; }
+					A.toast('评论已删除', 'success'); _load();
+				}).catch(function () { A.toast('删除失败', 'error'); });
+			});
+		});
+	}
+
+	function _renderPagination(d) {
+		var div = document.getElementById('commentsPagination');
+		div.innerHTML = '';
+		if (d.totalPages <= 1) return;
+		var info = A.cid(document.createElement('span'));
+		info.className = 'admin-page-info';
+		info.textContent = '第 ' + d.page + ' / ' + d.totalPages + ' 页（共 ' + d.total + ' 条）';
+		div.appendChild(info);
+		for (var i = 1; i <= d.totalPages; i++) {
+			(function (p) {
+				var btn = A.cid(document.createElement('button'));
+				btn.className = 'admin-page-btn' + (p === d.page ? ' active' : '');
+				btn.textContent = p;
+				btn.addEventListener('click', function () { page = p; _load(); });
+				div.appendChild(btn);
+			})(i);
+		}
+	}
+
+	document.querySelectorAll('#commentsTbl th[data-sort]').forEach(function (th) {
+		th.addEventListener('click', function () {
+			var s = th.dataset.sort;
+			if (sort === s) { order = order === 'desc' ? 'asc' : 'desc'; }
+			else { sort = s; order = 'desc'; }
+			_load();
+		});
+	});
+	document.getElementById('commentFilterBtn').addEventListener('click', function () {
+		filter = document.getElementById('commentFilter').value;
+		slugFilter = document.getElementById('commentSlugFilter').value.trim();
+		page = 1; _load();
+	});
+})();
+</script>
+
+<script is:inline>
+// ===== Articles Tab =====
+(function () {
+	var currentSlug = '';
+
+	A.loadArticles = function () { closeEditor(); _loadList(); };
+
+	function _loadList() {
+		fetch(A.api('/api/admin/articles')).then(function (r) { return r.json(); }).then(function (d) {
+			var tbody = document.querySelector('#articlesTbl tbody');
+			tbody.innerHTML = '';
+			if (!d.articles || !d.articles.length) {
+				var tr = A.cid(document.createElement('tr'));
+				tr.innerHTML = '<td colspan="5" class="admin-empty">未找到文章</td>';
+				tbody.appendChild(tr); return;
+			}
+			d.articles.forEach(function (a) {
+				var tr = A.cid(document.createElement('tr'));
+				var tagsHtml = (a.tags || []).map(function (t) { return '<span class="admin-badge admin-badge-chat" style="margin-right:0.2em;">' + A.esc(t) + '</span>'; }).join('');
+				tr.innerHTML =
+					'<td>' + A.esc(a.title) + '</td>' +
+					'<td>' + A.esc(a.slug) + '</td>' +
+					'<td class="col-narrow">' + A.esc(a.pubDate || '') + '</td>' +
+					'<td>' + tagsHtml + '</td>' +
+					'<td class="col-narrow"><button class="admin-btn admin-btn-sm edit-btn" data-slug="' + A.esc(a.slug) + '">编辑</button></td>';
+				tbody.appendChild(tr);
+			});
+			tbody.querySelectorAll('.edit-btn').forEach(function (btn) {
+				btn.addEventListener('click', function () { _openEditor(btn.dataset.slug); });
+			});
+		}).catch(function () { A.toast('加载文章列表失败', 'error'); });
+	}
+
+	function _openEditor(slug) {
+		currentSlug = slug;
+		fetch(A.api('/api/admin/articles/' + encodeURIComponent(slug))).then(function (r) { return r.json(); }).then(function (d) {
+			if (d.error) { A.toast(d.error, 'error'); return; }
+			document.getElementById('editTitle').value = d.frontmatter.title || '';
+			document.getElementById('editSlug').value = d.slug;
+			document.getElementById('editDesc').value = d.frontmatter.description || '';
+			document.getElementById('editDate').value = d.frontmatter.pubDate || '';
+			document.getElementById('editTags').value = (d.frontmatter.tags || []).join(', ');
+			document.getElementById('editContent').value = d.content || '';
+			document.getElementById('articleListWrap').style.display = 'none';
+			document.getElementById('articleEditor').style.display = '';
+		}).catch(function () { A.toast('加载文章失败', 'error'); });
+	}
+
+	function closeEditor() {
+		document.getElementById('articleListWrap').style.display = '';
+		document.getElementById('articleEditor').style.display = 'none';
+		currentSlug = '';
+	}
+
+	document.getElementById('saveArticleBtn').addEventListener('click', function () {
+		if (!currentSlug) return;
+		var btn = document.getElementById('saveArticleBtn');
+		btn.disabled = true; btn.textContent = '保存中...';
+		var frontmatter = {
+			title: document.getElementById('editTitle').value.trim(),
+			description: document.getElementById('editDesc').value.trim(),
+			pubDate: document.getElementById('editDate').value.trim(),
+			tags: document.getElementById('editTags').value.split(',').map(function (t) { return t.trim(); }).filter(Boolean),
+		};
+		var content = document.getElementById('editContent').value;
+		if (!frontmatter.title) { A.toast('标题不能为空', 'error'); btn.disabled = false; btn.textContent = '保存文章'; return; }
+		fetch(A.api('/api/admin/articles/' + encodeURIComponent(currentSlug)), {
+			method: 'PUT', headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ frontmatter: frontmatter, content: content }),
+		}).then(function (r) { return r.json(); }).then(function (d) {
+			if (d.error) { A.toast(d.error, 'error'); }
+			else { A.toast('文章已保存', 'success'); closeEditor(); _loadList(); }
+		}).catch(function () { A.toast('保存失败', 'error'); })
+		.finally(function () { btn.disabled = false; btn.textContent = '保存文章'; });
+	});
+
+	document.getElementById('cancelEditBtn').addEventListener('click', closeEditor);
+
+	document.getElementById('deploySiteBtn').addEventListener('click', function () {
+		if (!confirm('确定要触发重新部署吗？')) return;
+		var btn = document.getElementById('deploySiteBtn');
+		btn.disabled = true; btn.textContent = '部署中...';
+		fetch(A.api('/api/admin/deploy'), { method: 'POST' }).then(function (r) { return r.json(); }).then(function (d) {
+			if (d.error) { A.toast(d.error, 'error'); }
+			else { A.toast('部署已触发，请等待 3-5 分钟后刷新验证', 'success'); }
+		}).catch(function () { A.toast('触发部署失败', 'error'); })
+		.finally(function () { btn.disabled = false; btn.textContent = '🚀 触发部署'; });
+	});
+})();
+</script>
+
+<script is:inline>
+// ===== Chat Logs Tab =====
+(function () {
+	var page = 1, typeFilter = '';
+
+	A.loadChatLogs = function () { page = 1; _load(); };
+
+	function _load() {
+		var params = 'page=' + page + '&limit=50';
+		if (typeFilter) params += '&type=' + typeFilter;
+		fetch(A.api('/api/admin/chat-logs?' + params)).then(function (r) { return r.json(); }).then(function (d) {
+			_renderTable(d.logs); _renderPagination(d);
+		}).catch(function () { A.toast('加载对话记录失败', 'error'); });
+	}
+
+	function _renderTable(logs) {
+		var tbody = document.querySelector('#chatLogsTbl tbody');
+		tbody.innerHTML = '';
+		if (!logs || !logs.length) {
+			var tr = A.cid(document.createElement('tr'));
+			tr.innerHTML = '<td colspan="6" class="admin-empty">暂无记录</td>';
+			tbody.appendChild(tr); return;
+		}
+		logs.forEach(function (l) {
+			var tr = A.cid(document.createElement('tr'));
+			tr.className = 'admin-log-row';
+			var typeBadge = l.type === 'article-qa' ? '<span class="admin-badge admin-badge-qa">问答</span>' : '<span class="admin-badge admin-badge-chat">聊天</span>';
+			var article = l.article_title || l.slug || '-';
+			var detailId = 'log-detail-' + l.id;
+			tr.innerHTML =
+				'<td class="col-narrow">' + typeBadge + '</td>' +
+				'<td class="col-narrow">' + A.esc(article) + '</td>' +
+				'<td class="col-content"><span class="content-preview">' + A.esc((l.user_message || '').substring(0, 60)) + '</span></td>' +
+				'<td class="col-content"><span class="content-preview">' + A.esc((l.ai_reply || '').substring(0, 60)) + '</span></td>' +
+				'<td class="col-narrow">' + A.esc(l.ip || '') + '</td>' +
+				'<td class="col-narrow">' + A.fmtTime(l.created_at) + '</td>';
+			var detailRow = A.cid(document.createElement('tr'));
+			detailRow.className = 'admin-log-detail-row';
+			detailRow.innerHTML = '<td colspan="6"><div class="admin-log-detail" id="' + detailId + '"><strong>用户消息:</strong>\n' + A.esc(l.user_message || '') + '\n\n<strong>AI 回复:</strong>\n' + A.esc(l.ai_reply || '') + '</div></td>';
+			detailRow.style.display = 'none';
+			tr.addEventListener('click', function () {
+				var detail = document.getElementById(detailId);
+				var row = detail.parentElement.parentElement;
+				if (row.style.display === 'none') { row.style.display = ''; detail.classList.add('open'); }
+				else { row.style.display = 'none'; detail.classList.remove('open'); }
+			});
+			tbody.appendChild(tr);
+			tbody.appendChild(detailRow);
+		});
+	}
+
+	function _renderPagination(d) {
+		var div = document.getElementById('chatLogsPagination');
+		div.innerHTML = '';
+		if (d.totalPages <= 1) return;
+		var info = A.cid(document.createElement('span'));
+		info.className = 'admin-page-info';
+		info.textContent = '第 ' + d.page + ' / ' + d.totalPages + ' 页（共 ' + d.total + ' 条）';
+		div.appendChild(info);
+		for (var i = 1; i <= d.totalPages; i++) {
+			(function (p) {
+				var btn = A.cid(document.createElement('button'));
+				btn.className = 'admin-page-btn' + (p === d.page ? ' active' : '');
+				btn.textContent = p;
+				btn.addEventListener('click', function () { page = p; _load(); });
+				div.appendChild(btn);
+			})(i);
+		}
+	}
+
+	document.getElementById('chatLogFilterBtn').addEventListener('click', function () {
+		typeFilter = document.getElementById('chatLogTypeFilter').value;
+		page = 1; _load();
+	});
+})();
+</script>
