@@ -353,7 +353,7 @@ app.get('/api/comments', (req, res) => {
     }
 
     const comments = queryAll(
-      'SELECT id, slug, author, content, created_at FROM comments WHERE slug = ? AND approved = 1 ORDER BY created_at ASC',
+      'SELECT id, slug, author, content, created_at FROM comments WHERE slug = ? AND approved = 1 ORDER BY created_at DESC',
       [slug]
     );
 
@@ -402,7 +402,7 @@ app.post('/api/comments', commentLimiter, (req, res) => {
     // 异步通知有新评论（仅 ENABLE_WEIXIN_NOTIFY=true 时生效）
     const articleTitle = title || rows[0].slug || slug;
     const preview = trimmedContent.length > 100 ? trimmedContent.substring(0, 100) + '…' : trimmedContent;
-    notifyWeChat('\u{1F4AC} 新评论\n' + (trimmedAuthor || '匿名') + ' 在「' + articleTitle + '」留言：\n' + preview);
+    notifyWeChat('\u{1F4AC} 新评论\n' + (trimmedAuthor || '匿名') + ' 在「' + articleTitle + '」留言：\n' + preview + '\n🕐 ' + rows[0].created_at);
   } catch (err) {
     console.error('[comments] error:', err.message);
     res.status(500).json({ error: '提交评论失败' });

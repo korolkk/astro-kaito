@@ -1219,7 +1219,7 @@ const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nex
 
 		function formatTime(dateStr) {
 			try {
-				var d = new Date(dateStr + 'Z');
+				var d = new Date(dateStr.replace(' ', 'T'));
 				if (isNaN(d.getTime())) { d = new Date(dateStr); }
 				if (isNaN(d.getTime())) return dateStr;
 				var now = new Date();
@@ -1345,6 +1345,7 @@ const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nex
 						slug: getSlug(),
 						author: author,
 						content: content,
+						title: commentsSection.dataset.title || '',
 					}),
 				});
 
