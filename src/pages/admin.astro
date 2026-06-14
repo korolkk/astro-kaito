@@ -549,6 +549,11 @@ A.esc = function (s) {
 
 console.log('[admin] shared utils initialized');
 
+// 解析 tags：后端存的是 JSON 字符串，转成数组
+A._parseTags = function (tags) {
+	try { return JSON.parse(tags); } catch(e) { return []; }
+};
+
 // 统一 API 错误处理：429/401 时给明确提示
 A.apiFetch = function (url, opts) {
 	return fetch(url, opts).then(function (r) {
@@ -811,7 +816,7 @@ A.apiFetch = function (url, opts) {
 			}
 			d.articles.forEach(function (a) {
 				var tr = A.cid(document.createElement('tr'));
-				var tagsHtml = (a.tags || []).map(function (t) { return '<span class="admin-badge admin-badge-chat" style="margin-right:0.2em;">' + A.esc(t) + '</span>'; }).join('');
+				var tagsHtml = A._parseTags(a.tags).map(function (t) { return '<span class="admin-badge admin-badge-chat" style="margin-right:0.2em;">' + A.esc(t) + '</span>'; }).join('');
 				tr.innerHTML =
 					'<td>' + A.esc(a.title) + '</td>' +
 					'<td>' + A.esc(a.slug) + '</td>' +
