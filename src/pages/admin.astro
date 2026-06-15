@@ -864,7 +864,7 @@ A.apiFetch = function (url, opts) {
 				var ed = document.getElementById('articleEditor');
 				console.log('[admin] listWrap/editor:', {lw:!!lw, ed:!!ed});
 				if (lw) lw.style.display = 'none';
-				if (ed) { ed.style.display = ''; console.log('[admin] editor visible, display=', ed.style.display); }
+				if (ed) { ed.style.display = ''; console.log('[admin] editor visible, display=', ed.style.display, 'tabArticles display=', document.getElementById('tabArticles').style.display); }
 			}).catch(function (e) { console.error('[admin] _openEditor error:', e); A.toast('加载文章失败', 'error'); });
 	}
 
