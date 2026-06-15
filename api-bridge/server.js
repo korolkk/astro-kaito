@@ -892,7 +892,17 @@ app.put('/api/admin/articles/:slug', requireAuth, (req, res) => {
     const output = serializeMarkdownFile(newFm, content);
     writeFileSync(filePath, output, 'utf8');
 
-    res.json({ success: true, slug, filePath });
+	    // 自动提交到 Git 并推送
+	    try {
+	      const relPath = filePath.replace(REPO_DIR + '/', '');
+	      execSync('git add "' + relPath + '" && git commit -m "edit(admin): ' + slug + '" && git push',
+	        { cwd: REPO_DIR, encoding: 'utf8', timeout: 30_000 });
+	      console.log('[admin/articles] git push ok: ' + slug);
+	    } catch (e) {
+	      console.error('[admin/articles] git push failed:', (e.stderr || e.message).toString().substring(0, 200));
+	    }
+
+	    res.json({ success: true, slug, filePath });
   } catch (err) {
     console.error('[admin/articles] error:', err.message);
     res.status(500).json({ error: '保存文章失败' });
@@ -984,8 +994,7 @@ async function runDeploy() {
 
   try {
     console.log('[deploy] === 拉取代码 ===');
-    run('git fetch origin main', REPO_DIR);
-    run('git reset --hard origin/main', REPO_DIR);
+    run('git pull origin main', REPO_DIR);
 
     console.log('[deploy] === 同步部署脚本 ===');
     run(`cp ${REPO_DIR}/scripts/deploy.sh /opt/deploy.sh`, REPO_DIR);
