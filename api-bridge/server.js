@@ -991,9 +991,9 @@ async function runDeploy() {
     run(`cp ${REPO_DIR}/scripts/deploy.sh /opt/deploy.sh`, REPO_DIR);
 
     // 清理残留进程 + 释放页缓存
-    console.log('[deploy] === 清理内存 ===');
-    run('pkill -f "npm" 2>/dev/null || true', REPO_DIR);
-    run('sync && echo 3 > /proc/sys/vm/drop_caches 2>/dev/null || true', REPO_DIR);
+	    console.log('[deploy] === 清理内存 ===');
+	    try { run('pkill -f "npm" 2>/dev/null || true', REPO_DIR); } catch {}
+	    try { run('sync && echo 3 > /proc/sys/vm/drop_caches 2>/dev/null || true', REPO_DIR); } catch {}
 
     console.log('[deploy] === 安装依赖 ===');
     run('NODE_OPTIONS="--max-old-space-size=256" npm install', REPO_DIR);
