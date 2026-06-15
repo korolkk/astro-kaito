@@ -1,5 +1,5 @@
 ---
-title: "给博客接入 AI 聊天：OpenClaw 桥接方案从零搭建"
+title: "博客接入 AI 助手：OpenClaw 桥接方案从零搭建"
 description: "从架构设计到前端实现，完整记录在 Astro 静态博客中集成 OpenClaw AI 聊天和文章问答功能的全过程。"
 pubDate: "Jun 9 2026"
 heroImage: ../../assets/blog-placeholder-about.jpg
