@@ -451,7 +451,8 @@ import Header from '../components/Header.astro';
 				<div id="tabArticles" class="admin-tab-content" style="display:none;">
 					<div class="admin-table-wrap" id="articleListWrap">
 							<div style="display:flex;justify-content:flex-end;margin-bottom:0.6em;">
-								<button class="admin-btn admin-btn-accent" id="deploySiteBtn">🚀 触发部署</button>
+								<button class="admin-btn" id="previewSiteBtn">🔍 预览构建</button>
+									<button class="admin-btn admin-btn-accent" id="deploySiteBtn">🚀 触发部署</button>
 							</div>
 						<table class="admin-table" id="articlesTbl">
 							<thead><tr><th>标题</th><th>Slug</th><th>日期</th><th>标签</th><th>操作</th></tr></thead>
@@ -900,8 +901,19 @@ A.apiFetch = function (url, opts) {
 
 	document.getElementById('cancelEditBtn').addEventListener('click', closeEditor);
 
-	document.getElementById('deploySiteBtn').addEventListener('click', function () {
-		if (!confirm('确定要触发重新部署吗？')) return;
+	document.getElementById('previewSiteBtn').addEventListener('click', function () {
+			if (!confirm('预览构建将只执行 npm run build，不会重启服务。继续？')) return;
+			var btn = document.getElementById('previewSiteBtn');
+			btn.disabled = true; btn.textContent = '构建中...';
+			fetch(A.api('/api/admin/preview'), { method: 'POST' }).then(function (r) { return r.json(); }).then(function (d) {
+				if (d.error) { A.toast(d.error, 'error'); }
+				else { A.toast('预览构建已触发，build 完成后刷新页面查看效果', 'success'); }
+			}).catch(function () { A.toast('预览构建失败', 'error'); })
+			.finally(function () { btn.disabled = false; btn.textContent = '🔍 预览构建'; });
+		});
+
+		document.getElementById('deploySiteBtn').addEventListener('click', function () {
+		if (!confirm('确定要触发重新部署吗？这将重启 API Bridge。')) return;
 		var btn = document.getElementById('deploySiteBtn');
 		btn.disabled = true; btn.textContent = '部署中...';
 		fetch(A.api('/api/admin/deploy'), { method: 'POST' }).then(function (r) { return r.json(); }).then(function (d) {

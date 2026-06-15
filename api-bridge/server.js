@@ -909,6 +909,42 @@ app.put('/api/admin/articles/:slug', requireAuth, (req, res) => {
   }
 });
 
+// POST /api/admin/preview — 仅构建预览，不重启服务
+app.post('/api/admin/preview', requireAuth, async (req, res) => {
+  try {
+    res.json({ status: 'building', timestamp: new Date().toISOString() });
+
+    const run = (cmd, cwd) => {
+      console.log(`[preview] $ ${cmd}`);
+      return execSync(cmd, { cwd, encoding: 'utf8', timeout: 300_000 });
+    };
+
+    try {
+      console.log('[preview] === 拉取代码 ===');
+      run('git pull origin main', REPO_DIR);
+
+      console.log('[preview] === 安装依赖 ===');
+      run('NODE_OPTIONS="--max-old-space-size=256" npm install', REPO_DIR);
+
+      console.log('[preview] === 构建站点 ===');
+      run('NODE_OPTIONS="--max-old-space-size=256" BASE_URL=/ npm run build', REPO_DIR);
+      const distCheck = execSync(`ls ${REPO_DIR}/dist/ | wc -l`, { encoding: 'utf8' }).trim();
+      if (distCheck === '0') {
+        console.error('[preview] ❌ 构建失败：dist/ 目录为空');
+      } else {
+        console.log(`[preview] ✅ 预览构建完成，dist/ 包含 ${distCheck} 个文件/目录`);
+      }
+    } catch (err) {
+      console.error('[preview] ❌ 构建失败:', (err.stderr || err.message).toString().substring(0, 500));
+    }
+  } catch (err) {
+    console.error('[preview] error:', err.message);
+    if (!res.headersSent) {
+      res.status(500).json({ error: '预览构建失败: ' + err.message });
+    }
+  }
+});
+
 // POST /api/admin/deploy — 触发部署
 app.post('/api/admin/deploy', requireAuth, async (req, res) => {
   try {
