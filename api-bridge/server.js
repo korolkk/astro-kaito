@@ -759,16 +759,22 @@ app.get('/api/admin/stats', requireAuth, (req, res) => {
     const recentComments = queryAll(
       'SELECT id, slug, author, content, created_at, approved FROM comments ORDER BY created_at DESC LIMIT 5'
     );
-
-    // 文章数量（扫描文件系统）
-    let articleCount = 0;
-    try {
-      const result = execSync(
-        `find ${BLOG_CONTENT_DIR} -name "*.md" -o -name "*.mdx" 2>/dev/null | wc -l`,
-        { encoding: 'utf8', timeout: 5000 }
-      );
-      articleCount = parseInt(result.trim(), 10) || 0;
-    } catch { articleCount = 0; }
+	    // 文章数量（递归扫描目录，跨平台兼容）
+	    let articleCount = 0;
+	    try {
+	      function countMd(dir) {
+	        let n = 0;
+	        try {
+	          const entries = readdirSync(dir, { withFileTypes: true });
+	          for (const e of entries) {
+	            if (e.isDirectory()) n += countMd(join(dir, e.name));
+	            else if (/\.(md|mdx)$/.test(e.name)) n++;
+	          }
+	        } catch {}
+	        return n;
+	      }
+	      articleCount = countMd(BLOG_CONTENT_DIR);
+	    } catch { articleCount = 0; }
 
     res.json({
       commentTotal, commentApproved, commentPending,
