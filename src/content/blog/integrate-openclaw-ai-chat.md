@@ -2,10 +2,13 @@
 title: "给博客接入 AI 聊天：OpenClaw 桥接方案从零搭建"
 description: "从架构设计到前端实现，完整记录在 Astro 静态博客中集成 OpenClaw AI 聊天和文章问答功能的全过程。"
 pubDate: "Jun 9 2026"
-heroImage: "../../assets/blog-placeholder-about.jpg"
-tags: ["AI", "OpenClaw", "Astro", "Node.js"]
+heroImage: ../../assets/blog-placeholder-about.jpg
+tags:
+  - AI
+  - OpenClaw
+  - Astro
+  - Node.js
 ---
-
 ## 缘起
 
 博客搭好之后总觉得少了点什么。GitHub 热力图、数字滚动动画、打字机效果都加了，但都是"静态"的趣味功能。我想让博客真的能"对话"——访客可以问我博客里的内容，或者随便聊聊天。
@@ -109,10 +112,6 @@ location /api/ {
 ```
 
 前端用相对路径 `/api/chat` 发请求，无论 IP 还是域名都能正常工作。
-
-### CI 自动部署
-
-Bridge 的代码在仓库 `api-bridge/` 目录下，GitHub Actions 通过 webhook 触发服务器自主部署（详见另一篇文章《从 SSH 到 Webhook》）。每次推送后，服务器自动 `git pull` → 安装依赖 → 重启 Bridge，整个过程不到 30 秒。
 
 ## 总结
 

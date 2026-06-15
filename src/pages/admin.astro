@@ -450,6 +450,9 @@ import Header from '../components/Header.astro';
 				<!-- Articles Tab -->
 				<div id="tabArticles" class="admin-tab-content" style="display:none;">
 					<div class="admin-table-wrap" id="articleListWrap">
+							<div style="display:flex;justify-content:flex-end;margin-bottom:0.6em;">
+								<button class="admin-btn admin-btn-accent" id="deploySiteBtn">🚀 触发部署</button>
+							</div>
 						<table class="admin-table" id="articlesTbl">
 							<thead><tr><th>标题</th><th>Slug</th><th>日期</th><th>标签</th><th>操作</th></tr></thead>
 							<tbody></tbody>
@@ -471,8 +474,7 @@ import Header from '../components/Header.astro';
 						<div class="admin-editor-actions">
 							<button class="admin-btn admin-btn-accent" id="saveArticleBtn">保存文章</button>
 							<button class="admin-btn" id="cancelEditBtn">取消</button>
-							<button class="admin-btn admin-btn-accent" id="deploySiteBtn" style="margin-left:auto;">🚀 触发部署</button>
-						</div>
+													</div>
 					</div>
 				</div>
 
