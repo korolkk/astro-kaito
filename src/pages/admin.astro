@@ -195,6 +195,20 @@ import Header from '../components/Header.astro';
 				background: rgba(var(--accent-rgb), 0.1);
 				color: var(--accent);
 			}
+			.admin-tag-link {
+				text-decoration: none;
+				color: inherit;
+			}
+			.admin-tag-link:hover {
+				opacity: 0.75;
+			}
+			.admin-title-link {
+				color: var(--accent);
+				text-decoration: none;
+			}
+			.admin-title-link:hover {
+				text-decoration: underline;
+			}
 			.admin-badge-qa {
 				background: rgba(99, 102, 241, 0.1);
 				color: #6366f1;
@@ -824,9 +838,9 @@ A.apiFetch = function (url, opts) {
 			}
 			d.articles.forEach(function (a) {
 				var tr = A.cid(document.createElement('tr'));
-				var tagsHtml = A._parseTags(a.tags).map(function (t) { return '<span class="admin-badge admin-badge-chat" style="margin-right:0.2em;">' + A.esc(t) + '</span>'; }).join('');
+				var tagsHtml = A._parseTags(a.tags).map(function (t) { return '<a class="admin-badge admin-badge-chat admin-tag-link" href="/blog?tag=' + encodeURIComponent(t) + '" style="margin-right:0.2em;">' + A.esc(t) + '</a>'; }).join('');
 				tr.innerHTML =
-					'<td>' + A.esc(a.title) + '</td>' +
+					'<td><a class="admin-title-link" href="/blog/' + A.esc(a.slug) + '/">' + A.esc(a.title) + '</a></td>' +
 					'<td>' + A.esc(a.slug) + '</td>' +
 					'<td class="col-narrow">' + A.esc(a.pubDate || '') + '</td>' +
 					'<td>' + tagsHtml + '</td>' +
