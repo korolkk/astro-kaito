@@ -839,7 +839,14 @@ A.apiFetch = function (url, opts) {
 			document.getElementById('editSlug').value = d.slug;
 			document.getElementById('editDesc').value = d.frontmatter.description || '';
 			document.getElementById('editDate').value = d.frontmatter.pubDate || '';
-			document.getElementById('editTags').value = (d.frontmatter.tags || []).join(', ');
+			var tags = d.frontmatter.tags;
+				if (typeof tags === 'string') {
+					try { var parsed = JSON.parse(tags); if (Array.isArray(parsed)) tags = parsed; } catch(e) {}
+					if (typeof tags === 'string') {
+						tags = tags.replace(/^\[|\]$/g, '').split(',').map(function(t){ return t.trim().replace(/^['\"]|['\"]$/g, ''); }).filter(Boolean);
+					}
+				}
+				document.getElementById('editTags').value = (Array.isArray(tags) ? tags : []).join(', ');
 			document.getElementById('editContent').value = d.content || '';
 			document.getElementById('articleListWrap').style.display = 'none';
 			document.getElementById('articleEditor').style.display = '';
