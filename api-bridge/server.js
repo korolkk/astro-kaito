@@ -296,7 +296,9 @@ function parseMarkdownFile(filePath) {
     }
     if (inArray && currentKey) frontmatter[currentKey] = arrayItems;
     if (frontmatter.tags && typeof frontmatter.tags === 'string') {
-	    try { const p = JSON.parse(frontmatter.tags); if (Array.isArray(p)) frontmatter.tags = p; } catch {}
+	    try { const p = JSON.parse(frontmatter.tags); if (Array.isArray(p)) frontmatter.tags = p; } catch {
+	      try { const p = JSON.parse(frontmatter.tags.replace(/'/g, '"')); if (Array.isArray(p)) frontmatter.tags = p; } catch {}
+	    }
 	  }
 	  return { frontmatter, content: match[2] };
   } catch { return null; }
