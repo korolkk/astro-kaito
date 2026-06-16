@@ -1372,8 +1372,13 @@ const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nex
 
 				// OS detection
 				if (/Windows NT 10\.0/.test(ua)) {
-					var buildMatch = ua.match(/Windows NT 10\.0;.*?(\d{5,})/);
-					os = (buildMatch && parseInt(buildMatch[1], 10) >= 22000) ? 'Windows 11' : 'Windows 10';
+					// Win10/11 both report NT 10.0, use userAgentData to distinguish
+					var isWin11 = false;
+					if (navigator.userAgentData && navigator.userAgentData.platform === 'Windows') {
+						var pv = navigator.userAgentData.platformVersion || '';
+						isWin11 = (parseInt(pv.split('.')[0], 10) || 0) >= 13;
+					}
+					os = isWin11 ? 'Windows 11' : 'Windows 10/11';
 				} else if (/Windows NT (\d+\.\d+)/.test(ua)) {
 					var winMap = { '6.1': 'Windows 7', '6.2': 'Windows 8', '6.3': 'Windows 8.1' };
 					os = winMap[RegExp.$1] || ('Windows ' + RegExp.$1);
