@@ -285,6 +285,129 @@ const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nex
 				padding: 1.5em 0;
 			}
 
+			/* Reply button */
+			.comment-reply-btn {
+				font-size: 0.75em;
+				color: rgb(var(--gray));
+				background: none;
+				border: none;
+				cursor: pointer;
+				padding: 0.15em 0.4em;
+				border-radius: 4px;
+				transition: color 0.15s ease;
+				font-family: inherit;
+			}
+			.comment-reply-btn:hover { color: var(--accent); }
+
+			/* Inline reply form */
+			.comment-reply-form {
+				display: none;
+				margin-top: 0.6em;
+			}
+			.comment-reply-form.open { display: flex; flex-direction: column; gap: 0.45em; }
+			.comment-reply-form textarea {
+				padding: 0.5em 0.75em;
+				border: 1px solid rgb(var(--gray-light));
+				border-radius: 10px;
+				font-family: inherit;
+				font-size: 0.82em;
+				background: rgb(var(--gray-light));
+				color: rgb(var(--black));
+				outline: none;
+				resize: vertical;
+				min-height: 60px;
+				transition: border-color 0.15s ease;
+				box-sizing: border-box;
+			}
+			.comment-reply-form textarea:focus { border-color: var(--accent); }
+			.comment-reply-actions {
+				display: flex;
+				gap: 0.4em;
+				align-self: flex-end;
+			}
+			.comment-reply-cancel {
+				padding: 0.35em 0.8em;
+				border: 1px solid rgb(var(--gray-light));
+				border-radius: 8px;
+				background: var(--card-bg);
+				color: rgb(var(--gray));
+				font-family: inherit;
+				font-size: 0.78em;
+				cursor: pointer;
+			}
+			.comment-reply-cancel:hover { color: rgb(var(--black)); }
+			.comment-reply-submit {
+				padding: 0.35em 0.9em;
+				border: none;
+				border-radius: 8px;
+				background: var(--accent);
+				color: #fff;
+				font-family: inherit;
+				font-size: 0.78em;
+				font-weight: 600;
+				cursor: pointer;
+			}
+			.comment-reply-submit:hover { opacity: 0.85; }
+
+			/* Nested replies */
+			.comment-replies {
+				margin-left: 2.5em;
+				margin-top: 0.5em;
+				padding-left: 0.8em;
+				border-left: 2px solid rgb(var(--gray-light));
+				display: flex;
+				flex-direction: column;
+				gap: 0.6em;
+			}
+			.comment-replies .comment-item { font-size: 0.94em; }
+
+			/* Reply-to indicator */
+			.comment-reply-to {
+				font-size: 0.78em;
+				color: var(--accent);
+				margin-bottom: 0.2em;
+			}
+
+			/* Like button */
+			.comment-like-btn {
+				font-size: 0.75em;
+				color: rgb(var(--gray));
+				background: none;
+				border: none;
+				cursor: pointer;
+				padding: 0.15em 0.4em;
+				border-radius: 4px;
+				transition: all 0.2s ease;
+				font-family: inherit;
+				display: inline-flex;
+				align-items: center;
+				gap: 0.25em;
+			}
+			.comment-like-btn:hover { color: #e74c3c; }
+			.comment-like-btn.liked { color: #e74c3c; }
+
+			/* Device info badge */
+			.comment-device {
+				font-size: 0.7em;
+				color: rgb(var(--gray));
+				margin-top: 0.25em;
+				opacity: 0.75;
+			}
+
+			/* Actions row */
+			.comment-actions {
+				display: flex;
+				gap: 0.3em;
+				margin-top: 0.35em;
+			}
+
+			@media (max-width: 480px) {
+				.comment-replies {
+					margin-left: 1.2em;
+					padding-left: 0.5em;
+				}
+			}
+
 			/* Post navigation */
 			.post-nav {
 				display: flex;
@@ -1166,179 +1289,182 @@ const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nex
 
 
 <script is:inline>
-	(function () {
-		var commentsSection = document.getElementById('comments');
-		var commentForm = document.getElementById('commentForm');
-		var commentList = document.getElementById('commentList');
-		var authorInput = document.getElementById('commentAuthor');
-		var contentInput = document.getElementById('commentContent');
-		var submitBtn = document.getElementById('commentSubmit');
-		var statusEl = document.getElementById('commentStatus');
-
-		if (!commentsSection || !commentForm || !commentList) return;
-
-		// Astro scoped styles: find cid attribute
-		var CID = '';
 		(function () {
-			var el = commentsSection;
-			if (!el) return;
-			for (var i = 0; i < el.attributes.length; i++) {
-				if (el.attributes[i].name.indexOf('data-astro-cid') === 0) { CID = el.attributes[i].name; break; }
-			}
-		})();
-		function cid(el) { if (CID) el.setAttribute(CID, ''); return el; }
+			var commentsSection = document.getElementById('comments');
+			var commentForm = document.getElementById('commentForm');
+			var commentList = document.getElementById('commentList');
+			var authorInput = document.getElementById('commentAuthor');
+			var contentInput = document.getElementById('commentContent');
+			var submitBtn = document.getElementById('commentSubmit');
+			var statusEl = document.getElementById('commentStatus');
 
-		var apiBase = '';
-		function getApiUrl(path) {
-			if (!apiBase) {
-				var header = document.querySelector('header');
-				var base = (header && header.dataset.baseUrl) || '/';
-				apiBase = base.replace(/\/?$/, '');
-			}
-			return apiBase + path;
-		}
+			if (!commentsSection || !commentForm || !commentList) return;
 
-		function getSlug() {
-			var path = window.location.pathname;
-			path = path.replace(/\/+$/, '');
-			if (path === '') return 'home';
-			var parts = path.split('/');
-			return parts[parts.length - 1] || parts[parts.length - 2] || 'unknown';
-		}
-
-		var isSubmitting = false;
-
-		function setStatus(msg, type) {
-			if (!statusEl) return;
-			statusEl.textContent = msg;
-			statusEl.className = 'comment-status ' + (type || '');
-			if (type === 'success') {
-				setTimeout(function () { statusEl.textContent = ''; statusEl.className = 'comment-status'; }, 4000);
-			}
-		}
-
-		function formatTime(dateStr) {
-			try {
-				var d = new Date(dateStr.replace(' ', 'T'));
-				if (isNaN(d.getTime())) { d = new Date(dateStr); }
-				if (isNaN(d.getTime())) return dateStr;
-				var now = new Date();
-				var diff = now - d;
-				if (diff < 60000) return '刚刚';
-				if (diff < 3600000) return Math.floor(diff / 60000) + ' 分钟前';
-				if (diff < 86400000) return Math.floor(diff / 3600000) + ' 小时前';
-				if (diff < 604800000) return Math.floor(diff / 86400000) + ' 天前';
-				return d.getFullYear() + '-' +
-					String(d.getMonth() + 1).padStart(2, '0') + '-' +
-					String(d.getDate()).padStart(2, '0') + ' ' +
-					String(d.getHours()).padStart(2, '0') + ':' +
-					String(d.getMinutes()).padStart(2, '0');
-			} catch (e) { return dateStr; }
-		}
-
-		function avatarChar(name) {
-			if (!name || !name.trim()) return '匿';
-			var ch = name.trim().charAt(0);
-			return ch;
-		}
-
-		function renderComment(c) {
-			var item = cid(document.createElement('div'));
-			item.className = 'comment-item';
-
-			var avatar = cid(document.createElement('div'));
-			avatar.className = 'comment-avatar';
-			avatar.textContent = avatarChar(c.author);
-
-			var body = cid(document.createElement('div'));
-			body.className = 'comment-body';
-
-			var meta = cid(document.createElement('div'));
-			meta.className = 'comment-meta';
-
-			var authorSpan = cid(document.createElement('span'));
-			authorSpan.className = 'comment-author';
-			authorSpan.textContent = (c.author && c.author.trim()) ? c.author.trim() : '匿名';
-
-			var timeSpan = cid(document.createElement('span'));
-			timeSpan.className = 'comment-time';
-			timeSpan.textContent = formatTime(c.created_at);
-
-			meta.appendChild(authorSpan);
-			meta.appendChild(timeSpan);
-
-			var contentDiv = cid(document.createElement('div'));
-			contentDiv.className = 'comment-content';
-			contentDiv.innerHTML = window.__mdUtils.renderMarkdown(c.content);
-
-			body.appendChild(meta);
-			body.appendChild(contentDiv);
-			item.appendChild(avatar);
-			item.appendChild(body);
-			return item;
-		}
-
-		function renderEmpty() {
-			var div = cid(document.createElement('div'));
-			div.className = 'comment-empty';
-			div.textContent = '暂无评论，来抢沙发吧～';
-			return div;
-		}
-
-		function renderUnavailable(msg) {
-			var div = cid(document.createElement('div'));
-			div.className = 'comment-unavailable';
-			div.textContent = msg || '评论功能暂不可用';
-			return div;
-		}
-
-		async function loadComments() {
-			commentList.innerHTML = '';
-			try {
-				var resp = await fetch(getApiUrl('/api/comments?slug=' + encodeURIComponent(getSlug())));
-				if (!resp.ok) {
-					if (resp.status === 404) {
-						commentList.appendChild(renderUnavailable('评论服务未配置'));
-					} else {
-						commentList.appendChild(renderUnavailable('加载评论失败'));
-					}
-					return;
+			// Astro scoped styles: find cid attribute
+			var CID = '';
+			(function () {
+				var el = commentsSection;
+				if (!el) return;
+				for (var i = 0; i < el.attributes.length; i++) {
+					if (el.attributes[i].name.indexOf('data-astro-cid') === 0) { CID = el.attributes[i].name; break; }
 				}
-				var comments = await resp.json();
-				if (!Array.isArray(comments) || comments.length === 0) {
-					commentList.appendChild(renderEmpty());
-				} else {
-					comments.forEach(function (c) {
-						commentList.appendChild(renderComment(c));
-					});
+			})();
+			function cid(el) { if (CID) el.setAttribute(CID, ''); return el; }
+
+			var apiBase = '';
+			function getApiUrl(path) {
+				if (!apiBase) {
+					var header = document.querySelector('header');
+					var base = (header && header.dataset.baseUrl) || '/';
+					apiBase = base.replace(/\/?$/, '');
 				}
-			} catch (e) {
-				commentList.appendChild(renderUnavailable('评论服务不可用'));
+				return apiBase + path;
 			}
-		}
 
-		function setSubmitting(state) {
-			isSubmitting = state;
-			submitBtn.disabled = state;
-			submitBtn.textContent = state ? '提交中...' : '提交评论';
-		}
-
-		async function submitComment() {
-			if (isSubmitting) return;
-			var content = contentInput.value.trim();
-			if (!content) {
-				setStatus('请输入评论内容', 'error');
-				return;
+			function getSlug() {
+				var path = window.location.pathname;
+				path = path.replace(/\/+$/, '');
+				if (path === '') return 'home';
+				var parts = path.split('/');
+				return parts[parts.length - 1] || parts[parts.length - 2] || 'unknown';
 			}
-			if (content.length > 2000) { content = content.substring(0, 2000); }
-			var author = (authorInput.value || '').trim();
-			if (author.length > 50) { author = author.substring(0, 50); }
 
-			setSubmitting(true);
-			setStatus('', '');
+			var isSubmitting = false;
 
-			try {
-				var resp = await fetch(getApiUrl('/api/comments'), {
+			function setStatus(msg, type) {
+				if (!statusEl) return;
+				statusEl.textContent = msg;
+				statusEl.className = 'comment-status ' + (type || '');
+				if (type === 'success') {
+					setTimeout(function () { statusEl.textContent = ''; statusEl.className = 'comment-status'; }, 4000);
+				}
+			}
+
+			function formatTime(dateStr) {
+				try {
+					var d = new Date(dateStr.replace(' ', 'T'));
+					if (isNaN(d.getTime())) { d = new Date(dateStr); }
+					if (isNaN(d.getTime())) return dateStr;
+					var now = new Date();
+					var diff = now - d;
+					if (diff < 60000) return '刚刚';
+					if (diff < 3600000) return Math.floor(diff / 60000) + ' 分钟前';
+					if (diff < 86400000) return Math.floor(diff / 3600000) + ' 小时前';
+					if (diff < 604800000) return Math.floor(diff / 86400000) + ' 天前';
+					return d.getFullYear() + '-' +
+						String(d.getMonth() + 1).padStart(2, '0') + '-' +
+						String(d.getDate()).padStart(2, '0') + ' ' +
+						String(d.getHours()).padStart(2, '0') + ':' +
+						String(d.getMinutes()).padStart(2, '0');
+				} catch (e) { return dateStr; }
+			}
+
+			function avatarChar(name) {
+				if (!name || !name.trim()) return '匿';
+				return name.trim().charAt(0);
+			}
+
+			// ===== Device Info Parser =====
+			function parseDeviceInfo() {
+				var ua = navigator.userAgent;
+				var os = '未知系统';
+				var browser = '未知浏览器';
+
+				// OS detection
+				if (/Windows NT 10\.0/.test(ua)) {
+					var buildMatch = ua.match(/Windows NT 10\.0;.*?(\d{5,})/);
+					os = (buildMatch && parseInt(buildMatch[1], 10) >= 22000) ? 'Windows 11' : 'Windows 10';
+				} else if (/Windows NT (\d+\.\d+)/.test(ua)) {
+					var winMap = { '6.1': 'Windows 7', '6.2': 'Windows 8', '6.3': 'Windows 8.1' };
+					os = winMap[RegExp.$1] || ('Windows ' + RegExp.$1);
+				} else if (/Mac OS X (\d+[._]\d+)/.test(ua)) {
+					os = 'macOS ' + RegExp.$1.replace(/_/g, '.');
+				} else if (/Android (\d+(?:\.\d+)*)/.test(ua)) {
+					var androidVer = parseFloat(RegExp.$1);
+					var desserts = { 15: 'Vanilla Ice Cream', 14: 'Upside Down Cake', 13: 'Tiramisu', 12: 'Snow Cone', 11: 'Red Velvet Cake', 10: 'Quince Tart', 9: 'Pie', 8: 'Oreo', 7: 'Nougat', 6: 'Marshmallow', 5: 'Lollipop' };
+					var dessert = desserts[Math.floor(androidVer)] || '';
+					os = 'Android' + (dessert ? ' ' + dessert : '') + ' ' + androidVer;
+				} else if (/iPhone|iPad|iPod/.test(ua)) {
+					var iosMatch = ua.match(/OS (\d+[._]\d+)/);
+					os = 'iOS ' + (iosMatch ? iosMatch[1].replace(/_/g, '.') : '');
+				} else if (/Linux/.test(ua)) {
+					os = /Ubuntu/.test(ua) ? 'Ubuntu Linux' : 'Linux';
+				}
+
+				// Browser detection
+				if (/EdgA?\/(\d+)/.test(ua)) {
+					browser = 'Microsoft Edge ' + RegExp.$1;
+				} else if (/OPR\/(\d+)/.test(ua)) {
+					browser = 'Opera ' + RegExp.$1;
+				} else if (/Firefox\/(\d+)/.test(ua)) {
+					browser = 'Firefox ' + RegExp.$1;
+				} else if (/Chrome\/(\d+)/.test(ua) && !/Edg/.test(ua) && !/OPR/.test(ua)) {
+					browser = 'Google Chrome ' + RegExp.$1;
+				} else if (/(Version)\/(\d+).*Safari/.test(ua)) {
+					browser = 'Safari ' + RegExp.$2;
+				} else if (/Safari\/(\d+)/.test(ua)) {
+					browser = 'Safari ' + RegExp.$1;
+				}
+
+				return os + ' · ' + browser;
+			}
+
+			// ===== Like handling =====
+			var LIKED_KEY = 'kaitohub_liked_comments';
+			function getLikedComments() {
+				try { var s = localStorage.getItem(LIKED_KEY); return s ? JSON.parse(s) : []; }
+				catch (e) { return []; }
+			}
+			function addLikedComment(id) {
+				var liked = getLikedComments();
+				if (liked.indexOf(id) === -1) { liked.push(id); localStorage.setItem(LIKED_KEY, JSON.stringify(liked)); }
+			}
+
+			function handleLike(commentId, likeBtn, heartEl, countEl) {
+				var liked = getLikedComments();
+				if (liked.indexOf(commentId) !== -1) return;
+				// Optimistic UI
+				likeBtn.classList.add('liked');
+				heartEl.textContent = '\u2665';
+				likeBtn.title = '已点赞';
+				var cur = parseInt(countEl.textContent, 10) || 0;
+				countEl.textContent = cur + 1;
+				addLikedComment(commentId);
+
+				fetch(getApiUrl('/api/comments/' + commentId + '/like'), { method: 'POST' })
+					.then(function (r) { return r.json(); })
+					.then(function (d) {
+						if (d.likes != null) countEl.textContent = d.likes > 0 ? d.likes : '';
+					})
+					.catch(function () {}); // keep optimistic state on error
+			}
+
+			// ===== Reply form toggle =====
+			function toggleReplyForm(itemEl) {
+				var form = itemEl.querySelector('.comment-reply-form');
+				if (!form) return;
+				var isOpen = form.classList.contains('open');
+				// Close all other open forms
+				document.querySelectorAll('.comment-reply-form.open').forEach(function (f) {
+					if (f !== form) { f.classList.remove('open'); f.querySelector('textarea').value = ''; }
+				});
+				if (!isOpen) { form.classList.add('open'); form.querySelector('textarea').focus(); }
+				else { form.classList.remove('open'); form.querySelector('textarea').value = ''; }
+			}
+
+			// ===== Submit reply =====
+			function submitReply(parentComment, textarea, replyForm) {
+				if (isSubmitting) return;
+				var content = textarea.value.trim();
+				if (!content) { setStatus('请输入回复内容', 'error'); return; }
+				if (content.length > 2000) content = content.substring(0, 2000);
+				var author = (authorInput.value || '').trim();
+				if (author.length > 50) author = author.substring(0, 50);
+
+				isSubmitting = true;
+				setStatus('', '');
+
+				fetch(getApiUrl('/api/comments'), {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify({
@@ -1346,48 +1472,286 @@ const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nex
 						author: author,
 						content: content,
 						title: commentsSection.dataset.title || '',
+						parent_id: parentComment.id,
+						device_info: parseDeviceInfo(),
 					}),
-				});
+				}).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+				.then(function (result) {
+					if (!result.ok) { setStatus((result.data && result.data.error) || '回复提交失败', 'error'); return; }
+					setStatus('回复发表成功！', 'success');
+					textarea.value = '';
+					replyForm.classList.remove('open');
+					loadComments();
+				}).catch(function () { setStatus('评论服务不可用，请稍后重试', 'error'); })
+				.finally(function () { isSubmitting = false; });
+			}
 
-				if (!resp.ok) {
-					var data;
-					try { data = await resp.json(); } catch (e) { data = {}; }
-					if (resp.status === 429) {
-						setStatus('请求太频繁了，请稍后再试 🌊', 'error');
-					} else {
-						setStatus(data.error || '提交失败，请重试', 'error');
+			// ===== Render a single comment =====
+			function renderComment(c, allComments) {
+				var item = cid(document.createElement('div'));
+				item.className = 'comment-item';
+				item.id = 'comment-' + c.id;
+				item.dataset.commentId = c.id;
+
+				var avatar = cid(document.createElement('div'));
+				avatar.className = 'comment-avatar';
+				avatar.textContent = avatarChar(c.author);
+
+				var body = cid(document.createElement('div'));
+				body.className = 'comment-body';
+
+				var meta = cid(document.createElement('div'));
+				meta.className = 'comment-meta';
+
+				var authorSpan = cid(document.createElement('span'));
+				authorSpan.className = 'comment-author';
+				authorSpan.textContent = (c.author && c.author.trim()) ? c.author.trim() : '匿名';
+
+				var timeSpan = cid(document.createElement('span'));
+				timeSpan.className = 'comment-time';
+				timeSpan.textContent = formatTime(c.created_at);
+
+				meta.appendChild(authorSpan);
+				meta.appendChild(timeSpan);
+				body.appendChild(meta);
+
+				// "replying to @name" indicator
+				if (c.parent_id != null && allComments) {
+					for (var i = 0; i < allComments.length; i++) {
+						if (allComments[i].id === c.parent_id) {
+							var replyTo = cid(document.createElement('div'));
+							replyTo.className = 'comment-reply-to';
+							replyTo.textContent = '@' + ((allComments[i].author && allComments[i].author.trim()) || '匿名');
+							body.appendChild(replyTo);
+							break;
+						}
 					}
-				} else {
-					var comment = await resp.json();
-					setStatus('评论发表成功！', 'success');
-					contentInput.value = '';
-					// Insert new comment at the top of the list
-					var emptyEl = commentList.querySelector('.comment-empty');
-					if (emptyEl) emptyEl.remove();
-					var unavailableEl = commentList.querySelector('.comment-unavailable');
-					if (unavailableEl) unavailableEl.remove();
-					commentList.insertBefore(renderComment(comment), commentList.firstChild);
-					commentList.firstChild.scrollIntoView({ behavior: 'smooth', block: 'center' });
 				}
-			} catch (e) {
-				setStatus('评论服务不可用，请稍后重试', 'error');
+
+				var contentDiv = cid(document.createElement('div'));
+				contentDiv.className = 'comment-content';
+				contentDiv.innerHTML = window.__mdUtils.renderMarkdown(c.content);
+				body.appendChild(contentDiv);
+
+				// Device info badge
+				if (c.device_info) {
+					var deviceSpan = cid(document.createElement('div'));
+					deviceSpan.className = 'comment-device';
+					deviceSpan.textContent = String(c.device_info).substring(0, 200);
+					body.appendChild(deviceSpan);
+				}
+
+				// Actions row: reply + like
+				var actions = cid(document.createElement('div'));
+				actions.className = 'comment-actions';
+
+				// Reply button
+				var replyBtn = cid(document.createElement('button'));
+				replyBtn.className = 'comment-reply-btn';
+				replyBtn.textContent = '回复';
+				replyBtn.addEventListener('click', function () { toggleReplyForm(item); });
+				actions.appendChild(replyBtn);
+
+				// Like button
+				var likedComments = getLikedComments();
+				var isLiked = (likedComments.indexOf(c.id) !== -1);
+				var likeBtn = cid(document.createElement('button'));
+				likeBtn.className = 'comment-like-btn' + (isLiked ? ' liked' : '');
+				likeBtn.title = isLiked ? '已点赞' : '点赞';
+				var heartEl = cid(document.createElement('span'));
+				heartEl.textContent = isLiked ? '\u2665' : '\u2661';
+				likeBtn.appendChild(heartEl);
+				var countEl = cid(document.createElement('span'));
+				countEl.textContent = (c.likes || 0) > 0 ? (c.likes || 0) : '';
+				likeBtn.appendChild(countEl);
+				likeBtn.addEventListener('click', function () { handleLike(c.id, likeBtn, heartEl, countEl); });
+				actions.appendChild(likeBtn);
+
+				body.appendChild(actions);
+
+				// Inline reply form (hidden)
+				var replyForm = cid(document.createElement('div'));
+				replyForm.className = 'comment-reply-form';
+				var replyTextarea = cid(document.createElement('textarea'));
+				replyTextarea.placeholder = '写下你的回复...';
+				replyTextarea.maxLength = 2000;
+				replyTextarea.rows = 2;
+				var replyActions = cid(document.createElement('div'));
+				replyActions.className = 'comment-reply-actions';
+				var cancelBtn = cid(document.createElement('button'));
+				cancelBtn.className = 'comment-reply-cancel';
+				cancelBtn.textContent = '取消';
+				cancelBtn.addEventListener('click', function () {
+					replyForm.classList.remove('open');
+					replyTextarea.value = '';
+				});
+				var submitReplyBtn = cid(document.createElement('button'));
+				submitReplyBtn.className = 'comment-reply-submit';
+				submitReplyBtn.textContent = '回复';
+				submitReplyBtn.addEventListener('click', function () { submitReply(c, replyTextarea, replyForm); });
+				replyTextarea.addEventListener('keydown', function (e) {
+					if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); submitReplyBtn.click(); }
+				});
+				replyActions.appendChild(cancelBtn);
+				replyActions.appendChild(submitReplyBtn);
+				replyForm.appendChild(replyTextarea);
+				replyForm.appendChild(replyActions);
+				body.appendChild(replyForm);
+
+				// Container for nested replies
+				var repliesContainer = cid(document.createElement('div'));
+				repliesContainer.className = 'comment-replies';
+				repliesContainer.id = 'replies-' + c.id;
+				body.appendChild(repliesContainer);
+
+				item.appendChild(avatar);
+				item.appendChild(body);
+				return item;
 			}
 
-			setSubmitting(false);
-		}
-
-		// Load comments on page load
-		loadComments();
-
-		// Submit button
-		submitBtn.addEventListener('click', submitComment);
-
-		// Ctrl/Cmd+Enter to submit, Enter for newline
-		contentInput.addEventListener('keydown', function (e) {
-			if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-				e.preventDefault();
-				submitComment();
+			function renderEmpty() {
+				var div = cid(document.createElement('div'));
+				div.className = 'comment-empty';
+				div.textContent = '暂无评论，来抢沙发吧～';
+				return div;
 			}
-		});
-	})();
-</script>
+
+			function renderUnavailable(msg) {
+				var div = cid(document.createElement('div'));
+				div.className = 'comment-unavailable';
+				div.textContent = msg || '评论功能暂不可用';
+				return div;
+			}
+
+			// ===== Tree building & rendering =====
+			function buildTree(comments) {
+				var map = {};
+				var roots = [];
+				for (var i = 0; i < comments.length; i++) {
+					var c = comments[i];
+					map[c.id] = c;
+					c._replies = [];
+				}
+				for (var i = 0; i < comments.length; i++) {
+					var c = comments[i];
+					if (c.parent_id != null && map[c.parent_id]) {
+						map[c.parent_id]._replies.push(c);
+					} else {
+						roots.push(c);
+					}
+				}
+				// Roots: newest first
+				roots.sort(function (a, b) { return new Date(b.created_at.replace(' ','T')) - new Date(a.created_at.replace(' ','T')); });
+				// Replies: oldest first (chronological within thread)
+				for (var id in map) {
+					if (map[id]._replies.length > 0) {
+						map[id]._replies.sort(function (a, b) { return new Date(a.created_at.replace(' ','T')) - new Date(b.created_at.replace(' ','T')); });
+					}
+				}
+				return { roots: roots, map: map };
+			}
+
+			function renderNode(comment, allComments, parentEl) {
+				var item = renderComment(comment, allComments);
+				parentEl.appendChild(item);
+				var rc = item.querySelector('.comment-replies');
+				if (comment._replies && comment._replies.length > 0) {
+					for (var i = 0; i < comment._replies.length; i++) {
+						renderNode(comment._replies[i], allComments, rc);
+					}
+				}
+			}
+
+			// ===== Load comments =====
+			async function loadComments() {
+				commentList.innerHTML = '';
+				try {
+					var resp = await fetch(getApiUrl('/api/comments?slug=' + encodeURIComponent(getSlug())));
+					if (!resp.ok) {
+						if (resp.status === 404) { commentList.appendChild(renderUnavailable('评论服务未配置')); }
+						else { commentList.appendChild(renderUnavailable('加载评论失败')); }
+						return;
+					}
+					var comments = await resp.json();
+					if (!Array.isArray(comments) || comments.length === 0) {
+						commentList.appendChild(renderEmpty());
+					} else {
+						var tree = buildTree(comments);
+						for (var i = 0; i < tree.roots.length; i++) {
+							renderNode(tree.roots[i], comments, commentList);
+						}
+					}
+				} catch (e) {
+					commentList.appendChild(renderUnavailable('评论服务不可用'));
+				}
+			}
+
+			function setSubmitting(state) {
+				isSubmitting = state;
+				submitBtn.disabled = state;
+				submitBtn.textContent = state ? '提交中...' : '提交评论';
+			}
+
+			async function submitComment() {
+				if (isSubmitting) return;
+				var content = contentInput.value.trim();
+				if (!content) {
+					setStatus('请输入评论内容', 'error');
+					return;
+				}
+				if (content.length > 2000) { content = content.substring(0, 2000); }
+				var author = (authorInput.value || '').trim();
+				if (author.length > 50) { author = author.substring(0, 50); }
+
+				setSubmitting(true);
+				setStatus('', '');
+
+				try {
+					var resp = await fetch(getApiUrl('/api/comments'), {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({
+							slug: getSlug(),
+							author: author,
+							content: content,
+							title: commentsSection.dataset.title || '',
+							device_info: parseDeviceInfo(),
+						}),
+					});
+
+					if (!resp.ok) {
+						var data;
+						try { data = await resp.json(); } catch (e) { data = {}; }
+						if (resp.status === 429) {
+							setStatus('请求太频繁了，请稍后再试 🌊', 'error');
+						} else {
+							setStatus(data.error || '提交失败，请重试', 'error');
+						}
+					} else {
+						setStatus('评论发表成功！', 'success');
+						contentInput.value = '';
+						loadComments();
+					}
+				} catch (e) {
+					setStatus('评论服务不可用，请稍后重试', 'error');
+				}
+
+				setSubmitting(false);
+			}
+
+			// Load comments on page load
+			loadComments();
+
+			// Submit button
+			submitBtn.addEventListener('click', submitComment);
+
+			// Ctrl/Cmd+Enter to submit, Enter for newline
+			contentInput.addEventListener('keydown', function (e) {
+				if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+					e.preventDefault();
+					submitComment();
+				}
+			});
+		})();
+	</script>
+

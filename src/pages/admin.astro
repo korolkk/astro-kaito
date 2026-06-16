@@ -452,6 +452,8 @@ import Header from '../components/Header.astro';
 								<th data-sort="author">作者 <span class="sort-arrow"></span></th>
 								<th>内容</th>
 								<th data-sort="created_at">时间 <span class="sort-arrow"></span></th>
+								<th>点赞</th>
+								<th>设备</th>
 								<th>状态</th>
 								<th>操作</th>
 							</tr></thead>
@@ -742,7 +744,7 @@ A.apiFetch = function (url, opts) {
 		tbody.innerHTML = '';
 		if (!comments || !comments.length) {
 			var tr = A.cid(document.createElement('tr'));
-			tr.innerHTML = '<td colspan="6" class="admin-empty">暂无评论</td>';
+			tr.innerHTML = '<td colspan="8" class="admin-empty">暂无评论</td>';
 			tbody.appendChild(tr); return;
 		}
 		comments.forEach(function (c) {
@@ -753,7 +755,9 @@ A.apiFetch = function (url, opts) {
 				'<td>' + A.esc(c.slug) + '</td>' +
 				'<td class="col-narrow">' + A.esc(c.author || '匿名') + '</td>' +
 				'<td class="col-content"><span class="content-preview">' + A.esc(c.content.substring(0, 80)) + '</span></td>' +
-				'<td class="col-narrow">' + A.fmtTime(c.created_at) + '</td>' +
+					'<td class="col-narrow">' + A.fmtTime(c.created_at) + '</td>' +
+				'<td class="col-narrow">' + (c.likes || 0) + '</td>' +
+				'<td class="col-narrow" style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + A.esc(c.device_info || '') + '">' + A.esc((c.device_info || '').substring(0, 30)) + '</td>' +
 				'<td class="col-narrow">' + badge + '</td>' +
 				'<td class="col-narrow">' +
 					'<button class="admin-btn admin-btn-sm toggle-btn" data-id="' + c.id + '" data-approve="' + (c.approved ? 0 : 1) + '">' + toggleLabel + '</button> ' +
@@ -964,7 +968,7 @@ A.apiFetch = function (url, opts) {
 		tbody.innerHTML = '';
 		if (!logs || !logs.length) {
 			var tr = A.cid(document.createElement('tr'));
-			tr.innerHTML = '<td colspan="6" class="admin-empty">暂无记录</td>';
+			tr.innerHTML = '<td colspan="8" class="admin-empty">暂无记录</td>';
 			tbody.appendChild(tr); return;
 		}
 		logs.forEach(function (l) {
@@ -982,7 +986,7 @@ A.apiFetch = function (url, opts) {
 				'<td class="col-narrow">' + A.fmtTime(l.created_at) + '</td>';
 			var detailRow = A.cid(document.createElement('tr'));
 			detailRow.className = 'admin-log-detail-row';
-			detailRow.innerHTML = '<td colspan="6"><div class="admin-log-detail" id="' + detailId + '"><strong>用户消息:</strong>\n' + A.esc(l.user_message || '') + '\n\n<strong>AI 回复:</strong>\n' + A.esc(l.ai_reply || '') + '</div></td>';
+			detailRow.innerHTML = '<td colspan="8"><div class="admin-log-detail" id="' + detailId + '"><strong>用户消息:</strong>\n' + A.esc(l.user_message || '') + '\n\n<strong>AI 回复:</strong>\n' + A.esc(l.ai_reply || '') + '</div></td>';
 			detailRow.style.display = 'none';
 			tr.addEventListener('click', function () {
 				var detail = document.getElementById(detailId);

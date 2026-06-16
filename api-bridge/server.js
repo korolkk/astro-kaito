@@ -119,6 +119,35 @@ async function initDb() {
   `);
   db.run('CREATE INDEX IF NOT EXISTS idx_comments_slug ON comments(slug)');
 
+  // --- Schema migration: add new columns if missing ---
+  const existingCols = db.exec("PRAGMA table_info(comments)");
+  const colNames = existingCols.length > 0
+    ? existingCols[0].values.map(row => row[1])
+    : [];
+  const newCols = [
+    { name: 'parent_id',   def: 'ALTER TABLE comments ADD COLUMN parent_id INTEGER' },
+    { name: 'root_id',     def: 'ALTER TABLE comments ADD COLUMN root_id INTEGER' },
+    { name: 'likes',       def: 'ALTER TABLE comments ADD COLUMN likes INTEGER DEFAULT 0' },
+    { name: 'device_info', def: "ALTER TABLE comments ADD COLUMN device_info TEXT DEFAULT ''" },
+  ];
+  for (const col of newCols) {
+    if (!colNames.includes(col.name)) {
+      db.run(col.def);
+      console.log(`[api-bridge] 已添加列: ${col.name}`);
+    }
+  }
+
+  // --- Comment likes table ---
+  db.run(`
+    CREATE TABLE IF NOT EXISTS comment_likes (
+      comment_id INTEGER NOT NULL,
+      voter_ip TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+      PRIMARY KEY (comment_id, voter_ip)
+    )
+  `);
+
+  // --- Sessions table ---
   db.run(`
     CREATE TABLE IF NOT EXISTS sessions (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -605,7 +634,7 @@ app.get('/api/comments', (req, res) => {
     }
 
     const comments = queryAll(
-      'SELECT id, slug, author, content, created_at FROM comments WHERE slug = ? AND approved = 1 ORDER BY created_at DESC',
+      'SELECT id, slug, author, content, created_at, parent_id, root_id, likes, device_info FROM comments WHERE slug = ? AND approved = 1 ORDER BY created_at DESC',
       [slug]
     );
 
@@ -621,7 +650,7 @@ app.get('/api/comments', (req, res) => {
 // ======================
 app.post('/api/comments', commentLimiter, (req, res) => {
   try {
-    const { slug, author, content, title } = req.body;
+    const { slug, author, content, title, parent_id, device_info } = req.body;
 
     if (!slug || typeof slug !== 'string' || slug.length > 256) {
       return res.status(400).json({ error: '文章标识无效' });
@@ -638,26 +667,83 @@ app.post('/api/comments', commentLimiter, (req, res) => {
 
     const trimmedAuthor = (typeof author === 'string' ? author.trim() : '').substring(0, 50);
 
+    // 验证 parent_id 并计算 root_id
+    let resolvedParentId = null;
+    let resolvedRootId = null;
+    let parentAuthor = null;
+    if (parent_id != null && Number.isInteger(parent_id)) {
+      const parentRows = queryAll(
+        'SELECT id, author, root_id FROM comments WHERE id = ? AND slug = ? AND approved = 1',
+        [parent_id, slug]
+      );
+      if (parentRows.length > 0) {
+        resolvedParentId = parent_id;
+        resolvedRootId = parentRows[0].root_id || parent_id;
+        parentAuthor = parentRows[0].author || '';
+      }
+    }
+
+    const safeDeviceInfo = (typeof device_info === 'string' ? device_info : '').substring(0, 200);
+
     const id = runInsert(
-      'INSERT INTO comments (slug, author, content) VALUES (?, ?, ?)',
-      [slug, trimmedAuthor, trimmedContent]
+      'INSERT INTO comments (slug, author, content, parent_id, root_id, device_info) VALUES (?, ?, ?, ?, ?, ?)',
+      [slug, trimmedAuthor, trimmedContent, resolvedParentId, resolvedRootId, safeDeviceInfo]
     );
 
     // 读取刚插入的完整记录
     const rows = queryAll(
-      'SELECT id, slug, author, content, created_at FROM comments WHERE id = ?',
+      'SELECT id, slug, author, content, created_at, parent_id, root_id, likes, device_info FROM comments WHERE id = ?',
       [id]
     );
 
     res.status(201).json(rows[0]);
 
-    // 异步通知有新评论（仅 ENABLE_WEIXIN_NOTIFY=true 时生效）
+    // 异步通知（仅 ENABLE_WEIXIN_NOTIFY=true 时生效）
     const articleTitle = title || rows[0].slug || slug;
     const preview = trimmedContent.length > 100 ? trimmedContent.substring(0, 100) + '…' : trimmedContent;
-    notifyWeChat('\u{1F4AC} 新评论\n' + (trimmedAuthor || '匿名') + ' 在「' + articleTitle + '」留言：\n' + preview + '\n🕐 ' + rows[0].created_at);
+    const authorName = trimmedAuthor || '匿名';
+    if (resolvedParentId && parentAuthor) {
+      notifyWeChat('\u{1F4AC} 新回复\n' + authorName + ' 回复了 ' + (parentAuthor || '匿名') + '：\n' + preview + '\n🕐 ' + rows[0].created_at);
+    } else {
+      notifyWeChat('\u{1F4AC} 新评论\n' + authorName + ' 在「' + articleTitle + '」留言：\n' + preview + '\n🕐 ' + rows[0].created_at);
+    }
   } catch (err) {
     console.error('[comments] error:', err.message);
     res.status(500).json({ error: '提交评论失败' });
+  }
+});
+
+// ======================
+// POST /api/comments/:id/like — 点赞评论
+// ======================
+app.post('/api/comments/:id/like', commentLimiter, (req, res) => {
+  try {
+    const commentId = parseInt(req.params.id, 10);
+    if (isNaN(commentId)) return res.status(400).json({ error: '无效的评论 ID' });
+
+    // 验证评论存在且已通过
+    const rows = queryAll('SELECT id, likes FROM comments WHERE id = ? AND approved = 1', [commentId]);
+    if (rows.length === 0) return res.status(404).json({ error: '评论不存在' });
+
+    const voterIp = (req.ip || 'unknown').substring(0, 45);
+
+    // 尝试插入 — 复合主键防重复
+    try {
+      db.run('INSERT INTO comment_likes (comment_id, voter_ip) VALUES (?, ?)', [commentId, voterIp]);
+      db.run('UPDATE comments SET likes = likes + 1 WHERE id = ?', [commentId]);
+      saveDb();
+      const updated = queryAll('SELECT likes FROM comments WHERE id = ?', [commentId]);
+      return res.json({ liked: true, likes: updated[0].likes });
+    } catch (insertErr) {
+      // UNIQUE 约束冲突 = 已经点过赞
+      if (insertErr.message && insertErr.message.includes('UNIQUE')) {
+        return res.json({ liked: false, already_liked: true, likes: rows[0].likes });
+      }
+      throw insertErr;
+    }
+  } catch (err) {
+    console.error('[comments/like] error:', err.message);
+    res.status(500).json({ error: '点赞失败' });
   }
 });
 
@@ -694,7 +780,7 @@ app.get('/api/admin/comments', requireAuth, (req, res) => {
     const offset = (page - 1) * limit;
 
     const comments = queryAll(
-      `SELECT id, slug, author, content, created_at, approved
+      `SELECT id, slug, author, content, created_at, approved, parent_id, likes, device_info
        FROM comments ${where}
        ORDER BY ${sort} ${order}
        LIMIT ? OFFSET ?`,
@@ -741,6 +827,11 @@ app.delete('/api/admin/comments/:id', requireAuth, (req, res) => {
     const rows = queryAll('SELECT id FROM comments WHERE id = ?', [id]);
     if (rows.length === 0) return res.status(404).json({ error: '评论不存在' });
 
+    // 将子回复提升为顶层评论，防止孤儿
+    db.run('UPDATE comments SET parent_id = NULL, root_id = NULL WHERE parent_id = ?', [id]);
+    // 清理点赞记录
+    db.run('DELETE FROM comment_likes WHERE comment_id = ?', [id]);
+    // 删除评论
     db.run('DELETE FROM comments WHERE id = ?', [id]);
     saveDb();
 
