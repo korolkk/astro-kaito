@@ -77,6 +77,14 @@
 		animation: none;
 		transform: scale(1.12);
 	}
+	.ai-chat-btn.dragging {
+		animation: none;
+		cursor: grabbing;
+		transition: none !important;
+	}
+	.ai-chat-btn.dragging:hover {
+		transform: none;
+	}
 
 	/* Breathing scale + hue shift on the orb itself */
 	@keyframes ai-btn-breathe {
@@ -536,6 +544,7 @@
 			chatIcon.style.display = 'none';
 			closeIcon.style.display = '';
 			btn.setAttribute('aria-label', '关闭 AI 聊天');
+			positionDialog();
 			setTimeout(function () { input.focus(); }, 200);
 		}
 
@@ -672,5 +681,140 @@
 			input.style.height = 'auto';
 			input.style.height = Math.min(input.scrollHeight, 100) + 'px';
 		});
+		// ===== Drag to reposition =====
+		var DRAG_KEY = 'kaitohub_ai_chat_pos';
+		var isDragging = false;
+		var dragStartX = 0, dragStartY = 0;
+		var btnStartRight = 0, btnStartBottom = 0;
+		var dragMoved = false;
+		var DRAG_THRESHOLD = 5;
+
+		function getBtnPos() {
+			var r = parseFloat(btn.style.right) || 2 * 16;
+			var b = parseFloat(btn.style.bottom) || 5.5 * 16;
+			return { right: r, bottom: b };
+		}
+
+		function clampPos(right, bottom) {
+			var maxRight = window.innerWidth - 56;
+			var maxBottom = window.innerHeight - 56;
+			return {
+				right: Math.max(8, Math.min(right, maxRight)),
+				bottom: Math.max(8, Math.min(bottom, maxBottom))
+			};
+		}
+
+		function applyPos(pos) {
+			btn.style.right = pos.right + 'px';
+			btn.style.bottom = pos.bottom + 'px';
+			positionDialog();
+		}
+
+		// Position dialog intelligently: clamp horizontal, flip vertical as needed
+		function positionDialog() {
+			var pos = getBtnPos();
+			var vh = window.innerHeight;
+			var vw = window.innerWidth;
+			var btnTop = vh - pos.bottom - 48; // 48 = button height
+			var spaceAbove = btnTop - 16; // leave margin
+
+			// Horizontal: clamp dialog right so it stays within viewport
+			var dialogWidth = 380;
+			var maxRight = vw - dialogWidth - 8;
+			var dialogRight = Math.max(8, Math.min(pos.right, maxRight));
+			dialog.style.right = dialogRight + 'px';
+
+			if (spaceAbove >= 320) {
+				// Open above button
+				dialog.style.bottom = (pos.bottom + 56) + 'px';
+				dialog.style.top = 'auto';
+				dialog.style.maxHeight = Math.min(500, spaceAbove) + 'px';
+			} else {
+				// Open below button
+				var spaceBelow = vh - btnTop - 48 - 16;
+				dialog.style.bottom = 'auto';
+				dialog.style.top = (btnTop + 48 + 8) + 'px';
+				dialog.style.maxHeight = Math.min(500, Math.max(200, spaceBelow)) + 'px';
+			}
+		}
+
+		function savePos(pos) {
+			try { localStorage.setItem(DRAG_KEY, JSON.stringify(pos)); } catch (e) {}
+		}
+
+		// Load saved position
+		(function () {
+			try {
+				var saved = localStorage.getItem(DRAG_KEY);
+				if (saved) {
+					var pos = JSON.parse(saved);
+					if (typeof pos.right === 'number' && typeof pos.bottom === 'number') {
+						applyPos(clampPos(pos.right, pos.bottom));
+					}
+				}
+			} catch (e) {}
+		})();
+
+		function onDragStart(e) {
+			if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
+			isDragging = true;
+			dragMoved = false;
+			var pos = getBtnPos();
+			btnStartRight = pos.right;
+			btnStartBottom = pos.bottom;
+			var clientX = e.touches ? e.touches[0].clientX : e.clientX;
+			var clientY = e.touches ? e.touches[0].clientY : e.clientY;
+			dragStartX = clientX;
+			dragStartY = clientY;
+			btn.classList.add('dragging');
+		}
+
+		function onDragMove(e) {
+			if (!isDragging) return;
+			var clientX = e.touches ? e.touches[0].clientX : e.clientX;
+			var clientY = e.touches ? e.touches[0].clientY : e.clientY;
+			var dx = clientX - dragStartX;
+			var dy = clientY - dragStartY;
+			if (Math.abs(dx) < DRAG_THRESHOLD && Math.abs(dy) < DRAG_THRESHOLD) return;
+			dragMoved = true;
+			var newRight = btnStartRight - dx;
+			var newBottom = btnStartBottom - dy;
+			var clamped = clampPos(newRight, newBottom);
+			btn.style.right = clamped.right + 'px';
+			btn.style.bottom = clamped.bottom + 'px';
+			positionDialog();
+			if (e.preventDefault) e.preventDefault();
+		}
+
+		function onDragEnd(e) {
+			if (!isDragging) return;
+			isDragging = false;
+			btn.classList.remove('dragging');
+			var pos = getBtnPos();
+			savePos(pos);
+			if (dragMoved) {
+				e.preventDefault && e.preventDefault();
+				e.stopPropagation && e.stopPropagation();
+			}
+		}
+
+		// Mouse events
+		btn.addEventListener('mousedown', onDragStart);
+		document.addEventListener('mousemove', onDragMove);
+		document.addEventListener('mouseup', onDragEnd);
+
+		// Touch events
+		btn.addEventListener('touchstart', onDragStart, { passive: false });
+		document.addEventListener('touchmove', onDragMove, { passive: false });
+		document.addEventListener('touchend', onDragEnd);
+
+		// Update dialog position on resize
+		window.addEventListener('resize', function () {
+			var pos = getBtnPos();
+			var clamped = clampPos(pos.right, pos.bottom);
+			applyPos(clamped);
+			positionDialog();
+		});
+
 	})();
 </script>
