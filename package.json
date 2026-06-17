@@ -6,7 +6,9 @@
     "node": ">=22.12.0"
   },
   "scripts": {
-    "dev": "astro dev",
+    "dev": "concurrently -n api,astro -c blue,green \"npm run dev:api\" \"npm run dev:astro\"",
+    "dev:api": "cd api-bridge && npm run dev",
+    "dev:astro": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro"
@@ -17,5 +19,8 @@
     "@astrojs/sitemap": "^3.7.2",
     "astro": "^6.3.7",
     "sharp": "^0.34.3"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.3"
   }
 }
