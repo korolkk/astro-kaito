@@ -259,6 +259,14 @@ const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nex
 				font-weight: 600;
 				color: rgb(var(--black));
 			}
+			a.comment-author {
+				text-decoration: none;
+				color: var(--accent);
+			}
+			a.comment-author:hover {
+				text-decoration: underline;
+				opacity: 0.85;
+			}
 			.comment-time {
 				font-size: 0.75em;
 				color: rgb(var(--gray));
@@ -320,6 +328,29 @@ const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nex
 				box-sizing: border-box;
 			}
 			.comment-reply-form textarea:focus { border-color: var(--accent); }
+			.comment-reply-form input {
+				padding: 0.45em 0.7em;
+				border: 1px solid rgb(var(--gray-light));
+				border-radius: 8px;
+				font-family: inherit;
+				font-size: 0.8em;
+				background: rgb(var(--gray-light));
+				color: rgb(var(--black));
+				outline: none;
+				transition: border-color 0.15s ease;
+				box-sizing: border-box;
+			}
+			.comment-reply-form input:focus { border-color: var(--accent); }
+			.comment-reply-form input::placeholder { color: rgb(var(--gray)); }
+			.comment-reply-fields {
+				display: flex;
+				gap: 0.4em;
+				flex-wrap: wrap;
+			}
+			.comment-reply-fields input {
+				flex: 1;
+				min-width: 100px;
+			}
 			.comment-reply-actions {
 				display: flex;
 				gap: 0.4em;
@@ -901,6 +932,10 @@ const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nex
 							<h3>评论</h3>
 							<div class="comment-form" id="commentForm">
 								<input type="text" id="commentAuthor" maxlength="50" placeholder="昵称（选填）" autocomplete="off" />
+								<div class="comment-reply-fields">
+									<input type="email" id="commentEmail" maxlength="120" placeholder="邮箱（选填，不公开）" autocomplete="off" />
+									<input type="url" id="commentWebsite" maxlength="200" placeholder="网站（选填）" autocomplete="off" />
+								</div>
 								<textarea id="commentContent" maxlength="2000" placeholder="写下你的想法..." rows="3"></textarea>
 								<button class="comment-submit" id="commentSubmit">提交评论</button>
 								<div class="comment-status" id="commentStatus"></div>
@@ -1294,6 +1329,8 @@ const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nex
 			var commentForm = document.getElementById('commentForm');
 			var commentList = document.getElementById('commentList');
 			var authorInput = document.getElementById('commentAuthor');
+			var emailInput = document.getElementById('commentEmail');
+			var websiteInput = document.getElementById('commentWebsite');
 			var contentInput = document.getElementById('commentContent');
 			var submitBtn = document.getElementById('commentSubmit');
 			var statusEl = document.getElementById('commentStatus');
@@ -1458,13 +1495,17 @@ const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nex
 			}
 
 			// ===== Submit reply =====
-			function submitReply(parentComment, textarea, replyForm) {
+			function submitReply(parentComment, authorInputEl, emailInputEl, websiteInputEl, textarea, replyForm) {
 				if (isSubmitting) return;
 				var content = textarea.value.trim();
 				if (!content) { setStatus('请输入回复内容', 'error'); return; }
 				if (content.length > 2000) content = content.substring(0, 2000);
-				var author = (authorInput.value || '').trim();
+				var author = (authorInputEl.value || '').trim();
 				if (author.length > 50) author = author.substring(0, 50);
+				var email = (emailInputEl.value || '').trim();
+				if (email.length > 120) email = email.substring(0, 120);
+				var website = (websiteInputEl.value || '').trim();
+				if (website.length > 200) website = website.substring(0, 200);
 
 				isSubmitting = true;
 				setStatus('', '');
@@ -1475,6 +1516,8 @@ const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nex
 					body: JSON.stringify({
 						slug: getSlug(),
 						author: author,
+						email: email,
+						website: website,
 						content: content,
 						title: commentsSection.dataset.title || '',
 						parent_id: parentComment.id,
@@ -1485,6 +1528,9 @@ const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nex
 					if (!result.ok) { setStatus((result.data && result.data.error) || '回复提交失败', 'error'); return; }
 					setStatus('回复发表成功！', 'success');
 					textarea.value = '';
+					authorInputEl.value = '';
+					emailInputEl.value = '';
+					websiteInputEl.value = '';
 					replyForm.classList.remove('open');
 					loadComments();
 				}).catch(function () { setStatus('评论服务不可用，请稍后重试', 'error'); })
@@ -1508,15 +1554,26 @@ const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nex
 				var meta = cid(document.createElement('div'));
 				meta.className = 'comment-meta';
 
-				var authorSpan = cid(document.createElement('span'));
-				authorSpan.className = 'comment-author';
-				authorSpan.textContent = (c.author && c.author.trim()) ? c.author.trim() : '匿名';
+				var authorName = (c.author && c.author.trim()) ? c.author.trim() : '匿名';
+				var authorEl;
+				if (c.website && /^https?:\/\//i.test(c.website)) {
+					authorEl = cid(document.createElement('a'));
+					authorEl.className = 'comment-author';
+					authorEl.href = c.website;
+					authorEl.target = '_blank';
+					authorEl.rel = 'nofollow noopener';
+					authorEl.textContent = authorName;
+				} else {
+					authorEl = cid(document.createElement('span'));
+					authorEl.className = 'comment-author';
+					authorEl.textContent = authorName;
+				}
 
 				var timeSpan = cid(document.createElement('span'));
 				timeSpan.className = 'comment-time';
 				timeSpan.textContent = formatTime(c.created_at);
 
-				meta.appendChild(authorSpan);
+				meta.appendChild(authorEl);
 				meta.appendChild(timeSpan);
 				body.appendChild(meta);
 
@@ -1577,6 +1634,24 @@ const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nex
 				// Inline reply form (hidden)
 				var replyForm = cid(document.createElement('div'));
 				replyForm.className = 'comment-reply-form';
+				// Input fields row: nickname, email, website
+				var replyFields = cid(document.createElement('div'));
+				replyFields.className = 'comment-reply-fields';
+				var replyAuthorInput = cid(document.createElement('input'));
+				replyAuthorInput.type = 'text';
+				replyAuthorInput.placeholder = '昵称（选填）';
+				replyAuthorInput.maxLength = 50;
+				var replyEmailInput = cid(document.createElement('input'));
+				replyEmailInput.type = 'email';
+				replyEmailInput.placeholder = '邮箱（选填，不公开）';
+				replyEmailInput.maxLength = 120;
+				var replyWebsiteInput = cid(document.createElement('input'));
+				replyWebsiteInput.type = 'url';
+				replyWebsiteInput.placeholder = '网站（选填）';
+				replyWebsiteInput.maxLength = 200;
+				replyFields.appendChild(replyAuthorInput);
+				replyFields.appendChild(replyEmailInput);
+				replyFields.appendChild(replyWebsiteInput);
 				var replyTextarea = cid(document.createElement('textarea'));
 				replyTextarea.placeholder = '写下你的回复...';
 				replyTextarea.maxLength = 2000;
@@ -1593,12 +1668,13 @@ const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nex
 				var submitReplyBtn = cid(document.createElement('button'));
 				submitReplyBtn.className = 'comment-reply-submit';
 				submitReplyBtn.textContent = '回复';
-				submitReplyBtn.addEventListener('click', function () { submitReply(c, replyTextarea, replyForm); });
+				submitReplyBtn.addEventListener('click', function () { submitReply(c, replyAuthorInput, replyEmailInput, replyWebsiteInput, replyTextarea, replyForm); });
 				replyTextarea.addEventListener('keydown', function (e) {
 					if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); submitReplyBtn.click(); }
 				});
 				replyActions.appendChild(cancelBtn);
 				replyActions.appendChild(submitReplyBtn);
+				replyForm.appendChild(replyFields);
 				replyForm.appendChild(replyTextarea);
 				replyForm.appendChild(replyActions);
 				body.appendChild(replyForm);
@@ -1707,6 +1783,12 @@ const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nex
 				if (content.length > 2000) { content = content.substring(0, 2000); }
 				var author = (authorInput.value || '').trim();
 				if (author.length > 50) { author = author.substring(0, 50); }
+				var emailInput = document.getElementById('commentEmail');
+				var websiteInput = document.getElementById('commentWebsite');
+				var email = emailInput ? (emailInput.value || '').trim() : '';
+				if (email.length > 120) { email = email.substring(0, 120); }
+				var website = websiteInput ? (websiteInput.value || '').trim() : '';
+				if (website.length > 200) { website = website.substring(0, 200); }
 
 				setSubmitting(true);
 				setStatus('', '');
@@ -1718,6 +1800,8 @@ const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nex
 						body: JSON.stringify({
 							slug: getSlug(),
 							author: author,
+							email: email,
+							website: website,
 							content: content,
 							title: commentsSection.dataset.title || '',
 							device_info: parseDeviceInfo(),
@@ -1735,6 +1819,8 @@ const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nex
 					} else {
 						setStatus('评论发表成功！', 'success');
 						contentInput.value = '';
+						if (emailInput) emailInput.value = '';
+						if (websiteInput) websiteInput.value = '';
 						loadComments();
 					}
 				} catch (e) {

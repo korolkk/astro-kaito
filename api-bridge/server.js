@@ -129,6 +129,8 @@ async function initDb() {
     { name: 'root_id',     def: 'ALTER TABLE comments ADD COLUMN root_id INTEGER' },
     { name: 'likes',       def: 'ALTER TABLE comments ADD COLUMN likes INTEGER DEFAULT 0' },
     { name: 'device_info', def: "ALTER TABLE comments ADD COLUMN device_info TEXT DEFAULT ''" },
+    { name: 'email',       def: "ALTER TABLE comments ADD COLUMN email TEXT DEFAULT ''" },
+    { name: 'website',     def: "ALTER TABLE comments ADD COLUMN website TEXT DEFAULT ''" },
   ];
   for (const col of newCols) {
     if (!colNames.includes(col.name)) {
@@ -634,7 +636,7 @@ app.get('/api/comments', (req, res) => {
     }
 
     const comments = queryAll(
-      'SELECT id, slug, author, content, created_at, parent_id, root_id, likes, device_info FROM comments WHERE slug = ? AND approved = 1 ORDER BY created_at DESC',
+      'SELECT id, slug, author, email, website, content, created_at, parent_id, root_id, likes, device_info FROM comments WHERE slug = ? AND approved = 1 ORDER BY created_at DESC',
       [slug]
     );
 
@@ -650,7 +652,7 @@ app.get('/api/comments', (req, res) => {
 // ======================
 app.post('/api/comments', commentLimiter, (req, res) => {
   try {
-    const { slug, author, content, title, parent_id, device_info } = req.body;
+    const { slug, author, email, website, content, title, parent_id, device_info } = req.body;
 
     if (!slug || typeof slug !== 'string' || slug.length > 256) {
       return res.status(400).json({ error: '文章标识无效' });
@@ -666,6 +668,8 @@ app.post('/api/comments', commentLimiter, (req, res) => {
     }
 
     const trimmedAuthor = (typeof author === 'string' ? author.trim() : '').substring(0, 50);
+    const trimmedEmail = (typeof email === 'string' ? email.trim() : '').substring(0, 120);
+    const trimmedWebsite = (typeof website === 'string' ? website.trim() : '').substring(0, 200);
 
     // 验证 parent_id 并计算 root_id
     let resolvedParentId = null;
@@ -686,13 +690,13 @@ app.post('/api/comments', commentLimiter, (req, res) => {
     const safeDeviceInfo = (typeof device_info === 'string' ? device_info : '').substring(0, 200);
 
     const id = runInsert(
-      'INSERT INTO comments (slug, author, content, parent_id, root_id, device_info) VALUES (?, ?, ?, ?, ?, ?)',
-      [slug, trimmedAuthor, trimmedContent, resolvedParentId, resolvedRootId, safeDeviceInfo]
+      'INSERT INTO comments (slug, author, email, website, content, parent_id, root_id, device_info) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [slug, trimmedAuthor, trimmedEmail, trimmedWebsite, trimmedContent, resolvedParentId, resolvedRootId, safeDeviceInfo]
     );
 
     // 读取刚插入的完整记录
     const rows = queryAll(
-      'SELECT id, slug, author, content, created_at, parent_id, root_id, likes, device_info FROM comments WHERE id = ?',
+      'SELECT id, slug, author, email, website, content, created_at, parent_id, root_id, likes, device_info FROM comments WHERE id = ?',
       [id]
     );
 
@@ -780,7 +784,7 @@ app.get('/api/admin/comments', requireAuth, (req, res) => {
     const offset = (page - 1) * limit;
 
     const comments = queryAll(
-      `SELECT id, slug, author, content, created_at, approved, parent_id, likes, device_info
+      `SELECT id, slug, author, email, website, content, created_at, approved, parent_id, likes, device_info
        FROM comments ${where}
        ORDER BY ${sort} ${order}
        LIMIT ? OFFSET ?`,
