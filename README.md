@@ -1,66 +1,103 @@
-# Astro 博客起步模板
+# KaitoHub
 
-```sh
-npm create astro@latest -- --template blog
-```
+Kaito 的个人博客 —— 嵌入式软件工程师，专注 C/C++ 音视频开发。记录技术学习、项目笔记与生活思考。
 
-> 🧑‍🚀 **老手宇航员？** 删掉这个文件，尽情发挥吧！
+基于 [Astro 6](https://astro.build) 构建，纯静态生成（SSG），追求 100/100 Lighthouse 性能评分。
 
-功能特性：
+## 功能特性
 
-- ✅ 极简样式（自由定制！）
-- ✅ 100/100 Lighthouse 性能评分
-- ✅ SEO 友好，支持 canonical URL 和 Open Graph 数据
-- ✅ 站点地图（Sitemap）支持
-- ✅ RSS Feed 支持
-- ✅ Markdown 和 MDX 支持
+- ✅ **零 JS 默认** — 纯静态 HTML/CSS，交互功能内联实现，不引入 JS 框架
+- ✅ **暗色/亮色主题** — 三种模式（亮色/暗色/跟随系统），防 FOUC 闪烁
+- ✅ **文章时间轴** — CSS Grid 四栏布局，年份分组，标签筛选 + 分页
+- ✅ **全文搜索** — 构建时生成 JSON 索引，客户端实时过滤
+- ✅ **评论系统** — 自建 SQLite 后端，支持嵌套回复、点赞、Markdown 渲染
+- ✅ **AI 集成** — 文章问答 + 浮动聊天，通过 OpenClaw 兼容 API
+- ✅ **管理后台** — 在线编辑文章、审核评论、查看聊天日志、一键部署
+- ✅ **SEO 友好** — canonical URL、Open Graph、Twitter 卡片、RSS Feed、Sitemap
+- ✅ **响应式设计** — 适配桌面/平板/手机
+- ✅ **本地字体** — Atkinson Hyperlegible 自托管，无外部请求
 
 ## 🚀 项目结构
 
-Astro 项目的目录结构如下：
-
 ```text
-├── public/
+├── public/                  # 静态资源（favicon）
+├── scripts/                 # 部署与开发辅助脚本
+├── api-bridge/              # 独立 Express API 服务（评论、AI、管理后台）
+│   ├── server.js            # API 主入口
+│   └── package.json
 ├── src/
-│   ├── assets/
-│   ├── components/
+│   ├── assets/              # 图片、字体等静态资源
+│   │   └── fonts/           # 本地字体文件
+│   ├── components/          # Astro 组件
+│   │   ├── BaseHead.astro   # <head> 元数据 + 防 FOUC 脚本
+│   │   ├── Header.astro     # 导航栏（搜索 + 主题切换）
+│   │   ├── Footer.astro     # 页脚（版权 + 返回顶部）
+│   │   ├── AiChat.astro     # 浮动 AI 聊天组件
+│   │   ├── HeaderLink.astro # 导航链接（活动状态检测）
+│   │   └── FormattedDate.astro
 │   ├── content/
+│   │   └── blog/            # Markdown/MDX 文章（75 篇）
 │   ├── layouts/
-│   └── pages/
+│   │   └── BlogPost.astro   # 文章页面布局（进度条/TOC/评论/AI问答）
+│   ├── pages/               # 路由页面
+│   │   ├── index.astro      # 首页
+│   │   ├── blog/            # /blog 文章列表 + /blog/:slug 文章详情
+│   │   ├── about.astro      # 关于页面
+│   │   ├── admin.astro      # 管理后台 SPA
+│   │   ├── ai-tools.astro   # AI 工具推荐
+│   │   ├── 404.astro        # 错误页面
+│   │   ├── rss.xml.js       # RSS Feed
+│   │   └── search-index.json.js  # 搜索索引
+│   ├── styles/
+│   │   └── global.css       # 全局样式（CSS 变量、主题、排版）
+│   ├── consts.ts            # 站点常量
+│   └── content.config.ts    # 内容集合 schema
 ├── astro.config.mjs
-├── README.md
 ├── package.json
-└── tsconfig.json
+├── tsconfig.json
+└── CLAUDE.md                # Claude Code 开发指引
 ```
-
-Astro 会查找 `src/pages/` 目录下的 `.astro` 或 `.md` 文件，每个文件都会根据其文件名暴露为一个路由。
-
-`src/components/` 没什么特别的，只是我们习惯把 Astro/React/Vue/Svelte/Preact 组件放在这里。
-
-`src/content/` 目录包含相关 Markdown 和 MDX 文档的「集合」。使用 `getCollection()` 从 `src/content/blog/` 获取文章，并通过可选的 schema 对 frontmatter 进行类型检查。详见 [Astro 内容集合文档](https://docs.astro.build/en/guides/content-collections/)。
-
-静态资源（如图片）可以放在 `public/` 目录中。
 
 ## 🧞 命令
 
-所有命令都在项目根目录的终端中运行：
+| 命令 | 操作 |
+| :--- | :--- |
+| `npm install` | 安装依赖 |
+| `npm run dev` | 启动开发服务器（Astro :4321 + API Bridge :3001） |
+| `npm run build` | 构建生产站点到 `./dist/` |
+| `npm run preview` | 本地预览生产构建 |
+| `npm run astro -- check` | 类型检查 |
+| `npm run astro -- --help` | 获取 Astro CLI 帮助 |
 
-| 命令                       | 操作                                             |
-| :------------------------- | :----------------------------------------------- |
-| `npm install`              | 安装依赖                                         |
-| `npm run dev`              | 启动本地开发服务器 `localhost:4321`               |
-| `npm run build`            | 构建生产站点到 `./dist/`                          |
-| `npm run preview`          | 本地预览生产构建，部署前检查                       |
-| `npm run astro ...`        | 运行 CLI 命令，如 `astro add`、`astro check`      |
-| `npm run astro -- --help`  | 获取 Astro CLI 帮助                               |
+## 🏗️ 架构
 
-## 👀 想了解更多？
+```
+浏览器 ──→ Nginx (:80/443)
+              ├── /        → Astro 静态文件 (dist/)
+              └── /api/*   → Express API Bridge (:3001)
+                                ├── sql.js (SQLite WASM)
+                                └── OpenClaw (AI 聊天/问答)
+```
 
-查看[官方文档](https://docs.astro.build)或加入我们的 [Discord 服务器](https://astro.build/chat)。
+- **Astro** 负责全部前端页面的静态生成
+- **API Bridge** 提供评论、AI、管理后台等动态功能的 REST API
+- **sql.js** 纯 WASM 实现，零编译依赖，跨平台通吃
+- 本地开发时 Vite 自动将 `/api` 代理到 `localhost:3001`
 
-## 致谢
+## 📡 API 端点
 
-本主题基于精美的 [Bear Blog](https://github.com/HermanMartinus/bearblog/)。
+| 方法 | 端点 | 说明 |
+| :--- | :--- | :--- |
+| GET | `/api/health` | 健康检查 |
+| POST | `/api/chat` | AI 自由聊天 |
+| POST | `/api/article-qa` | 文章上下文问答 |
+| GET/POST | `/api/comments` | 评论列表 / 提交评论 |
+| POST | `/api/comments/:id/like` | 评论点赞 |
+| POST | `/api/auth/login` | 管理员登录 |
+| GET | `/api/auth/check` | 会话检查 |
+| GET/PATCH/DELETE | `/api/admin/comments` | 评论管理 |
+| GET/PUT | `/api/admin/articles` | 文章管理 |
+| POST | `/api/admin/deploy` | 触发部署 |
 
 ## 更新日志
 
@@ -76,7 +113,6 @@ Astro 会查找 `src/pages/` 目录下的 `.astro` 或 `.md` 文件，每个文�
 - 首页移除开源项目卡片（迁移至 AI 工具页面）
 
 **文章目录 TOC**
-- `src/pages/blog/[...slug].astro`：新增 `extractHeadings()` 函数，从 post.body 提取 h2-h4 标题并生成匹配 ID
 - `src/layouts/BlogPost.astro`：新增右侧悬浮目录侧边栏（220px），层级缩进，scroll 驱动高亮激活章节
 - 屏幕 ≤1300px 时自动隐藏
 
@@ -93,18 +129,14 @@ Astro 会查找 `src/pages/` 目录下的 `.astro` 或 `.md` 文件，每个文�
 - 每页 15 篇文章，客户端 JS 分页
 - 箭号 + 数字页码统一风格，悬停 accent 色，当前页加粗
 - 与标签筛选联动，URL 参数 `?page=N&tag=xxx`
-- 卡片 min-height 保证翻页栏位置稳定不跳动
-
-**斜杠命令**
-- `.claude/skills/`：新增 `/commit` `/push` `/ship` 三个斜杠命令
 
 ### 2026-05-28 — 文章标签、时间轴列表、翻页导航
 
 **标签系统**
-- `src/content.config.ts`：blog schema 新增 `tags: z.array(z.string()).optional().default([])`
+- `src/content.config.ts`：blog schema 新增 `tags` 字段
 - 为全部 77 篇文章添加标签，覆盖 8 个分类：CSP、LeetCode、字节青训营、Git、ROS2、Markdown/MDX、计算机视觉、随笔
 - 文章页面和博客列表页以药丸样式展示标签
-- `src/pages/search-index.json.js`：搜索索引包含 tags 字段，支持按标签搜索
+- 搜索索引包含 tags 字段，支持按标签搜索
 
 **文章页面增强**
 - 阅读进度条：页面顶部 sticky 定位，RAF 节流跟随滚动
@@ -116,7 +148,6 @@ Astro 会查找 `src/pages/` 目录下的 `.astro` 或 `.md` 文件，每个文�
 - 同一年份只显示一次年份标题，年份切换时圆点高亮
 - 悬停动画：圆点放大 1.5 倍 + 主题色光晕扩散，连线同步变色
 - 标签筛选栏：顶部药丸按钮，点击过滤文章，URL 参数 `?tag=xxx` 支持直达
-- 卡片背景跟随主题切换（`var(--card-bg)`），宽度 1140px 与导航栏对齐
 
 **搜索修复**
 - Header 脚本添加 `is:inline` 防止 Astro 处理为 `type="module"` 导致 DOM 操作失败
@@ -183,7 +214,6 @@ Astro 会查找 `src/pages/` 目录下的 `.astro` 或 `.md` 文件，每个文�
 - 1/3 + 2/3 双栏分割，左侧头像卡片，右侧博客文章卡片
 - 圆形头像，名称 "Kaito"，中文简介，外链（GitHub / Twitter / Email）
 - 最新 5 篇文章按 `pubDate` 降序排列，每篇显示标题/日期/简介，底部 "查看全部文章 →" 链接
-- `public/bg-pattern.svg` 作为固定背景图（渐变 + 网格 + 波浪线 + 径向光晕）
 - 卡片样式：`border-radius: 20px; box-shadow: 0 2px 12px rgba(var(--black), 0.04)`
 
 **导航栏**（`src/components/Header.astro`）
