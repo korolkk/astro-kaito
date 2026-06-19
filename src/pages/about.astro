@@ -13,174 +13,136 @@ import Footer from '../components/Footer.astro';
 			description="Kaito 的个人介绍与技术博客 — 嵌入式软件工程师，音视频开发方向，热爱技术写作与开源探索"
 		/>
 		<style>
+			/* ===== Layout basics ===== */
 			main {
 				width: 720px;
 				max-width: calc(100% - 2em);
 				margin: auto;
-				padding: 3em 1em;
+				padding: 0 1em 3em;
 			}
 
-			.hero-image {
-				width: 100%;
-				max-height: 240px;
+			/* ===== Hero ===== */
+			.hero {
+				position: relative;
+				margin: 0 -1em 2.5em;
 				overflow: hidden;
-				margin-bottom: 0;
 			}
-			.hero-image img {
-				display: block;
-				margin: 0 auto;
-				border-radius: 12px;
-				box-shadow: var(--box-shadow);
+			.hero-banner {
 				width: 100%;
-				max-width: 720px;
+				max-height: 260px;
+				overflow: hidden;
+			}
+			.hero-banner img {
+				display: block;
+				width: 100%;
 				height: auto;
+				max-height: 260px;
 				object-fit: cover;
-				max-height: 240px;
+				border-radius: 0 0 20px 20px;
+				box-shadow: var(--box-shadow);
+			}
+			.hero-content {
+				position: relative;
+				margin-top: -48px;
+				padding: 0 1.5em;
+				text-align: center;
+			}
+			.hero-avatar {
+				width: 80px;
+				height: 80px;
+				border-radius: 50%;
+				border: 4px solid var(--card-bg);
+				background: var(--card-bg);
+				box-shadow: 0 2px 16px rgba(var(--black), 0.10);
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				font-size: 2.4em;
+				margin-bottom: 0.6em;
+			}
+			.hero-name {
+				font-size: 1.8em;
+				font-weight: 700;
+				color: rgb(var(--black));
+				margin: 0 0 0.15em;
+				line-height: 1.2;
+			}
+			.hero-tagline {
+				font-size: 0.95em;
+				color: rgb(var(--gray));
+				margin: 0 0 0.8em;
+				line-height: 1.6;
+			}
+			.hero-socials {
+				display: flex;
+				justify-content: center;
+				gap: 0.6em;
+				flex-wrap: wrap;
+			}
+			.hero-socials a {
+				display: inline-flex;
+				align-items: center;
+				gap: 0.3em;
+				padding: 0.3em 0.8em;
+				border-radius: 999px;
+				font-size: 0.82em;
+				font-weight: 600;
+				text-decoration: none;
+				background: rgba(var(--accent-rgb), 0.06);
+				color: rgb(var(--black));
+				border: 1px solid rgba(var(--gray-light), 0.6);
+				transition: background 0.2s, border-color 0.2s;
+			}
+			.hero-socials a:hover {
+				background: rgba(var(--accent-rgb), 0.12);
+				border-color: var(--accent);
 			}
 
-			/* ===== Section headings ===== */
+			/* ===== Section spacing ===== */
+			section {
+				margin-bottom: 2.8em;
+			}
 			.section-title {
-				margin-top: 2em;
-				margin-bottom: 0.8em;
-				padding-bottom: 0.4em;
-				border-bottom: 2px solid rgba(var(--accent-rgb), 0.15);
-				font-size: 1.15em;
+				display: flex;
+				align-items: center;
+				gap: 0.4em;
+				margin: 0 0 1em;
+				font-size: 1.05em;
+				font-weight: 700;
 				color: rgb(var(--black));
+				letter-spacing: -0.01em;
+			}
+			.section-title::after {
+				content: '';
+				flex: 1;
+				height: 2px;
+				background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.15), transparent);
+				margin-left: 0.5em;
 			}
 
 			/* ===== Intro ===== */
-			.intro {
-				margin-bottom: 1em;
-			}
-			.intro h2 {
-				border-bottom: none;
-				padding-bottom: 0;
-				margin-bottom: 0.6em;
-				font-size: 1.4em;
-			}
-			.lead {
-				font-size: 1.05em;
-				color: rgb(var(--black));
+			.intro p {
+				margin: 0 0 0.6em;
+				font-size: 0.95em;
 				line-height: 1.75;
+				color: rgb(var(--gray-dark));
+			}
+			.intro p:last-child {
+				margin-bottom: 0;
 			}
 
 			/* ===== Two-column layout ===== */
 			.two-col {
 				display: grid;
 				grid-template-columns: 1fr 1fr;
-				gap: 2em;
-				margin-bottom: 0.5em;
-			}
-			.two-col .col {
-				min-width: 0;
+				gap: 1.5em;
 			}
 
-			/* ===== Timeline ===== */
-			.timeline {
-				position: relative;
-				padding: 0.5em 0;
-			}
-			.tl-item {
-				display: grid;
-				grid-template-columns: 32px 1fr;
-				gap: 1em;
-				position: relative;
-			}
-			.tl-item:not(:last-child) {
-				padding-bottom: 1em;
-			}
-
-			/* Dot & line */
-			.tl-marker {
+			/* ===== Now grid ===== */
+			.now-grid {
 				display: flex;
 				flex-direction: column;
-				align-items: center;
-				position: relative;
-			}
-			.tl-dot {
-				width: 12px;
-				height: 12px;
-				border-radius: 50%;
-				background: var(--accent);
-				flex-shrink: 0;
-				margin-top: 0.45em;
-				position: relative;
-				z-index: 2;
-				box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.12);
-			}
-			.tl-item:not(:last-child) .tl-marker::after {
-				content: '';
-				width: 2px;
-				flex: 1;
-				background: rgba(var(--accent-rgb), 0.2);
-				margin-top: 6px;
-				min-height: calc(100% + 1em);
-			}
-
-			/* Timeline Card */
-			.tl-card {
-				background: var(--card-bg);
-				border: 1px solid rgb(var(--gray-light));
-				border-radius: 12px;
-				padding: 1.1em 1.3em;
-				transition: box-shadow 0.2s ease, transform 0.2s ease;
-			}
-			.tl-item:hover .tl-card {
-				box-shadow: 0 2px 16px rgba(var(--black), 0.06);
-				transform: translateY(-1px);
-			}
-			.tl-date {
-				display: inline-block;
-				font-size: 0.78em;
-				font-weight: 600;
-				color: var(--accent);
-				background: rgba(var(--accent-rgb), 0.07);
-				padding: 0.15em 0.6em;
-				border-radius: 999px;
-				margin-bottom: 0.3em;
-			}
-			.tl-duration {
-				display: inline-block;
-				font-size: 0.75em;
-				color: rgb(var(--gray));
-				margin-left: 0.5em;
-			}
-			.tl-card h3 {
-				margin: 0 0 0.15em;
-				font-size: 1.05em;
-				color: rgb(var(--black));
-			}
-			.tl-subtitle {
-				font-size: 0.82em;
-				color: rgb(var(--gray));
-				margin-bottom: 0.5em;
-				font-style: italic;
-			}
-			.tl-card p {
-				margin: 0 0 0.6em;
-				font-size: 0.88em;
-				color: rgb(var(--gray));
-				line-height: 1.65;
-			}
-			.tl-skills {
-				display: flex;
-				flex-wrap: wrap;
-				gap: 0.3em;
-				margin-top: 0.3em;
-			}
-			.tl-skills span {
-				font-size: 0.72em;
-				padding: 0.15em 0.5em;
-				border-radius: 999px;
-				color: var(--accent);
-				background: rgba(var(--accent-rgb), 0.07);
-			}
-
-			/* ===== "Now" grid ===== */
-			.now-grid {
-				display: grid;
-				grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-				gap: 0.8em;
+				gap: 0.6em;
 			}
 			.now-card {
 				display: flex;
@@ -189,55 +151,188 @@ import Footer from '../components/Footer.astro';
 				background: var(--card-bg);
 				border: 1px solid rgb(var(--gray-light));
 				border-radius: 10px;
-				padding: 1em;
-				transition: box-shadow 0.2s ease;
+				padding: 0.9em 1em;
+				transition: box-shadow 0.2s, border-color 0.2s;
 			}
 			.now-card:hover {
-				box-shadow: 0 2px 12px rgba(var(--black), 0.05);
+				box-shadow: 0 2px 12px rgba(var(--black), 0.04);
+				border-color: rgba(var(--accent-rgb), 0.2);
 			}
 			.now-icon {
-				font-size: 1.4em;
+				font-size: 1.3em;
 				flex-shrink: 0;
-				line-height: 1.2;
+				line-height: 1.3;
 			}
 			.now-card strong {
 				display: block;
-				font-size: 0.9em;
+				font-size: 0.88em;
 				color: rgb(var(--black));
-				margin-bottom: 0.2em;
+				margin-bottom: 0.15em;
 			}
 			.now-card p {
 				margin: 0;
-				font-size: 0.82em;
+				font-size: 0.8em;
 				color: rgb(var(--gray));
 				line-height: 1.55;
+			}
+
+			/* ===== Blog stats ===== */
+			.blog-stats {
+				display: flex;
+				gap: 0.6em;
+				margin-bottom: 0.8em;
+			}
+			.bs-card {
+				flex: 1;
+				text-align: center;
+				background: var(--card-bg);
+				border: 1px solid rgb(var(--gray-light));
+				border-radius: 10px;
+				padding: 0.8em 0.6em;
+			}
+			.bs-num {
+				display: block;
+				font-size: 1.6em;
+				font-weight: 700;
+				color: var(--accent);
+				line-height: 1.2;
+			}
+			.bs-label {
+				font-size: 0.75em;
+				color: rgb(var(--gray));
+			}
+			.bs-desc {
+				font-size: 0.82em;
+				color: rgb(var(--gray));
+				line-height: 1.6;
+				margin: 0;
+			}
+
+			/* ===== Timeline ===== */
+			.timeline {
+				position: relative;
+				padding: 0.3em 0;
+			}
+			.tl-item {
+				display: grid;
+				grid-template-columns: 28px 1fr;
+				gap: 0.9em;
+				position: relative;
+			}
+			.tl-item:not(:last-child) {
+				padding-bottom: 0.8em;
+			}
+
+			.tl-marker {
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				position: relative;
+			}
+			.tl-dot {
+				width: 11px;
+				height: 11px;
+				border-radius: 50%;
+				background: var(--accent);
+				flex-shrink: 0;
+				margin-top: 0.5em;
+				position: relative;
+				z-index: 2;
+				box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.10);
+			}
+			.tl-item:not(:last-child) .tl-marker::after {
+				content: '';
+				width: 2px;
+				flex: 1;
+				background: rgba(var(--accent-rgb), 0.12);
+				margin-top: 6px;
+				min-height: calc(100% + 0.8em);
+			}
+
+			.tl-card {
+				background: var(--card-bg);
+				border: 1px solid rgb(var(--gray-light));
+				border-radius: 10px;
+				padding: 0.8em 1em;
+				transition: box-shadow 0.2s;
+			}
+			.tl-item:hover .tl-card {
+				box-shadow: 0 2px 14px rgba(var(--black), 0.04);
+			}
+			.tl-header {
+				display: flex;
+				flex-wrap: wrap;
+				align-items: baseline;
+				gap: 0.4em;
+				margin-bottom: 0.2em;
+			}
+			.tl-date {
+				font-size: 0.75em;
+				font-weight: 600;
+				color: var(--accent);
+				background: rgba(var(--accent-rgb), 0.06);
+				padding: 0.12em 0.55em;
+				border-radius: 999px;
+			}
+			.tl-duration {
+				font-size: 0.72em;
+				color: rgb(var(--gray));
+			}
+			.tl-card h3 {
+				margin: 0 0 0.1em;
+				font-size: 0.95em;
+				font-weight: 700;
+				color: rgb(var(--black));
+			}
+			.tl-sub {
+				font-size: 0.78em;
+				color: rgb(var(--gray));
+				margin-bottom: 0.4em;
+			}
+			.tl-card p {
+				margin: 0 0 0.4em;
+				font-size: 0.82em;
+				color: rgb(var(--gray));
+				line-height: 1.6;
+			}
+			.tl-skills {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.25em;
+			}
+			.tl-skills span {
+				font-size: 0.7em;
+				padding: 0.1em 0.5em;
+				border-radius: 999px;
+				color: var(--accent);
+				background: rgba(var(--accent-rgb), 0.06);
 			}
 
 			/* ===== Tech stack ===== */
 			.stack-grid {
 				display: grid;
-				grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-				gap: 0.8em;
+				grid-template-columns: 1fr 1fr;
+				gap: 0.6em;
 			}
 			.stack-cat {
 				background: var(--card-bg);
 				border: 1px solid rgb(var(--gray-light));
 				border-radius: 10px;
-				padding: 1em;
+				padding: 0.8em 1em;
 			}
 			.stack-cat h3 {
-				margin: 0 0 0.5em;
-				font-size: 0.95em;
+				margin: 0 0 0.4em;
+				font-size: 0.85em;
 				color: rgb(var(--black));
 			}
 			.stack-tags {
 				display: flex;
 				flex-wrap: wrap;
-				gap: 0.3em;
+				gap: 0.25em;
 			}
 			.stack-tags span {
-				font-size: 0.75em;
-				padding: 0.2em 0.6em;
+				font-size: 0.73em;
+				padding: 0.15em 0.5em;
 				border-radius: 999px;
 				font-weight: 600;
 			}
@@ -247,80 +342,45 @@ import Footer from '../components/Footer.astro';
 			}
 			.st-secondary {
 				color: var(--accent);
-				background: rgba(var(--accent-rgb), 0.08);
-			}
-
-			/* ===== Blog stats ===== */
-			.blog-stats {
-				display: flex;
-				justify-content: center;
-				gap: 1.5em;
-				margin: 0.5em 0;
-				flex-wrap: wrap;
-			}
-			.bs-card {
-				text-align: center;
-				min-width: 80px;
-				background: var(--card-bg);
-				border: 1px solid rgb(var(--gray-light));
-				border-radius: 10px;
-				padding: 0.8em 1em;
-			}
-			.bs-num {
-				display: block;
-				font-size: 1.8em;
-				font-weight: 700;
-				color: var(--accent);
-				line-height: 1.2;
-			}
-			.bs-label {
-				font-size: 0.78em;
-				color: rgb(var(--gray));
-			}
-			.bs-desc {
-				font-size: 0.85em;
-				color: rgb(var(--gray));
-				text-align: center;
-				line-height: 1.6;
-				margin-top: 0.8em;
+				background: rgba(var(--accent-rgb), 0.07);
 			}
 
 			/* ===== Dev environment ===== */
 			.dev-env {
-				display: flex;
-				flex-direction: column;
+				display: grid;
+				grid-template-columns: 1fr 1fr;
 				gap: 0.5em;
 			}
 			.de-item {
 				display: flex;
-				gap: 0.6em;
+				gap: 0.5em;
 				align-items: flex-start;
 				background: var(--card-bg);
 				border: 1px solid rgb(var(--gray-light));
-				border-radius: 10px;
-				padding: 0.7em 0.9em;
+				border-radius: 8px;
+				padding: 0.6em 0.8em;
 			}
 			.de-icon {
-				font-size: 1.2em;
+				font-size: 1.1em;
 				flex-shrink: 0;
 			}
 			.de-item strong {
 				display: block;
-				font-size: 0.85em;
+				font-size: 0.82em;
 				color: rgb(var(--black));
-				margin-bottom: 0.1em;
+				margin-bottom: 0.05em;
 			}
 			.de-item p {
 				margin: 0;
-				font-size: 0.78em;
+				font-size: 0.75em;
 				color: rgb(var(--gray));
 			}
 
 			/* ===== Beyond code ===== */
-			.beyond-code {
-				display: flex;
-				flex-direction: column;
-				gap: 0.4em;
+			.beyond-grid {
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+				gap: 0.5em;
 			}
 			.bc-item {
 				display: flex;
@@ -328,96 +388,126 @@ import Footer from '../components/Footer.astro';
 				align-items: center;
 				background: var(--card-bg);
 				border: 1px solid rgb(var(--gray-light));
-				border-radius: 10px;
-				padding: 0.6em 0.9em;
-				font-size: 0.85em;
+				border-radius: 8px;
+				padding: 0.55em 0.8em;
+				font-size: 0.82em;
 				color: rgb(var(--gray));
 			}
 			.bc-icon {
-				font-size: 1.2em;
+				font-size: 1.1em;
 				flex-shrink: 0;
 			}
 
 			/* ===== Contact ===== */
 			.contact-grid {
-				display: grid;
-				grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-				gap: 0.7em;
-				margin-top: 0.8em;
+				display: flex;
+				gap: 0.6em;
+				margin-top: 0.6em;
 			}
 			.contact-card {
+				flex: 1;
 				display: flex;
-				flex-direction: column;
 				align-items: center;
-				gap: 0.15em;
+				gap: 0.6em;
 				background: var(--card-bg);
 				border: 1px solid rgb(var(--gray-light));
 				border-radius: 10px;
-				padding: 1.2em 1em;
+				padding: 0.9em 1em;
 				text-decoration: none;
-				transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+				transition: box-shadow 0.2s, border-color 0.2s, transform 0.2s;
 			}
 			.contact-card:hover {
-				box-shadow: 0 2px 12px rgba(var(--black), 0.06);
-				transform: translateY(-2px);
+				box-shadow: 0 2px 12px rgba(var(--black), 0.05);
 				border-color: var(--accent);
+				transform: translateY(-1px);
 			}
 			.cc-icon {
-				font-size: 1.8em;
+				font-size: 1.5em;
+				flex-shrink: 0;
 			}
-			.contact-card strong {
+			.cc-body strong {
+				display: block;
 				color: rgb(var(--black));
-				font-size: 0.95em;
+				font-size: 0.9em;
 			}
-			.contact-card span:last-child {
+			.cc-body span {
 				color: rgb(var(--gray));
-				font-size: 0.8em;
+				font-size: 0.78em;
+			}
+
+			/* ===== Site info ===== */
+			.site-info p {
+				margin: 0 0 0.5em;
+				font-size: 0.88em;
+				color: rgb(var(--gray-dark));
+				line-height: 1.7;
+			}
+			.site-info p:last-child {
+				margin-bottom: 0;
 			}
 
 			/* ===== Footer quote ===== */
 			.footer-quote {
 				text-align: center;
-				margin-top: 2.5em;
-				padding-top: 1.5em;
-				border-top: 1px solid rgb(var(--gray-light));
+				padding: 1.8em 0 0;
 				color: rgb(var(--gray));
 				font-size: 0.88em;
 				font-style: italic;
+			}
+			.footer-quote::before {
+				content: '';
+				display: block;
+				width: 48px;
+				height: 3px;
+				background: rgba(var(--accent-rgb), 0.15);
+				border-radius: 2px;
+				margin: 0 auto 1em;
 			}
 
 			/* ===== Responsive ===== */
 			@media (max-width: 768px) {
 				.two-col {
 					grid-template-columns: 1fr;
-					gap: 1em;
+					gap: 1.2em;
 				}
-				.section-title {
-					margin-top: 1.5em;
+				.hero-content {
+					padding: 0 1em;
+				}
+				.hero-tagline {
+					font-size: 0.88em;
+				}
+				section {
+					margin-bottom: 2.2em;
+				}
+				.blog-stats {
+					flex-wrap: wrap;
 				}
 			}
 
-			@media (max-width: 500px) {
-				.tl-item {
-					grid-template-columns: 24px 1fr;
-					gap: 0.7em;
-				}
-				.tl-dot {
-					width: 10px;
-					height: 10px;
-				}
-				.now-grid,
+			@media (max-width: 600px) {
 				.stack-grid,
-				.contact-grid {
+				.dev-env,
+				.beyond-grid {
 					grid-template-columns: 1fr;
 				}
-				.bs-num {
-					font-size: 1.5em;
+				.contact-grid {
+					flex-direction: column;
 				}
-				.intro h2 {
-					font-size: 1.2em;
+				.tl-item {
+					grid-template-columns: 22px 1fr;
+					gap: 0.6em;
 				}
-				.lead {
-					font-size: 0.95em;
+				.tl-dot {
+					width: 9px;
+					height: 9px;
+				}
+				.hero-avatar {
+					width: 64px;
+					height: 64px;
+					font-size: 2em;
+				}
+				.hero-name {
+					font-size: 1.4em;
 				}
 			}
 		</style>
@@ -426,333 +516,362 @@ import Footer from '../components/Footer.astro';
 	<body>
 		<Header />
 		<main>
-			<div class="hero-image">
-				<Image src={AboutHeroImage} alt="" width={720} height={240} />
-			</div>
-
-			<div class="intro">
-				<h2>你好，我是 Kaito 👋</h2>
-				<p class="lead">
-					一名热爱技术的嵌入式软件工程师，目前就职于浙江大华，专注于音视频编解码与流媒体传输方向。
-					工作之余喜欢写博客分享技术心得，也热衷于探索开源项目和新领域知识。
-				</p>
-				<p>
-					我相信"输出倒逼输入" —— 写作不仅是记录，更是深度思考的过程。
-					每一篇文章都是对知识点的重新梳理和内化，也希望能帮助到同路人。
-				</p>
-			</div>
-
-			<h2 class="section-title">🔭 当前在做</h2>
-
-			<div class="now-grid">
-				<div class="now-card">
-					<span class="now-icon">📝</span>
-					<div>
-						<strong>持续写作</strong>
-						<p>维护 KaitoHub 技术博客，记录工作中的技术积累和学习心得，目标保持每月至少 2 篇高质量文章。</p>
-					</div>
+			<!-- ==================== Hero ==================== -->
+			<div class="hero">
+				<div class="hero-banner">
+					<Image src={AboutHeroImage} alt="" width={720} height={260} />
 				</div>
-				<div class="now-card">
-					<span class="now-icon">🤖</span>
-					<div>
-						<strong>AI 辅助编程实践</strong>
-						<p>深度使用 AI 编程工具（Claude Code、Cursor 等），探索 AI 在嵌入式开发和日常效率中的最佳实践。</p>
-					</div>
-				</div>
-				<div class="now-card">
-					<span class="now-icon">🎯</span>
-					<div>
-						<strong>音视频技术深耕</strong>
-						<p>深入学习 H.264/H.265 编码原理、WebRTC 协议栈、流媒体框架，拓展技术广度与深度。</p>
-					</div>
-				</div>
-			</div>
-
-			<h2 class="section-title">技术栈</h2>
-
-			<div class="stack-grid">
-				<div class="stack-cat">
-					<h3>🔧 核心语言</h3>
-					<div class="stack-tags">
-						<span class="st-primary">C</span>
-						<span class="st-primary">C++</span>
-						<span class="st-secondary">Python</span>
-						<span class="st-secondary">Go</span>
-						<span class="st-secondary">Shell</span>
-					</div>
-				</div>
-				<div class="stack-cat">
-					<h3>📡 嵌入式 & 芯片</h3>
-					<div class="stack-tags">
-						<span class="st-primary">海思</span>
-						<span class="st-primary">联咏</span>
-						<span class="st-primary">星宸</span>
-						<span class="st-secondary">嵌入式 Linux</span>
-					</div>
-				</div>
-				<div class="stack-cat">
-					<h3>🎬 音视频</h3>
-					<div class="stack-tags">
-						<span class="st-primary">H.264/H.265</span>
-						<span class="st-secondary">RTSP/RTMP</span>
-						<span class="st-secondary">WebRTC</span>
-						<span class="st-secondary">FFmpeg</span>
-					</div>
-				</div>
-				<div class="stack-cat">
-					<h3>🛠 工具 & 其他</h3>
-					<div class="stack-tags">
-						<span class="st-secondary">Git</span>
-						<span class="st-secondary">Linux</span>
-						<span class="st-secondary">Docker</span>
-						<span class="st-secondary">ROS2</span>
-						<span class="st-secondary">OpenCV</span>
-						<span class="st-secondary">MATLAB</span>
-					</div>
-				</div>
-			</div>
-
-			<h2 class="section-title">成长历程</h2>
-
-			<div class="timeline">
-				<div class="tl-item">
-					<div class="tl-marker">
-						<div class="tl-dot"></div>
-					</div>
-					<div class="tl-card">
-						<span class="tl-date">2024.06 — 至今</span>
-						<span class="tl-duration">2 年</span>
-						<h3>📝 KaitoHub · 技术写作</h3>
-						<div class="tl-subtitle">个人技术博客</div>
-						<p>
-							持续运营个人技术博客 KaitoHub，从 Hexo 迁移至 Astro 6 全面重设计。
-							累计发布技术文章 77 篇，涵盖嵌入式开发、算法题解（CSP / LeetCode）、
-							项目实战笔记等多个领域。博客内容源于日常工作的技术积累和学习心得，
-							持续实践 AI 辅助编程，在效率与质量之间寻找最佳平衡点。
-						</p>
-						<div class="tl-skills">
-							<span>Astro</span><span>Markdown</span><span>SEO</span><span>AI 工具</span><span>技术写作</span>
-						</div>
-					</div>
-				</div>
-
-				<div class="tl-item">
-					<div class="tl-marker">
-						<div class="tl-dot"></div>
-					</div>
-					<div class="tl-card">
-						<span class="tl-date">2023.07 — 至今</span>
-						<span class="tl-duration">3 年</span>
-						<h3>💻 浙江大华 · 嵌入式软件工程师</h3>
-						<div class="tl-subtitle">浙江大华技术股份有限公司 · 杭州</div>
-						<p>
-							2023 年毕业后正式入职浙江大华技术股份有限公司，担任嵌入式软件工程师。
-							主要使用 C/C++ 进行音视频相关开发工作，方向为音视频编解码与流媒体传输。
-							日常工作中深度接触海思（HiSilicon）、联咏（Novatek）、星宸（SigmaStar）
-							等主流芯片平台，积累了丰富的底层系统开发和性能优化经验。
-						</p>
-						<div class="tl-skills">
-							<span>C/C++</span><span>音视频编解码</span><span>海思</span><span>联咏</span><span>星宸</span><span>嵌入式 Linux</span>
-						</div>
-					</div>
-				</div>
-
-				<div class="tl-item">
-					<div class="tl-marker">
-						<div class="tl-dot"></div>
-					</div>
-					<div class="tl-card">
-						<span class="tl-date">2023.04 — 2023.06</span>
-						<span class="tl-duration">3 个月</span>
-						<h3>🤖 ROS2 自学 & 机器人公司实习</h3>
-						<div class="tl-subtitle">机器人公司 · 嵌入式开发实习</div>
-						<p>
-							自学 ROS2（Robot Operating System 2）相关知识，包括节点通信、
-							Topic/Service 机制、传感器数据处理等内容。随后在一家机器人公司完成
-							3 个月的嵌入式开发实习，独立完成了深度图像到点云数据的转换实现，
-							将理论知识与工程实践相结合，获得了宝贵的软硬结合开发经验。
-						</p>
-						<div class="tl-skills">
-							<span>ROS2</span><span>C/C++</span><span>Python</span><span>OpenCV</span><span>点云处理</span>
-						</div>
-					</div>
-				</div>
-
-				<div class="tl-item">
-					<div class="tl-marker">
-						<div class="tl-dot"></div>
-					</div>
-					<div class="tl-card">
-						<span class="tl-date">2023.01 — 2023.03</span>
-						<span class="tl-duration">3 个月</span>
-						<h3>🚀 字节跳动青训营 · 后端方向</h3>
-						<div class="tl-subtitle">字节跳动 · ByteDance</div>
-						<p>
-							毕业前夕参加字节跳动后端青训营，深入学习了 Go 语言、微服务架构、分布式系统
-							设计等后端核心技术。在结营项目中，使用 Hertz 框架和 Kitex RPC 框架完成了
-							后端服务开发，获得优秀学员称号。这段经历拓宽了技术视野，也为之后的嵌入式
-							开发工作积累了系统设计思维。
-						</p>
-						<div class="tl-skills">
-							<span>Go</span><span>Hertz</span><span>Kitex</span><span>MySQL</span><span>微服务</span>
-						</div>
-					</div>
-				</div>
-
-				<div class="tl-item">
-					<div class="tl-marker">
-						<div class="tl-dot"></div>
-					</div>
-					<div class="tl-card">
-						<span class="tl-date">2022.02</span>
-						<span class="tl-duration">数模竞赛</span>
-						<h3>🏅 数学建模美赛 · Finalist（F 奖）</h3>
-						<div class="tl-subtitle">MCM/ICM · Mathematical Contest in Modeling</div>
-						<p>
-							参加美国大学生数学建模竞赛（MCM/ICM），团队在有限时间内完成从问题分析、
-							模型构建到论文撰写的全流程。最终获得 Finalist（特等奖提名 / F 奖），
-							全球获奖比例不足 2%，是本科期间最重要的学术荣誉之一。
-						</p>
-						<div class="tl-skills">
-							<span>数学建模</span><span>MATLAB</span><span>Python</span><span>论文写作</span><span>团队协作</span>
-						</div>
-					</div>
-				</div>
-
-				<div class="tl-item">
-					<div class="tl-marker">
-						<div class="tl-dot"></div>
-					</div>
-					<div class="tl-card">
-						<span class="tl-date">2019.09 — 2023.06</span>
-						<span class="tl-duration">4 年</span>
-						<h3>🎓 本科 · 计算机科学与技术</h3>
-						<div class="tl-subtitle">杭州电子科技大学 · Hangzhou Dianzi University</div>
-						<p>
-							高考后被杭州电子科技大学计算机科学与技术专业录取。在校期间系统学习了
-							计算机组成原理、操作系统、计算机网络、数据结构与算法等核心课程，
-							多次参与课程项目开发，打下了扎实的工程基础。
-						</p>
-						<div class="tl-skills">
-							<span>C/C++</span><span>Python</span><span>数据结构</span><span>算法</span><span>计算机网络</span>
-						</div>
-					</div>
-				</div>
-			</div>
-
-			<div class="two-col">
-				<div class="col">
-					<h2 class="section-title">博客数据</h2>
-					<div class="blog-stats">
-						<div class="bs-card">
-							<span class="bs-num">77</span>
-							<span class="bs-label">技术文章</span>
-						</div>
-						<div class="bs-card">
-							<span class="bs-num">3+</span>
-							<span class="bs-label">年持续写作</span>
-						</div>
-						<div class="bs-card">
-							<span class="bs-num">4</span>
-							<span class="bs-label">内容板块</span>
-						</div>
-					</div>
-					<p class="bs-desc">
-						涵盖 <strong>嵌入式开发</strong> · <strong>算法题解</strong>（CSP/LeetCode）· <strong>项目实战</strong> · <strong>工具教程</strong> 四大方向，
-						从底层驱动到上层应用，从编码实践到理论推演。
+				<div class="hero-content">
+					<div class="hero-avatar">🦀</div>
+					<h1 class="hero-name">Kaito</h1>
+					<p class="hero-tagline">
+						嵌入式软件工程师 · 深耕音视频编解码与流媒体传输 ·
+						<br />
+						在技术写作中持续成长
 					</p>
-				</div>
-
-				<div class="col">
-					<h2 class="section-title">开发环境</h2>
-					<div class="dev-env">
-						<div class="de-item">
-							<span class="de-icon">💻</span>
-							<div>
-								<strong>编辑器</strong>
-								<p>VS Code + Vim 插件，轻量高效</p>
-							</div>
-						</div>
-						<div class="de-item">
-							<span class="de-icon">🐧</span>
-							<div>
-								<strong>操作系统</strong>
-								<p>Windows 11 开发 + Ubuntu 服务器部署</p>
-							</div>
-						</div>
-						<div class="de-item">
-							<span class="de-icon">🎨</span>
-							<div>
-								<strong>终端</strong>
-								<p>Windows Terminal + Git Bash + Oh My Posh</p>
-							</div>
-						</div>
-						<div class="de-item">
-							<span class="de-icon">☁️</span>
-							<div>
-								<strong>服务器</strong>
-								<p>阿里云 ECS · Nginx 反向代理 · 自动化部署</p>
-							</div>
-						</div>
+					<div class="hero-socials">
+						<a href="https://github.com/korolkk" target="_blank">🐙 GitHub</a>
+						<a href="mailto:704788475@qq.com">📧 Email</a>
 					</div>
 				</div>
 			</div>
 
-			<div class="two-col">
-				<div class="col">
-					<h2 class="section-title">代码之外</h2>
-					<div class="beyond-code">
-						<div class="bc-item">
-							<span class="bc-icon">🎮</span>
-							<span>玩游戏，探索独立游戏和 3A 大作的设计理念</span>
-						</div>
-						<div class="bc-item">
-							<span class="bc-icon">📚</span>
-							<span>读技术书和非虚构类书籍，保持持续输入</span>
-						</div>
-						<div class="bc-item">
-							<span class="bc-icon">🏃</span>
-							<span>跑步和健身，保持身体和精神的良好状态</span>
-						</div>
-						<div class="bc-item">
-							<span class="bc-icon">🎬</span>
-							<span>看电影和纪录片，从不同视角理解世界</span>
-						</div>
-					</div>
-				</div>
-
-				<div class="col">
-					<h2 class="section-title">关于本站</h2>
+			<!-- ==================== 关于我 ==================== -->
+			<section>
+				<h2 class="section-title">👤 关于我</h2>
+				<div class="intro">
 					<p>
-						KaitoHub 是基于 <strong>Astro 6</strong> 构建的极简博客，采用卡片式设计，支持亮色与暗色主题切换。
-						技术选型追求极致的页面加载速度：零 JS 默认理念、本地托管字体、响应式图片自动优化，
-						目标 Lighthouse 评分 100/100。
+						你好，我是 Kaito，目前就职于<strong>浙江大华</strong>，担任嵌入式软件工程师，
+						专注于<strong>音视频编解码</strong>与<strong>流媒体传输</strong>方向。
+						日常与海思、联咏、星宸等芯片平台打交道，用 C/C++ 在底层世界里解决问题。
 					</p>
 					<p>
-						站点部署在阿里云 ECS 上，通过 GitHub Webhook 实现推送即部署。
+						工作之余运营 <strong>KaitoHub</strong> 技术博客，相信「输出倒逼输入」——
+						写作不仅是记录，更是深度思考的过程。目前已累计发表 77 篇文章，
+						内容覆盖嵌入式开发、算法题解、项目实战与工具教程。
+					</p>
+					<p>
+						杭州电子科技大学计算机专业毕业，曾获数学建模美赛 F 奖（全球 &lt; 2%），
+						字节跳动青训营优秀学员。持续学习中，保持好奇，保持饥饿。
+					</p>
+				</div>
+			</section>
+
+			<!-- ==================== 当前在做 + 博客数据 ==================== -->
+			<section>
+				<div class="two-col">
+					<div>
+						<h2 class="section-title">🔭 当前在做</h2>
+						<div class="now-grid">
+							<div class="now-card">
+								<span class="now-icon">📝</span>
+								<div>
+									<strong>持续写作</strong>
+									<p>维护 KaitoHub 技术博客，目标每月至少 2 篇高质量文章。</p>
+								</div>
+							</div>
+							<div class="now-card">
+								<span class="now-icon">🤖</span>
+								<div>
+									<strong>AI 辅助编程实践</strong>
+									<p>深度使用 Claude Code、Cursor 等工具，探索 AI × 嵌入式的最佳实践。</p>
+								</div>
+							</div>
+							<div class="now-card">
+								<span class="now-icon">🎯</span>
+								<div>
+									<strong>音视频技术深耕</strong>
+									<p>深入 H.264/H.265 编码原理、WebRTC 协议栈、流媒体框架。</p>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<div>
+						<h2 class="section-title">📊 博客数据</h2>
+						<div class="blog-stats">
+							<div class="bs-card">
+								<span class="bs-num">77</span>
+								<span class="bs-label">技术文章</span>
+							</div>
+							<div class="bs-card">
+								<span class="bs-num">3+</span>
+								<span class="bs-label">年持续写作</span>
+							</div>
+							<div class="bs-card">
+								<span class="bs-num">4</span>
+								<span class="bs-label">内容板块</span>
+							</div>
+						</div>
+						<p class="bs-desc">
+							覆盖 <strong>嵌入式开发</strong> · <strong>算法题解</strong> · <strong>项目实战</strong> · <strong>工具教程</strong> 四大方向，
+							从底层驱动到上层应用。
+						</p>
+					</div>
+				</div>
+			</section>
+
+			<!-- ==================== 成长历程 ==================== -->
+			<section>
+				<h2 class="section-title">📌 成长历程</h2>
+				<div class="timeline">
+					<div class="tl-item">
+						<div class="tl-marker">
+							<div class="tl-dot"></div>
+						</div>
+						<div class="tl-card">
+							<div class="tl-header">
+								<span class="tl-date">2024.06 — 至今</span>
+								<span class="tl-duration">2 年</span>
+							</div>
+							<h3>KaitoHub · 技术写作</h3>
+							<div class="tl-sub">个人技术博客，累计文章 77 篇</div>
+							<p>从 Hexo 迁移至 Astro 6 全面重设计，持续输出嵌入式、算法、项目实战内容。</p>
+							<div class="tl-skills">
+								<span>Astro</span><span>Markdown</span><span>SEO</span><span>AI 工具</span>
+							</div>
+						</div>
+					</div>
+
+					<div class="tl-item">
+						<div class="tl-marker">
+							<div class="tl-dot"></div>
+						</div>
+						<div class="tl-card">
+							<div class="tl-header">
+								<span class="tl-date">2023.07 — 至今</span>
+								<span class="tl-duration">3 年</span>
+							</div>
+							<h3>浙江大华 · 嵌入式软件工程师</h3>
+							<div class="tl-sub">杭州 · 音视频编解码与流媒体传输</div>
+							<p>C/C++ 开发，深度接触海思、联咏、星宸芯片平台，积累底层系统与性能优化经验。</p>
+							<div class="tl-skills">
+								<span>C/C++</span><span>音视频编解码</span><span>海思</span><span>联咏</span><span>星宸</span>
+							</div>
+						</div>
+					</div>
+
+					<div class="tl-item">
+						<div class="tl-marker">
+							<div class="tl-dot"></div>
+						</div>
+						<div class="tl-card">
+							<div class="tl-header">
+								<span class="tl-date">2023.04 — 2023.06</span>
+								<span class="tl-duration">3 个月</span>
+							</div>
+							<h3>ROS2 · 机器人公司实习</h3>
+							<div class="tl-sub">嵌入式开发实习 · 深度图像 → 点云数据转换</div>
+							<p>自学 ROS2 协议栈后完成实习，将理论与工程实践结合，获得软硬结合开发经验。</p>
+							<div class="tl-skills">
+								<span>ROS2</span><span>OpenCV</span><span>点云处理</span><span>Python</span>
+							</div>
+						</div>
+					</div>
+
+					<div class="tl-item">
+						<div class="tl-marker">
+							<div class="tl-dot"></div>
+						</div>
+						<div class="tl-card">
+							<div class="tl-header">
+								<span class="tl-date">2023.01 — 2023.03</span>
+								<span class="tl-duration">3 个月</span>
+							</div>
+							<h3>字节跳动青训营 · 后端方向</h3>
+							<div class="tl-sub">优秀学员 · Hertz / Kitex 框架实战</div>
+							<p>深入 Go 语言、微服务架构与分布式系统，结项项目获得优秀学员称号。</p>
+							<div class="tl-skills">
+								<span>Go</span><span>Hertz</span><span>Kitex</span><span>微服务</span>
+							</div>
+						</div>
+					</div>
+
+					<div class="tl-item">
+						<div class="tl-marker">
+							<div class="tl-dot"></div>
+						</div>
+						<div class="tl-card">
+							<div class="tl-header">
+								<span class="tl-date">2022.02</span>
+								<span class="tl-duration">美赛 F 奖</span>
+							</div>
+							<h3>数学建模美赛 · Finalist</h3>
+							<div class="tl-sub">MCM/ICM · 全球 &lt; 2%</div>
+							<p>美国大学生数学建模竞赛 Finalist（F 奖），本科期间最重要的学术荣誉之一。</p>
+							<div class="tl-skills">
+								<span>数学建模</span><span>MATLAB</span><span>Python</span><span>论文写作</span>
+							</div>
+						</div>
+					</div>
+
+					<div class="tl-item">
+						<div class="tl-marker">
+							<div class="tl-dot"></div>
+						</div>
+						<div class="tl-card">
+							<div class="tl-header">
+								<span class="tl-date">2019.09 — 2023.06</span>
+								<span class="tl-duration">4 年</span>
+							</div>
+							<h3>杭州电子科技大学 · 本科</h3>
+							<div class="tl-sub">计算机科学与技术</div>
+							<p>系统学习计算机组成原理、操作系统、数据结构等核心课程，打下扎实工程基础。</p>
+							<div class="tl-skills">
+								<span>C/C++</span><span>数据结构</span><span>算法</span><span>计算机网络</span>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- ==================== 技术栈 + 开发环境 ==================== -->
+			<section>
+				<div class="two-col">
+					<div>
+						<h2 class="section-title">🛠 技术栈</h2>
+						<div class="stack-grid">
+							<div class="stack-cat">
+								<h3>🔧 核心语言</h3>
+								<div class="stack-tags">
+									<span class="st-primary">C</span>
+									<span class="st-primary">C++</span>
+									<span class="st-secondary">Python</span>
+									<span class="st-secondary">Go</span>
+									<span class="st-secondary">Shell</span>
+								</div>
+							</div>
+							<div class="stack-cat">
+								<h3>📡 嵌入式 & 芯片</h3>
+								<div class="stack-tags">
+									<span class="st-primary">海思</span>
+									<span class="st-primary">联咏</span>
+									<span class="st-primary">星宸</span>
+									<span class="st-secondary">嵌入式 Linux</span>
+								</div>
+							</div>
+							<div class="stack-cat">
+								<h3>🎬 音视频</h3>
+								<div class="stack-tags">
+									<span class="st-primary">H.264/H.265</span>
+									<span class="st-secondary">RTSP/RTMP</span>
+									<span class="st-secondary">WebRTC</span>
+									<span class="st-secondary">FFmpeg</span>
+								</div>
+							</div>
+							<div class="stack-cat">
+								<h3>🔩 工具 & 其他</h3>
+								<div class="stack-tags">
+									<span class="st-secondary">Git</span>
+									<span class="st-secondary">Linux</span>
+									<span class="st-secondary">Docker</span>
+									<span class="st-secondary">ROS2</span>
+									<span class="st-secondary">OpenCV</span>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<div>
+						<h2 class="section-title">💻 开发环境</h2>
+						<div class="dev-env">
+							<div class="de-item">
+								<span class="de-icon">⌨️</span>
+								<div>
+									<strong>编辑器</strong>
+									<p>VS Code + Vim 插件</p>
+								</div>
+							</div>
+							<div class="de-item">
+								<span class="de-icon">🐧</span>
+								<div>
+									<strong>系统</strong>
+									<p>Win 11 + Ubuntu 服务器</p>
+								</div>
+							</div>
+							<div class="de-item">
+								<span class="de-icon">🖥️</span>
+								<div>
+									<strong>终端</strong>
+									<p>Win Terminal + Oh My Posh</p>
+								</div>
+							</div>
+							<div class="de-item">
+								<span class="de-icon">☁️</span>
+								<div>
+									<strong>服务器</strong>
+									<p>阿里云 ECS · Nginx</p>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- ==================== 代码之外 + 联系我 ==================== -->
+			<section>
+				<div class="two-col">
+					<div>
+						<h2 class="section-title">🎮 代码之外</h2>
+						<div class="beyond-grid">
+							<div class="bc-item">
+								<span class="bc-icon">🎮</span>
+								<span>独立游戏 & 3A 大作</span>
+							</div>
+							<div class="bc-item">
+								<span class="bc-icon">📚</span>
+								<span>技术 & 非虚构阅读</span>
+							</div>
+							<div class="bc-item">
+								<span class="bc-icon">🏃</span>
+								<span>跑步 & 健身</span>
+							</div>
+							<div class="bc-item">
+								<span class="bc-icon">🎬</span>
+								<span>电影 & 纪录片</span>
+							</div>
+						</div>
+					</div>
+
+					<div>
+						<h2 class="section-title">📬 联系我</h2>
+						<p style="margin:0 0 0.4em;font-size:0.88em;color:rgb(var(--gray));line-height:1.6;">
+							文章疑问、技术交流，欢迎随时联系：
+						</p>
+						<div class="contact-grid">
+							<a href="https://github.com/korolkk" target="_blank" class="contact-card">
+								<span class="cc-icon">🐙</span>
+								<div class="cc-body">
+									<strong>GitHub</strong>
+									<span>@korolkk</span>
+								</div>
+							</a>
+							<a href="mailto:704788475@qq.com" class="contact-card">
+								<span class="cc-icon">📧</span>
+								<div class="cc-body">
+									<strong>Email</strong>
+									<span>704788475@qq.com</span>
+								</div>
+							</a>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- ==================== 关于本站 ==================== -->
+			<section>
+				<h2 class="section-title">🌐 关于本站</h2>
+				<div class="site-info">
+					<p>
+						KaitoHub 基于 <strong>Astro 6</strong> 构建，采用极简卡片式设计，支持亮暗主题切换。
+						零 JS 默认、本地字体、响应式图片，追求极致加载速度。
+					</p>
+					<p>
+						站点部署在阿里云 ECS，通过 GitHub Webhook 实现推送即部署。
 						在这里记录技术学习、项目经验和生活随想。
 					</p>
 				</div>
-			</div>
-
-			<h2 class="section-title">联系我</h2>
-
-			<p>
-				如果你对文章内容有疑问，或者想交流技术话题，欢迎随时联系：
-			</p>
-
-			<div class="contact-grid">
-				<a href="https://github.com/korolkk" target="_blank" class="contact-card">
-					<span class="cc-icon">🐙</span>
-					<strong>GitHub</strong>
-					<span>@korolkk</span>
-				</a>
-				<a href="mailto:704788475@qq.com" class="contact-card">
-					<span class="cc-icon">📧</span>
-					<strong>Email</strong>
-					<span>704788475@qq.com</span>
-				</a>
-			</div>
+			</section>
 
 			<p class="footer-quote">
 				"Stay hungry, stay foolish." —— Steve Jobs
