@@ -6,7 +6,7 @@ import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
 import FormattedDate from '../components/FormattedDate.astro';
 import { SITE_TITLE, SITE_DESCRIPTION, SITE_START_DATE } from '../consts';
-import avatarPlaceholder from '../assets/blog-placeholder-about.jpg';
+import avatarPlaceholder from '../assets/kaito_1.jpg';
 const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
 
 const allPosts = (await getCollection('blog')).sort(
@@ -420,8 +420,8 @@ const stats = {
 						/>
 						<h1 class="profile-name">Kaito</h1>
 						<p class="profile-bio">
-							嵌入式软件工程师，专注音视频开发方向。<br />
-							主攻 C/C++，熟悉海思、联咏、星宸芯片平台。
+							嵌入式软件工程师。<br />
+							喜欢摄影、骑行和捣鼓各种小工具。
 						</p>
 						<div class="profile-quote-wrapper">
 							<p class="profile-quote" id="profileQuote">"饭里盐加多了，就会咸"</p>
