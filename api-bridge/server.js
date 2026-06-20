@@ -46,8 +46,8 @@ const SESSION_DURATION_MS = 24 * 60 * 60 * 1000;
 const BLOG_CONTENT_DIR = process.env.BLOG_CONTENT_DIR || '/var/www/kaitohub/src/content/blog';
 
 // 仓库路径（服务器上 clone 的位置）
-const REPO_DIR = '/var/www/kaitohub';
-const DIST_DIR = '/var/www/kaitohub/dist';
+const REPO_DIR = process.env.REPO_DIR || '/var/www/kaitohub';
+const DIST_DIR = process.env.DIST_DIR || '/var/www/kaitohub/dist';
 
 // ======================
 // SQLite 数据库初始化（sql.js — WASM，无需本地编译）
