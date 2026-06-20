@@ -2,7 +2,7 @@
 title: "个人博客部署到阿里云服务器全攻略"
 description: "从 GitHub Pages 迁移到阿里云 ECS，完整记录 Nginx 配置、SELinux 排障、CI/CD 自动部署的全过程与踩坑经验。"
 pubDate: "Jun 7 2026"
-heroImage: "../../assets/blog-placeholder-about.jpg"
+heroImage: "../../assets/covers/cover-aliyun.jpg"
 tags: ["部署", "Nginx", "阿里云", "CI/CD"]
 ---
 

@@ -193,6 +193,42 @@ Windows 上 `rm -rf node_modules` 经常失败（`EBUSY: resource busy or locked
 - `node_modules/` 不能提交
 - `.env` 文件（含真实密钥）不能提交，只提交 `.env.example` 模板
 
+### 19. 文章封面图生成策略
+
+为新建文章生成 `heroImage` 封面时，使用 sharp 生成主题渐变色封面（720×240），避免使用通用占位图。
+
+- 封面存放在 `src/assets/covers/` 目录
+- 根据文章主题选择配色，例如：
+  - AI/机器学习 → 紫蓝色调 `[[88,55,140], [30,60,150]]`
+  - 部署/运维 → 青绿色调 `[[15,100,85], [40,140,100]]`
+  - 云服务 → 橙红色调 `[[180,80,30], [230,140,60]]`
+  - 教程/工具 → 蓝色调 `[[40,60,140], [120,80,200]]`
+  - 算法/竞赛 → 深蓝灰色调 `[[30,40,60], [60,90,140]]`
+  - 项目实战 → 暖色调 `[[180,100,40], [220,160,80]]`
+- 生成脚本模板：
+
+```js
+const sharp = require('sharp');
+const W = 720, H = 240;
+const pixels = Buffer.alloc(W * H * 3);
+const [r1, g1, b1] = colors[0];
+const [r2, g2, b2] = colors[1];
+for (let y = 0; y < H; y++) {
+  for (let x = 0; x < W; x++) {
+    const t = (x / W + y / H) / 2;
+    pixels[(y * W + x) * 3] = Math.round(r1 + (r2 - r1) * t);
+    pixels[(y * W + x) * 3 + 1] = Math.round(g1 + (g2 - g1) * t);
+    pixels[(y * W + x) * 3 + 2] = Math.round(b1 + (b2 - b1) * t);
+  }
+}
+// 加微噪点纹理后保存
+await sharp(pixels, { raw: { width: W, height: H, channels: 3 } })
+  .jpeg({ quality: 85 })
+  .toFile('src/assets/covers/cover-xxx.jpg');
+```
+
+- 生成后在文章 frontmatter 中引用：`heroImage: ../../assets/covers/cover-xxx.jpg`
+
 ## 站点配置
 
 全局常量（`SITE_TITLE`、`SITE_DESCRIPTION`）定义在 `src/consts.ts` 中。`astro.config.mjs` 中的 `site` URL 应在上线前从 `https://example.com` 改为实际域名。
