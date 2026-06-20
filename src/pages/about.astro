@@ -43,22 +43,9 @@ import Footer from '../components/Footer.astro';
 			}
 			.hero-content {
 				position: relative;
-				margin-top: -48px;
-				padding: 0 1.5em;
+				margin-top: 0;
+				padding: 4em 1.5em 0;
 				text-align: center;
-			}
-			.hero-avatar {
-				width: 80px;
-				height: 80px;
-				border-radius: 50%;
-				border: 4px solid var(--card-bg);
-				background: var(--card-bg);
-				box-shadow: 0 2px 16px rgba(var(--black), 0.10);
-				display: inline-flex;
-				align-items: center;
-				justify-content: center;
-				font-size: 2.4em;
-				margin-bottom: 0.6em;
 			}
 			.hero-name {
 				font-size: 1.8em;
@@ -471,7 +458,7 @@ import Footer from '../components/Footer.astro';
 					gap: 1.2em;
 				}
 				.hero-content {
-					padding: 0 1em;
+					padding: 2em 1em 0;
 				}
 				.hero-tagline {
 					font-size: 0.88em;
@@ -501,11 +488,6 @@ import Footer from '../components/Footer.astro';
 					width: 9px;
 					height: 9px;
 				}
-				.hero-avatar {
-					width: 64px;
-					height: 64px;
-					font-size: 2em;
-				}
 				.hero-name {
 					font-size: 1.4em;
 				}
@@ -522,8 +504,7 @@ import Footer from '../components/Footer.astro';
 					<Image src={AboutHeroImage} alt="" width={720} height={260} />
 				</div>
 				<div class="hero-content">
-					<div class="hero-avatar">🦀</div>
-					<h1 class="hero-name">Kaito</h1>
+										<h1 class="hero-name">Kaito</h1>
 					<p class="hero-tagline">
 						嵌入式软件工程师 · 深耕音视频编解码与流媒体传输 ·
 						<br />
