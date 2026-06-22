@@ -430,8 +430,8 @@
 			bottom: 5em;
 			width: auto;
 			max-width: none;
-			height: calc(100dvh - 7em);
-			max-height: none;
+			height: auto;
+			max-height: 55dvh;
 			border-radius: 16px 16px 0 0;
 		}
 		.ai-chat-btn {
@@ -717,24 +717,26 @@
 			var vw = window.innerWidth;
 			var btnTop = vh - pos.bottom - 48; // 48 = button height
 			var spaceAbove = btnTop - 16; // leave margin
+			var isMobile = vw <= 500;
+			var maxHeightCap = isMobile ? Math.round(vh * 0.55) : 500;
 
 			// Horizontal: clamp dialog right so it stays within viewport
-			var dialogWidth = 380;
+			var dialogWidth = isMobile ? Math.min(380, vw - 16) : 380;
 			var maxRight = vw - dialogWidth - 8;
 			var dialogRight = Math.max(8, Math.min(pos.right, maxRight));
 			dialog.style.right = dialogRight + 'px';
 
-			if (spaceAbove >= 320) {
+			if (spaceAbove >= (isMobile ? 260 : 320)) {
 				// Open above button
 				dialog.style.bottom = (pos.bottom + 56) + 'px';
 				dialog.style.top = 'auto';
-				dialog.style.maxHeight = Math.min(500, spaceAbove) + 'px';
+				dialog.style.maxHeight = Math.min(maxHeightCap, spaceAbove) + 'px';
 			} else {
 				// Open below button
 				var spaceBelow = vh - btnTop - 48 - 16;
 				dialog.style.bottom = 'auto';
 				dialog.style.top = (btnTop + 48 + 8) + 'px';
-				dialog.style.maxHeight = Math.min(500, Math.max(200, spaceBelow)) + 'px';
+				dialog.style.maxHeight = Math.min(maxHeightCap, Math.max(200, spaceBelow)) + 'px';
 			}
 		}
 

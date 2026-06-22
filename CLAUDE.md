@@ -229,6 +229,18 @@ await sharp(pixels, { raw: { width: W, height: H, channels: 3 } })
 
 - 生成后在文章 frontmatter 中引用：`heroImage: ../../assets/covers/cover-xxx.jpg`
 
+## 开发规则（续）
+
+### 19. 同时考虑网页端和手机端
+
+每次 CSS/布局修改必须同时验证桌面端（>768px）和手机端（≤500px）的显示效果。关键检查点：
+
+- **响应式断点**：主要断点为 `768px`（平板/两栏折叠）和 `500px`（手机/单栏），新组件至少覆盖这两个断点
+- **`max-width` / `overflow`**：手机端 375-414px 宽度下，元素不能撑出视口。图片、代码块、表格需有 `max-width: 100%` 防溢出
+- **触摸友好**：可点击元素（按钮、链接）至少 44×44px 的点击区域，间距足够防止误触
+- **弹窗/浮层**：手机端不能占满屏幕（≤55dvh），确保背景内容和关闭按钮可见
+- **字体大小**：手机端最小 14px（防 iOS 缩放），输入框字体 ≥16px（防聚焦时页面缩放）
+- **测试方式**：`npm run build && npm run preview` 后使用浏览器 DevTools 的 Responsive Mode 切换到 375px（iPhone SE）和 414px（iPhone 12-15）验证
 ## 站点配置
 
 全局常量（`SITE_TITLE`、`SITE_DESCRIPTION`）定义在 `src/consts.ts` 中。`astro.config.mjs` 中的 `site` URL 应在上线前从 `https://example.com` 改为实际域名。
