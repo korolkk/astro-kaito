@@ -599,6 +599,7 @@ import { SITE_TITLE } from '../../consts';
 				var originalFile = null;
 				var originalFileName = '';
 				var currentBlob = null;
+				var processedCanvas = null;
 				var quality = 0.85;
 				var format = 'image/jpeg';
 				var targetWidth = 0;
@@ -748,9 +749,13 @@ import { SITE_TITLE } from '../../consts';
 					maxW = maxW || Math.min(afterCanvas.parentElement.clientWidth - 4, 400);
 					maxH = maxH || maxW;
 
-					var scale = Math.min(maxW / targetWidth, maxH / targetHeight, 1);
-					var displayW = Math.round(targetWidth * scale);
-					var displayH = Math.round(targetHeight * scale);
+					var source = processedCanvas || originalImage;
+					var srcW = processedCanvas ? processedCanvas.width : origWidth;
+					var srcH = processedCanvas ? processedCanvas.height : origHeight;
+
+					var scale = Math.min(maxW / srcW, maxH / srcH, 1);
+					var displayW = Math.round(srcW * scale);
+					var displayH = Math.round(srcH * scale);
 
 					afterCanvas.width = displayW;
 					afterCanvas.height = displayH;
@@ -758,9 +763,8 @@ import { SITE_TITLE } from '../../consts';
 					aCtx.imageSmoothingEnabled = true;
 					aCtx.imageSmoothingQuality = 'high';
 
-					// Draw scaled
 					aCtx.clearRect(0, 0, displayW, displayH);
-					aCtx.drawImage(originalImage, 0, 0, targetWidth, targetHeight);
+					aCtx.drawImage(source, 0, 0, displayW, displayH);
 				}
 
 				// ========== Image Processing ==========
@@ -780,6 +784,9 @@ import { SITE_TITLE } from '../../consts';
 						ctx.filter = activeFilter;
 					}
 					ctx.drawImage(originalImage, 0, 0, targetWidth, targetHeight);
+
+					// Store processed canvas for preview
+					processedCanvas = offscreen;
 
 					// Convert to blob
 					var mimeType = format;
