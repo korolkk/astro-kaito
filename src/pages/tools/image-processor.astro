@@ -1,0 +1,1045 @@
+---
+import BaseHead from '../../components/BaseHead.astro';
+import Footer from '../../components/Footer.astro';
+import Header from '../../components/Header.astro';
+import { SITE_TITLE } from '../../consts';
+---
+
+<!doctype html>
+<html lang="zh-CN">
+	<head>
+		<BaseHead title={`图片处理工具 - ${SITE_TITLE}`} description="在线图片压缩、格式转换、缩放和滤镜工具，完全在浏览器中运行" />
+		<style>
+			main {
+				width: 1140px;
+				max-width: calc(100% - 2em);
+				padding-left: 2em;
+				padding-right: 2em;
+			}
+			.page-title {
+				font-size: 1.6em;
+				font-weight: 700;
+				color: rgb(var(--black));
+				margin-bottom: 0.3em;
+				text-align: center;
+			}
+			.page-desc {
+				text-align: center;
+				color: rgb(var(--gray));
+				font-size: 0.9em;
+				margin-bottom: 2em;
+			}
+
+			/* Upload zone */
+			.upload-zone {
+				border: 2px dashed rgb(var(--gray-light));
+				border-radius: 16px;
+				padding: 3em 2em;
+				text-align: center;
+				background: var(--card-bg);
+				cursor: pointer;
+				transition: border-color 0.2s ease, background 0.2s ease;
+				margin-bottom: 1em;
+			}
+			.upload-zone:hover,
+			.upload-zone.drag-over {
+				border-color: var(--accent);
+				background: rgba(var(--accent-rgb), 0.04);
+			}
+			.upload-icon {
+				font-size: 2.5em;
+				display: block;
+				margin-bottom: 0.4em;
+			}
+			.upload-text {
+				font-size: 1em;
+				font-weight: 600;
+				color: rgb(var(--black));
+				margin: 0 0 0.3em;
+			}
+			.upload-hint {
+				font-size: 0.82em;
+				color: rgb(var(--gray));
+				margin: 0;
+			}
+			.upload-supported {
+				font-size: 0.75em;
+				color: rgb(var(--gray));
+				margin: 0.6em 0 0;
+				opacity: 0.7;
+			}
+
+			/* Error message */
+			.error-msg {
+				display: flex;
+				align-items: center;
+				gap: 0.5em;
+				padding: 0.7em 1em;
+				background: rgba(220, 53, 69, 0.08);
+				border: 1px solid rgba(220, 53, 69, 0.2);
+				border-radius: 10px;
+				color: #dc3545;
+				font-size: 0.85em;
+				margin-bottom: 1em;
+				animation: fadeIn 0.2s ease;
+			}
+			@keyframes fadeIn {
+				from { opacity: 0; transform: translateY(-4px); }
+				to { opacity: 1; transform: translateY(0); }
+			}
+
+			/* Tool layout */
+			.tool-layout {
+				display: grid;
+				grid-template-columns: 340px 1fr;
+				gap: 1.5em;
+				align-items: start;
+			}
+
+			/* Panels */
+			.panel {
+				background: var(--card-bg);
+				border-radius: 20px;
+				padding: 1.5em;
+				box-shadow: 0 2px 12px rgba(var(--black), 0.04);
+			}
+			.panel-title {
+				font-size: 0.9em;
+				font-weight: 700;
+				color: rgb(var(--gray));
+				text-transform: uppercase;
+				letter-spacing: 0.05em;
+				margin: 0 0 1em;
+				padding-bottom: 0.6em;
+				border-bottom: 2px solid rgb(var(--gray-light));
+			}
+
+			/* Control groups */
+			.control-group {
+				margin-bottom: 1.2em;
+			}
+			.control-group:last-child {
+				margin-bottom: 0;
+			}
+			.control-label {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				font-size: 0.85em;
+				font-weight: 600;
+				color: rgb(var(--black));
+				margin-bottom: 0.4em;
+			}
+			.control-value {
+				font-weight: 400;
+				color: var(--accent);
+				font-variant-numeric: tabular-nums;
+			}
+
+			/* Slider */
+			input[type="range"] {
+				-webkit-appearance: none;
+				width: 100%;
+				height: 6px;
+				border-radius: 3px;
+				background: rgb(var(--gray-light));
+				outline: none;
+			}
+			input[type="range"]::-webkit-slider-thumb {
+				-webkit-appearance: none;
+				width: 18px;
+				height: 18px;
+				border-radius: 50%;
+				background: var(--accent);
+				cursor: pointer;
+				transition: transform 0.15s ease;
+			}
+			input[type="range"]::-webkit-slider-thumb:hover {
+				transform: scale(1.15);
+			}
+			input[type="range"]:disabled {
+				opacity: 0.35;
+				cursor: not-allowed;
+			}
+
+			/* Format selector */
+			.format-btns {
+				display: flex;
+				gap: 0.4em;
+			}
+			.format-btn {
+				flex: 1;
+				padding: 0.5em 0.3em;
+				border: 1.5px solid rgb(var(--gray-light));
+				border-radius: 8px;
+				background: var(--card-bg);
+				color: rgb(var(--gray-dark));
+				font-family: inherit;
+				font-size: 0.82em;
+				font-weight: 600;
+				cursor: pointer;
+				transition: all 0.2s ease;
+				text-align: center;
+			}
+			.format-btn:hover {
+				border-color: var(--accent);
+				color: var(--accent);
+			}
+			.format-btn.active {
+				background: var(--accent);
+				border-color: var(--accent);
+				color: #fff;
+			}
+
+			/* Resize inputs */
+			.resize-row {
+				display: flex;
+				align-items: center;
+				gap: 0.4em;
+			}
+			.resize-input {
+				flex: 1;
+				min-width: 0;
+				padding: 0.45em 0.6em;
+				border: 1.5px solid rgb(var(--gray-light));
+				border-radius: 8px;
+				background: var(--card-bg);
+				color: rgb(var(--black));
+				font-family: inherit;
+				font-size: 0.85em;
+				font-variant-numeric: tabular-nums;
+				outline: none;
+				transition: border-color 0.2s ease;
+			}
+			.resize-input:focus {
+				border-color: var(--accent);
+			}
+			.resize-sep {
+				color: rgb(var(--gray));
+				font-size: 0.85em;
+				flex-shrink: 0;
+			}
+			.lock-btn {
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				width: 34px;
+				height: 34px;
+				border: 1.5px solid rgb(var(--gray-light));
+				border-radius: 8px;
+				background: var(--card-bg);
+				color: rgb(var(--gray));
+				cursor: pointer;
+				transition: all 0.2s ease;
+				flex-shrink: 0;
+			}
+			.lock-btn:hover {
+				border-color: var(--accent);
+				color: var(--accent);
+			}
+			.lock-btn.locked {
+				background: rgba(var(--accent-rgb), 0.08);
+				border-color: var(--accent);
+				color: var(--accent);
+			}
+			.lock-btn svg {
+				width: 16px;
+				height: 16px;
+			}
+
+			/* Filter buttons */
+			.filter-btns {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.35em;
+			}
+			.filter-btn {
+				padding: 0.35em 0.7em;
+				border: 1.5px solid rgb(var(--gray-light));
+				border-radius: 999px;
+				background: var(--card-bg);
+				color: rgb(var(--gray-dark));
+				font-family: inherit;
+				font-size: 0.78em;
+				cursor: pointer;
+				transition: all 0.2s ease;
+				white-space: nowrap;
+			}
+			.filter-btn:hover {
+				border-color: var(--accent);
+				color: var(--accent);
+			}
+			.filter-btn.active {
+				background: var(--accent);
+				border-color: var(--accent);
+				color: #fff;
+			}
+
+			/* Action buttons */
+			.action-btns {
+				display: flex;
+				gap: 0.5em;
+				margin-top: 0.3em;
+			}
+			.btn {
+				padding: 0.55em 1.2em;
+				border-radius: 10px;
+				font-family: inherit;
+				font-size: 0.88em;
+				font-weight: 600;
+				cursor: pointer;
+				transition: all 0.2s ease;
+				border: none;
+				text-align: center;
+			}
+			.btn-primary {
+				flex: 1;
+				background: var(--accent);
+				color: #fff;
+			}
+			.btn-primary:hover {
+				opacity: 0.85;
+			}
+			.btn-secondary {
+				background: rgb(var(--gray-light));
+				color: rgb(var(--gray-dark));
+			}
+			.btn-secondary:hover {
+				background: rgb(var(--gray));
+				color: #fff;
+			}
+
+			/* Preview panel */
+			.preview-dual {
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+				gap: 0.8em;
+				margin-bottom: 1em;
+			}
+			.preview-item {
+				text-align: center;
+			}
+			.preview-label {
+				font-size: 0.75em;
+				font-weight: 700;
+				color: rgb(var(--gray));
+				text-transform: uppercase;
+				letter-spacing: 0.05em;
+				margin-bottom: 0.4em;
+			}
+			.preview-label.after {
+				color: var(--accent);
+			}
+			.preview-canvas-wrap {
+				background: rgb(var(--gray-light));
+				border-radius: 12px;
+				overflow: hidden;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				min-height: 120px;
+				position: relative;
+			}
+			.preview-canvas-wrap canvas {
+				display: block;
+				max-width: 100%;
+				height: auto;
+			}
+
+			/* Size comparison */
+			.size-compare {
+				background: rgb(var(--gray-light));
+				border-radius: 12px;
+				padding: 1em;
+			}
+			.size-compare-header {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				margin-bottom: 0.6em;
+			}
+			.size-label {
+				font-size: 0.8em;
+				font-weight: 600;
+				color: rgb(var(--gray-dark));
+			}
+			.size-saved {
+				font-size: 0.82em;
+				font-weight: 700;
+				color: #28a745;
+			}
+			.size-bar {
+				height: 8px;
+				border-radius: 4px;
+				background: rgb(var(--gray-light));
+				position: relative;
+				overflow: hidden;
+				margin-bottom: 0.5em;
+			}
+			.size-bar-original {
+				position: absolute;
+				inset: 0;
+				background: rgb(var(--gray));
+				border-radius: 4px;
+				opacity: 0.4;
+				width: 100%;
+			}
+			.size-bar-processed {
+				position: absolute;
+				inset: 0;
+				background: var(--accent);
+				border-radius: 4px;
+				transition: width 0.3s ease;
+			}
+			.size-details {
+				display: flex;
+				justify-content: space-between;
+				font-size: 0.75em;
+				color: rgb(var(--gray));
+			}
+			.size-original-val {
+				color: rgb(var(--gray-dark));
+			}
+			.size-processed-val {
+				color: var(--accent);
+				font-weight: 600;
+			}
+
+			/* No image placeholder */
+			.no-image-placeholder {
+				color: rgb(var(--gray));
+				font-size: 0.85em;
+				text-align: center;
+				padding: 2em 1em;
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				gap: 0.5em;
+			}
+			.no-image-placeholder .placeholder-icon {
+				font-size: 2em;
+				opacity: 0.5;
+			}
+
+			/* Disabled state */
+			.controls-disabled {
+				pointer-events: none;
+				opacity: 0.45;
+			}
+
+			@media (max-width: 768px) {
+				.tool-layout {
+					grid-template-columns: 1fr;
+				}
+				.preview-dual {
+					grid-template-columns: 1fr 1fr;
+				}
+			}
+			@media (max-width: 500px) {
+				.panel {
+					padding: 1em;
+				}
+				.preview-dual {
+					grid-template-columns: 1fr;
+				}
+				.upload-zone {
+					padding: 2em 1em;
+				}
+				.format-btns {
+					flex-wrap: wrap;
+				}
+				.format-btn {
+					flex: 1 1 auto;
+					min-width: 60px;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<Header />
+		<main>
+			<h1 class="page-title">🖼️ 图片处理工具</h1>
+			<p class="page-desc">图片压缩、格式转换、缩放和滤镜 — 所有处理都在浏览器本地完成，不会上传到任何服务器</p>
+
+			<!-- Upload Zone -->
+			<div class="upload-zone" id="uploadZone">
+				<span class="upload-icon">📁</span>
+				<p class="upload-text">拖拽图片到此处，或点击选择文件</p>
+				<p class="upload-hint">支持 JPEG · PNG · WebP 格式</p>
+				<p class="upload-supported" id="uploadStatus">尚未选择文件</p>
+			</div>
+			<input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp" style="display:none">
+
+			<!-- Error message -->
+			<div class="error-msg" id="errorMsg" style="display:none">
+				<svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zM7 3h2v5H7V3zm0 7h2v2H7v-2z"/></svg>
+				<span id="errorText"></span>
+			</div>
+
+			<!-- Tool Layout (hidden until image loaded) -->
+			<div class="tool-layout" id="toolLayout" style="display:none">
+				<!-- Controls Panel -->
+				<div class="panel" id="controlsPanel">
+					<div class="panel-title">⚙️ 控制面板</div>
+
+					<div class="control-group">
+						<div class="control-label">
+							<span>压缩质量</span>
+							<span class="control-value" id="qualityValue">85%</span>
+						</div>
+						<input type="range" id="qualitySlider" min="10" max="100" value="85" step="1">
+					</div>
+
+					<div class="control-group">
+						<div class="control-label">输出格式</div>
+						<div class="format-btns" id="formatBtns">
+							<button class="format-btn active" data-format="image/jpeg">JPEG</button>
+							<button class="format-btn" data-format="image/png">PNG</button>
+							<button class="format-btn" data-format="image/webp">WebP</button>
+						</div>
+					</div>
+
+					<div class="control-group">
+						<div class="control-label">图片尺寸</div>
+						<div class="resize-row">
+							<input type="number" class="resize-input" id="widthInput" placeholder="宽度" min="1" max="4096">
+							<span class="resize-sep">×</span>
+							<input type="number" class="resize-input" id="heightInput" placeholder="高度" min="1" max="4096">
+							<button class="lock-btn locked" id="lockBtn" title="锁定宽高比">
+								<svg id="lockIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+							</button>
+						</div>
+					</div>
+
+					<div class="control-group">
+						<div class="control-label">滤镜效果</div>
+						<div class="filter-btns" id="filterBtns">
+							<button class="filter-btn active" data-filter="none">原图</button>
+							<button class="filter-btn" data-filter="grayscale(1)">灰度</button>
+							<button class="filter-btn" data-filter="sepia(0.75)">复古</button>
+							<button class="filter-btn" data-filter="brightness(1.2)">提亮</button>
+							<button class="filter-btn" data-filter="brightness(0.75)">压暗</button>
+							<button class="filter-btn" data-filter="contrast(1.3)">增强对比</button>
+						</div>
+					</div>
+
+					<div class="action-btns">
+						<button class="btn btn-primary" id="downloadBtn">⬇ 下载图片</button>
+						<button class="btn btn-secondary" id="resetBtn">↺ 重置</button>
+					</div>
+				</div>
+
+				<!-- Preview Panel -->
+				<div class="panel" id="previewPanel">
+					<div class="panel-title">👁️ 预览对比</div>
+
+					<div class="preview-dual">
+						<div class="preview-item">
+							<div class="preview-label">原始图片</div>
+							<div class="preview-canvas-wrap">
+								<canvas id="beforeCanvas"></canvas>
+							</div>
+						</div>
+						<div class="preview-item">
+							<div class="preview-label after">处理后</div>
+							<div class="preview-canvas-wrap">
+								<canvas id="afterCanvas"></canvas>
+							</div>
+						</div>
+					</div>
+
+					<div class="size-compare" id="sizeCompare" style="display:none">
+						<div class="size-compare-header">
+							<span class="size-label">文件大小对比</span>
+							<span class="size-saved" id="sizeSaved"></span>
+						</div>
+						<div class="size-bar">
+							<div class="size-bar-original"></div>
+							<div class="size-bar-processed" id="sizeBarProcessed" style="width:85%"></div>
+						</div>
+						<div class="size-details">
+							<span>原始: <span class="size-original-val" id="sizeOriginal">—</span></span>
+							<span>处理后: <span class="size-processed-val" id="sizeProcessed">—</span></span>
+						</div>
+					</div>
+				</div>
+			</div>
+		</main>
+		<Footer />
+
+		<script is:inline>
+			(function () {
+				// ========== DOM References ==========
+				var uploadZone = document.getElementById('uploadZone');
+				var fileInput = document.getElementById('fileInput');
+				var uploadStatus = document.getElementById('uploadStatus');
+				var errorMsg = document.getElementById('errorMsg');
+				var errorText = document.getElementById('errorText');
+				var toolLayout = document.getElementById('toolLayout');
+				var controlsPanel = document.getElementById('controlsPanel');
+				var qualitySlider = document.getElementById('qualitySlider');
+				var qualityValue = document.getElementById('qualityValue');
+				var formatBtns = document.getElementById('formatBtns');
+				var widthInput = document.getElementById('widthInput');
+				var heightInput = document.getElementById('heightInput');
+				var lockBtn = document.getElementById('lockBtn');
+				var filterBtns = document.getElementById('filterBtns');
+				var downloadBtn = document.getElementById('downloadBtn');
+				var resetBtn = document.getElementById('resetBtn');
+				var beforeCanvas = document.getElementById('beforeCanvas');
+				var afterCanvas = document.getElementById('afterCanvas');
+				var sizeCompare = document.getElementById('sizeCompare');
+				var sizeSaved = document.getElementById('sizeSaved');
+				var sizeBarProcessed = document.getElementById('sizeBarProcessed');
+				var sizeOriginal = document.getElementById('sizeOriginal');
+				var sizeProcessed = document.getElementById('sizeProcessed');
+
+				// ========== State ==========
+				var originalImage = null;
+				var originalFile = null;
+				var originalFileName = '';
+				var currentBlob = null;
+				var quality = 0.85;
+				var format = 'image/jpeg';
+				var targetWidth = 0;
+				var targetHeight = 0;
+				var origWidth = 0;
+				var origHeight = 0;
+				var aspectLocked = true;
+				var activeFilter = 'none';
+				var updateTimer = 0;
+
+				// ========== Helpers ==========
+				function fmtSize(bytes) {
+					if (bytes === 0) return '0 B';
+					if (bytes < 1024) return bytes + ' B';
+					if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+					return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+				}
+
+				function showError(msg) {
+					errorText.textContent = msg;
+					errorMsg.style.display = 'flex';
+					clearTimeout(errorMsg._timer);
+					errorMsg._timer = setTimeout(function () {
+						errorMsg.style.display = 'none';
+					}, 4000);
+				}
+
+				function hideError() {
+					errorMsg.style.display = 'none';
+					clearTimeout(errorMsg._timer);
+				}
+
+				function setControlsEnabled(enabled) {
+					if (enabled) {
+						controlsPanel.classList.remove('controls-disabled');
+					} else {
+						controlsPanel.classList.add('controls-disabled');
+					}
+				}
+
+				function getFormatExt() {
+					if (format === 'image/jpeg') return 'jpg';
+					if (format === 'image/png') return 'png';
+					return 'webp';
+				}
+
+				function isPNG() {
+					return format === 'image/png';
+				}
+
+				// ========== Image Loading ==========
+				function loadImage(file) {
+					hideError();
+
+					// Validate file type
+					if (!file.type.match(/^image\/(jpeg|png|webp)$/)) {
+						if (file.type === 'image/svg+xml') {
+							showError('SVG 格式暂不支持，请使用 JPEG、PNG 或 WebP 图片');
+						} else if (file.type.startsWith('image/')) {
+							showError('不支持的图片格式: ' + file.type + '，请使用 JPEG、PNG 或 WebP');
+						} else {
+							showError('请上传图片文件（JPEG、PNG 或 WebP）');
+						}
+						return;
+					}
+
+					if (file.size === 0) {
+						showError('文件为空，请选择有效的图片文件');
+						return;
+					}
+
+					originalFile = file;
+					originalFileName = file.name.replace(/\.[^.]+$/, '');
+
+					var reader = new FileReader();
+					reader.onload = function (e) {
+						var img = new Image();
+						img.onload = function () {
+							originalImage = img;
+							origWidth = img.naturalWidth;
+							origHeight = img.naturalHeight;
+
+							// Clamp to max 4096
+							if (origWidth > 4096 || origHeight > 4096) {
+								var scale = 4096 / Math.max(origWidth, origHeight);
+								origWidth = Math.round(origWidth * scale);
+								origHeight = Math.round(origHeight * scale);
+							}
+
+							targetWidth = origWidth;
+							targetHeight = origHeight;
+
+							// Update inputs
+							widthInput.value = targetWidth;
+							heightInput.value = targetHeight;
+							widthInput.max = origWidth * 2;
+							heightInput.max = origHeight * 2;
+
+							// Show tool layout
+							toolLayout.style.display = '';
+							setControlsEnabled(true);
+
+							// Update quality slider state for PNG
+							updateQualitySliderState();
+
+							// Initial render
+							renderPreview();
+							processImage();
+
+							// Update status
+							uploadStatus.textContent = '已加载: ' + file.name + ' (' + fmtSize(file.size) + ')';
+						};
+						img.onerror = function () {
+							showError('图片加载失败，文件可能已损坏');
+						};
+						img.src = e.target.result;
+					};
+					reader.onerror = function () {
+						showError('文件读取失败，请重试');
+					};
+					reader.readAsDataURL(file);
+				}
+
+				// ========== Preview Rendering ==========
+				function renderPreview() {
+					if (!originalImage) return;
+
+					// Before canvas: show original image
+					var maxDisplayW = Math.min(beforeCanvas.parentElement.clientWidth - 4, 400);
+					var scale = Math.min(maxDisplayW / origWidth, 1);
+					var displayW = Math.round(origWidth * scale);
+					var displayH = Math.round(origHeight * scale);
+
+					beforeCanvas.width = displayW;
+					beforeCanvas.height = displayH;
+					var bCtx = beforeCanvas.getContext('2d');
+					bCtx.imageSmoothingEnabled = true;
+					bCtx.imageSmoothingQuality = 'high';
+					bCtx.drawImage(originalImage, 0, 0, displayW, displayH);
+
+					// After canvas: render processed image
+					renderAfterPreview(displayW, displayH);
+				}
+
+				function renderAfterPreview(maxW, maxH) {
+					if (!originalImage) return;
+					maxW = maxW || Math.min(afterCanvas.parentElement.clientWidth - 4, 400);
+					maxH = maxH || maxW;
+
+					var scale = Math.min(maxW / targetWidth, maxH / targetHeight, 1);
+					var displayW = Math.round(targetWidth * scale);
+					var displayH = Math.round(targetHeight * scale);
+
+					afterCanvas.width = displayW;
+					afterCanvas.height = displayH;
+					var aCtx = afterCanvas.getContext('2d');
+					aCtx.imageSmoothingEnabled = true;
+					aCtx.imageSmoothingQuality = 'high';
+
+					// Draw scaled
+					aCtx.clearRect(0, 0, displayW, displayH);
+					aCtx.drawImage(originalImage, 0, 0, targetWidth, targetHeight);
+				}
+
+				// ========== Image Processing ==========
+				function processImage() {
+					if (!originalImage) return;
+
+					// Create offscreen canvas at target dimensions
+					var offscreen = document.createElement('canvas');
+					offscreen.width = targetWidth;
+					offscreen.height = targetHeight;
+					var ctx = offscreen.getContext('2d');
+					ctx.imageSmoothingEnabled = true;
+					ctx.imageSmoothingQuality = 'high';
+
+					// Apply filter if active
+					if (activeFilter !== 'none') {
+						ctx.filter = activeFilter;
+					}
+					ctx.drawImage(originalImage, 0, 0, targetWidth, targetHeight);
+
+					// Convert to blob
+					var mimeType = format;
+					var q = isPNG() ? undefined : quality;
+
+					if (offscreen.toBlob) {
+						offscreen.toBlob(function (blob) {
+							if (!blob) {
+								// Fallback
+								blobFromDataURL(offscreen, mimeType);
+								return;
+							}
+							currentBlob = blob;
+							updateSizeDisplay();
+							renderAfterPreview();
+						}, mimeType, q);
+					} else {
+						blobFromDataURL(offscreen, mimeType);
+					}
+				}
+
+				function blobFromDataURL(canvas, mimeType) {
+					var dataURL = canvas.toDataURL(mimeType, isPNG() ? undefined : quality);
+					var byteString = atob(dataURL.split(',')[1]);
+					var ab = new ArrayBuffer(byteString.length);
+					var ia = new Uint8Array(ab);
+					for (var i = 0; i < byteString.length; i++) {
+						ia[i] = byteString.charCodeAt(i);
+					}
+					currentBlob = new Blob([ab], { type: mimeType });
+					updateSizeDisplay();
+					renderAfterPreview();
+				}
+
+				function updateSizeDisplay() {
+					if (!originalFile || !currentBlob) return;
+
+					var origSize = originalFile.size;
+					var newSize = currentBlob.size;
+					var savedPct = origSize > 0 ? Math.round((1 - newSize / origSize) * 100) : 0;
+					var barWidth = origSize > 0 ? Math.max(1, Math.round((newSize / origSize) * 100)) : 100;
+
+					sizeCompare.style.display = '';
+					sizeOriginal.textContent = fmtSize(origSize);
+					sizeProcessed.textContent = fmtSize(newSize);
+					sizeBarProcessed.style.width = barWidth + '%';
+
+					if (savedPct > 0) {
+						sizeSaved.textContent = '节省 ' + savedPct + '%';
+						sizeSaved.style.color = '#28a745';
+					} else if (savedPct < 0) {
+						sizeSaved.textContent = '增大 ' + Math.abs(savedPct) + '%';
+						sizeSaved.style.color = '#dc3545';
+					} else {
+						sizeSaved.textContent = '大小相同';
+						sizeSaved.style.color = 'rgb(var(--gray))';
+					}
+				}
+
+				// ========== Control Handlers ==========
+				function updateQualitySliderState() {
+					if (isPNG()) {
+						qualitySlider.disabled = true;
+						qualityValue.textContent = '无损';
+					} else {
+						qualitySlider.disabled = false;
+						qualityValue.textContent = Math.round(quality * 100) + '%';
+					}
+				}
+
+				function scheduleUpdate() {
+					clearTimeout(updateTimer);
+					updateTimer = setTimeout(function () {
+						processImage();
+					}, 80);
+				}
+
+				// Quality slider
+				qualitySlider.addEventListener('input', function () {
+					quality = parseInt(this.value) / 100;
+					qualityValue.textContent = this.value + '%';
+					scheduleUpdate();
+				});
+
+				// Format buttons
+				formatBtns.addEventListener('click', function (e) {
+					var btn = e.target.closest('.format-btn');
+					if (!btn) return;
+
+					format = btn.getAttribute('data-format');
+					var btns = formatBtns.querySelectorAll('.format-btn');
+					for (var i = 0; i < btns.length; i++) {
+						btns[i].classList.remove('active');
+					}
+					btn.classList.add('active');
+					updateQualitySliderState();
+					scheduleUpdate();
+				});
+
+				// Width/Height inputs
+				widthInput.addEventListener('input', function () {
+					var w = parseInt(this.value);
+					if (isNaN(w) || w < 1) return;
+					targetWidth = w;
+					if (aspectLocked && origWidth > 0) {
+						targetHeight = Math.round(targetWidth * (origHeight / origWidth));
+						heightInput.value = targetHeight;
+					}
+					scheduleUpdate();
+				});
+
+				heightInput.addEventListener('input', function () {
+					var h = parseInt(this.value);
+					if (isNaN(h) || h < 1) return;
+					targetHeight = h;
+					if (aspectLocked && origHeight > 0) {
+						targetWidth = Math.round(targetHeight * (origWidth / origHeight));
+						widthInput.value = targetWidth;
+					}
+					scheduleUpdate();
+				});
+
+				// Lock button
+				lockBtn.addEventListener('click', function () {
+					aspectLocked = !aspectLocked;
+					if (aspectLocked) {
+						lockBtn.classList.add('locked');
+						// Re-sync aspect ratio
+						if (origWidth > 0 && origHeight > 0) {
+							targetHeight = Math.round(targetWidth * (origHeight / origWidth));
+							heightInput.value = targetHeight;
+							scheduleUpdate();
+						}
+					} else {
+						lockBtn.classList.remove('locked');
+					}
+				});
+
+				// Filter buttons
+				filterBtns.addEventListener('click', function (e) {
+					var btn = e.target.closest('.filter-btn');
+					if (!btn) return;
+
+					activeFilter = btn.getAttribute('data-filter');
+					var btns = filterBtns.querySelectorAll('.filter-btn');
+					for (var i = 0; i < btns.length; i++) {
+						btns[i].classList.remove('active');
+					}
+					btn.classList.add('active');
+					scheduleUpdate();
+				});
+
+				// ========== Download ==========
+				downloadBtn.addEventListener('click', function () {
+					if (!currentBlob) return;
+
+					var ext = getFormatExt();
+					var filename = 'processed-' + (originalFileName || 'image') + '-' + targetWidth + 'x' + targetHeight + '.' + ext;
+
+					var url = URL.createObjectURL(currentBlob);
+					var a = document.createElement('a');
+					a.href = url;
+					a.download = filename;
+					document.body.appendChild(a);
+					a.click();
+					document.body.removeChild(a);
+					setTimeout(function () {
+						URL.revokeObjectURL(url);
+					}, 100);
+				});
+
+				// ========== Reset ==========
+				resetBtn.addEventListener('click', function () {
+					if (!originalImage) return;
+
+					quality = 0.85;
+					format = 'image/jpeg';
+					targetWidth = origWidth;
+					targetHeight = origHeight;
+					activeFilter = 'none';
+
+					// Reset UI
+					qualitySlider.value = '85';
+					qualityValue.textContent = '85%';
+					widthInput.value = targetWidth;
+					heightInput.value = targetHeight;
+
+					var fBtns = formatBtns.querySelectorAll('.format-btn');
+					for (var i = 0; i < fBtns.length; i++) {
+						fBtns[i].classList.remove('active');
+						if (fBtns[i].getAttribute('data-format') === 'image/jpeg') {
+							fBtns[i].classList.add('active');
+						}
+					}
+
+					var fltBtns = filterBtns.querySelectorAll('.filter-btn');
+					for (var j = 0; j < fltBtns.length; j++) {
+						fltBtns[j].classList.remove('active');
+						if (fltBtns[j].getAttribute('data-filter') === 'none') {
+							fltBtns[j].classList.add('active');
+						}
+					}
+
+					updateQualitySliderState();
+					renderPreview();
+					processImage();
+				});
+
+				// ========== Upload Handlers ==========
+				uploadZone.addEventListener('click', function () {
+					fileInput.click();
+				});
+
+				fileInput.addEventListener('change', function () {
+					if (this.files && this.files[0]) {
+						loadImage(this.files[0]);
+					}
+				});
+
+				// Drag and drop
+				uploadZone.addEventListener('dragover', function (e) {
+					e.preventDefault();
+					e.stopPropagation();
+					this.classList.add('drag-over');
+				});
+
+				uploadZone.addEventListener('dragenter', function (e) {
+					e.preventDefault();
+					e.stopPropagation();
+					this.classList.add('drag-over');
+				});
+
+				uploadZone.addEventListener('dragleave', function (e) {
+					e.preventDefault();
+					e.stopPropagation();
+					this.classList.remove('drag-over');
+				});
+
+				uploadZone.addEventListener('drop', function (e) {
+					e.preventDefault();
+					e.stopPropagation();
+					this.classList.remove('drag-over');
+
+					var files = e.dataTransfer.files;
+					if (files && files[0]) {
+						loadImage(files[0]);
+					}
+				});
+
+				// Global drag events to prevent browser opening the file
+				document.addEventListener('dragover', function (e) {
+					e.preventDefault();
+				});
+				document.addEventListener('drop', function (e) {
+					e.preventDefault();
+				});
+
+				// ========== Initial State ==========
+				setControlsEnabled(false);
+			})();
+		</script>
+	</body>
+</html>
