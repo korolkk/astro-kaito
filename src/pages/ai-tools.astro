@@ -8,7 +8,7 @@ import { SITE_TITLE } from '../consts';
 <!doctype html>
 <html lang="zh-CN">
 	<head>
-		<BaseHead title={`AI工具 - ${SITE_TITLE}`} description="AI工具和开源项目合集" />
+		<BaseHead title={`自研工具 - ${SITE_TITLE}`} description="自研在线工具合集" />
 		<style>
 			main {
 				width: 1140px;
@@ -174,7 +174,7 @@ import { SITE_TITLE } from '../consts';
 	<body>
 		<Header />
 		<main>
-			<h1 class="page-title">AI 工具 & 开源项目</h1>
+			<h1 class="page-title">自研工具</h1>
 
 				<div class="ai-chat-notice">
 					<span class="ai-chat-notice-icon">💬</span>
@@ -183,81 +183,9 @@ import { SITE_TITLE } from '../consts';
 
 			<section class="section">
 				<h2 class="section-title">
-					<span class="icon">🤖</span> AI 工具推荐
+					<span class="icon">🛠️</span> 自研工具
 				</h2>
 				<div class="tools-grid">
-					<a href="https://claude.ai" target="_blank" class="tool-card">
-						<div class="tool-header">
-							<span class="tool-icon">C</span>
-							<span class="tool-name">Claude</span>
-						</div>
-						<p class="tool-desc">Anthropic 出品的 AI 助手，擅长代码推理、长文本分析和创意写作。</p>
-						<div class="tool-tags">
-							<span class="tool-tag">对话</span>
-							<span class="tool-tag">编程</span>
-						</div>
-					</a>
-
-					<a href="https://chat.openai.com" target="_blank" class="tool-card">
-						<div class="tool-header">
-							<span class="tool-icon">G</span>
-							<span class="tool-name">ChatGPT</span>
-						</div>
-						<p class="tool-desc">OpenAI 的通用对话模型，生态丰富，插件和 GPTs 扩展性好。</p>
-						<div class="tool-tags">
-							<span class="tool-tag">对话</span>
-							<span class="tool-tag">通用</span>
-						</div>
-					</a>
-
-					<a href="https://github.com/features/copilot" target="_blank" class="tool-card">
-						<div class="tool-header">
-							<span class="tool-icon">GH</span>
-							<span class="tool-name">GitHub Copilot</span>
-						</div>
-						<p class="tool-desc">IDE 内嵌 AI 编程助手，代码补全和 Chat 功能深度集成编辑器。</p>
-						<div class="tool-tags">
-							<span class="tool-tag">编程</span>
-							<span class="tool-tag">IDE</span>
-						</div>
-					</a>
-
-					<a href="https://www.perplexity.ai" target="_blank" class="tool-card">
-						<div class="tool-header">
-							<span class="tool-icon">P</span>
-							<span class="tool-name">Perplexity</span>
-						</div>
-						<p class="tool-desc">AI 搜索引擎，实时联网检索并附来源引用，适合技术调研。</p>
-						<div class="tool-tags">
-							<span class="tool-tag">搜索</span>
-							<span class="tool-tag">调研</span>
-						</div>
-					</a>
-
-					<a href="https://www.midjourney.com" target="_blank" class="tool-card">
-						<div class="tool-header">
-							<span class="tool-icon">MJ</span>
-							<span class="tool-name">Midjourney</span>
-						</div>
-						<p class="tool-desc">AI 图像生成工具，通过文字描述生成高质量的艺术和设计图像。</p>
-						<div class="tool-tags">
-							<span class="tool-tag">图像</span>
-							<span class="tool-tag">设计</span>
-						</div>
-					</a>
-
-					<a href="https://gemini.google.com" target="_blank" class="tool-card">
-						<div class="tool-header">
-							<span class="tool-icon">Ge</span>
-							<span class="tool-name">Gemini</span>
-						</div>
-						<p class="tool-desc">Google 多模态 AI，深度整合 Google 生态，支持文本/图像/代码。</p>
-						<div class="tool-tags">
-							<span class="tool-tag">多模态</span>
-							<span class="tool-tag">对话</span>
-						</div>
-					</a>
-
 					<a href="/tools/image-processor" class="tool-card">
 						<div class="tool-header">
 							<span class="tool-icon">IP</span>
@@ -267,6 +195,19 @@ import { SITE_TITLE } from '../consts';
 						<div class="tool-tags">
 							<span class="tool-tag">自研</span>
 							<span class="tool-tag">图像</span>
+							<span class="tool-tag">工具</span>
+						</div>
+					</a>
+
+					<a href="/tools/bitstream-analyzer" class="tool-card">
+						<div class="tool-header">
+							<span class="tool-icon">BS</span>
+							<span class="tool-name">码流分析工具</span>
+						</div>
+						<p class="tool-desc">自研的H.264/H.265/MP4码流解析工具，支持NAL单元分析、帧类型统计、GOP结构可视化和格式转换。</p>
+						<div class="tool-tags">
+							<span class="tool-tag">自研</span>
+							<span class="tool-tag">视频</span>
 							<span class="tool-tag">工具</span>
 						</div>
 					</a>

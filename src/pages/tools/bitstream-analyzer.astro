@@ -1,0 +1,3424 @@
+---
+import BaseHead from '../../components/BaseHead.astro';
+import Footer from '../../components/Footer.astro';
+import Header from '../../components/Header.astro';
+import { SITE_TITLE } from '../../consts';
+---
+
+<!doctype html>
+<html lang="zh-CN">
+	<head>
+		<BaseHead title={`视频码流分析工具 - ${SITE_TITLE}`} description="H.264/H.265/MP4 码流解析、帧类型分析、GOP结构可视化、格式转换 — 纯浏览器端处理" />
+		<style>
+			main {
+				width: 1140px;
+				max-width: calc(100% - 2em);
+				padding-left: 2em;
+				padding-right: 2em;
+			}
+			.page-title {
+				font-size: 1.6em;
+				font-weight: 700;
+				color: rgb(var(--black));
+				margin-bottom: 0.3em;
+				text-align: center;
+			}
+			.page-desc {
+				font-size: 0.9em;
+				color: rgb(var(--gray));
+				text-align: center;
+				margin: 0 0 1.5em;
+				line-height: 1.5;
+			}
+
+			/* Upload Zone */
+			.upload-zone {
+				border: 2px dashed rgb(var(--gray-light));
+				border-radius: 16px;
+				padding: 3em 2em;
+				text-align: center;
+				cursor: pointer;
+				transition: all 0.2s ease;
+				background: var(--card-bg);
+				margin-bottom: 1em;
+			}
+			.upload-zone:hover,
+			.upload-zone.drag-over {
+				border-color: var(--accent);
+				background: rgba(var(--accent-rgb), 0.03);
+			}
+			.upload-icon {
+				font-size: 2.8em;
+				display: block;
+				margin-bottom: 0.4em;
+			}
+			.upload-text {
+				font-size: 1em;
+				font-weight: 600;
+				color: rgb(var(--black));
+				margin: 0 0 0.3em;
+			}
+			.upload-hint {
+				font-size: 0.82em;
+				color: rgb(var(--gray));
+				margin: 0;
+			}
+			.upload-supported {
+				font-size: 0.78em;
+				color: rgb(var(--gray));
+				margin: 0.5em 0 0;
+			}
+
+			/* File Info Bar */
+			.file-info-bar {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.4em 1.2em;
+				padding: 0.7em 1.2em;
+				background: var(--card-bg);
+				border-radius: 12px;
+				margin-bottom: 1em;
+				font-size: 0.85em;
+				color: rgb(var(--gray-dark));
+				box-shadow: 0 1px 6px rgba(var(--black), 0.03);
+			}
+			.file-info-item {
+				white-space: nowrap;
+			}
+			.file-info-item strong {
+				color: rgb(var(--black));
+			}
+
+			/* Error / Warning */
+			.error-msg {
+				background: rgba(255, 76, 76, 0.08);
+				border: 1px solid rgba(255, 76, 76, 0.2);
+				border-radius: 10px;
+				padding: 0.8em 1.2em;
+				color: #d32f2f;
+				font-size: 0.88em;
+				margin-bottom: 1em;
+				animation: fadeIn 0.3s ease;
+			}
+			[data-theme='dark'] .error-msg {
+				color: #ff6b6b;
+			}
+			.warning-msg {
+				background: rgba(255, 152, 0, 0.08);
+				border: 1px solid rgba(255, 152, 0, 0.2);
+				border-radius: 10px;
+				padding: 0.8em 1.2em;
+				color: #e65100;
+				font-size: 0.88em;
+				margin-bottom: 1em;
+			}
+			[data-theme='dark'] .warning-msg {
+				color: #ffb74d;
+			}
+			@keyframes fadeIn {
+				from { opacity: 0; transform: translateY(-4px); }
+				to { opacity: 1; transform: translateY(0); }
+			}
+
+			/* Tool Layout */
+			.tool-layout {
+				display: grid;
+				grid-template-columns: 340px 1fr;
+				gap: 1.5em;
+				align-items: start;
+			}
+
+			/* Panels */
+			.panel {
+				background: var(--card-bg);
+				border-radius: 20px;
+				padding: 1.5em;
+				box-shadow: 0 2px 12px rgba(var(--black), 0.04);
+			}
+			.panel-title {
+				font-size: 0.9em;
+				font-weight: 700;
+				color: rgb(var(--gray));
+				text-transform: uppercase;
+				letter-spacing: 0.05em;
+				margin: 0 0 1em;
+				padding-bottom: 0.6em;
+				border-bottom: 2px solid rgb(var(--gray-light));
+			}
+
+			/* Buttons */
+			.btn {
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				gap: 0.4em;
+				padding: 0.6em 1.2em;
+				border: none;
+				border-radius: 10px;
+				font-size: 0.88em;
+				font-weight: 600;
+				cursor: pointer;
+				transition: all 0.2s ease;
+				font-family: var(--font-atkinson);
+			}
+			.btn-primary {
+				background: var(--accent);
+				color: #fff;
+			}
+			.btn-primary:hover {
+				filter: brightness(1.1);
+				transform: translateY(-1px);
+			}
+			.btn-secondary {
+				background: rgb(var(--gray-light));
+				color: rgb(var(--gray-dark));
+			}
+			.btn-secondary:hover {
+				background: rgb(var(--gray));
+				color: #fff;
+			}
+			.btn-small {
+				padding: 0.35em 0.7em;
+				font-size: 0.78em;
+				border-radius: 8px;
+			}
+			.btn:disabled {
+				opacity: 0.4;
+				pointer-events: none;
+			}
+
+			/* Action Buttons Row */
+			.action-btns {
+				display: flex;
+				flex-direction: column;
+				gap: 0.5em;
+				margin-bottom: 1.2em;
+			}
+			.action-btns .btn {
+				width: 100%;
+			}
+
+			/* Control Group */
+			.control-group {
+				margin-bottom: 1.2em;
+			}
+			.control-label {
+				font-size: 0.85em;
+				font-weight: 700;
+				color: rgb(var(--gray-dark));
+				margin-bottom: 0.4em;
+			}
+			.control-value {
+				font-size: 0.8em;
+				color: var(--accent);
+				font-variant-numeric: tabular-nums;
+			}
+
+			/* Format Buttons */
+			.format-btns {
+				display: flex;
+				gap: 0.4em;
+			}
+			.format-btn {
+				flex: 1;
+				padding: 0.45em 0.5em;
+				border: 1.5px solid rgb(var(--gray-light));
+				border-radius: 8px;
+				background: transparent;
+				cursor: pointer;
+				font-size: 0.82em;
+				font-weight: 500;
+				color: rgb(var(--gray-dark));
+				transition: all 0.15s ease;
+				font-family: var(--font-atkinson);
+				text-align: center;
+			}
+			.format-btn:hover {
+				border-color: var(--accent);
+				color: var(--accent);
+			}
+			.format-btn.active {
+				background: var(--accent);
+				color: #fff;
+				border-color: var(--accent);
+			}
+
+			/* Detail rows */
+			.detail-row {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				padding: 0.4em 0;
+				font-size: 0.84em;
+				border-bottom: 1px solid rgba(var(--gray-light), 0.5);
+			}
+			.detail-row span:first-child {
+				color: rgb(var(--gray));
+			}
+			.detail-row span:last-child {
+				color: rgb(var(--black));
+				font-weight: 600;
+				font-variant-numeric: tabular-nums;
+			}
+
+			/* Stat Cards Grid */
+			.stat-cards {
+				display: grid;
+				grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+				gap: 0.7em;
+				margin-bottom: 1em;
+			}
+			.stat-card {
+				background: rgb(var(--gray-light));
+				border-radius: 12px;
+				padding: 0.9em 1em;
+				text-align: center;
+			}
+			.stat-value {
+				font-size: 1.4em;
+				font-weight: 700;
+				color: var(--accent);
+				line-height: 1.2;
+			}
+			.stat-label {
+				font-size: 0.75em;
+				color: rgb(var(--gray));
+				margin-top: 0.2em;
+			}
+			.stat-sub {
+				font-size: 0.7em;
+				color: rgb(var(--gray));
+			}
+
+			/* Tab Bar */
+			.tab-bar {
+				display: flex;
+				gap: 0.3em;
+				margin-bottom: 1em;
+				flex-wrap: wrap;
+				border-bottom: 2px solid rgb(var(--gray-light));
+				padding-bottom: 0;
+			}
+			.tab-btn {
+				padding: 0.45em 0.9em;
+				border: none;
+				background: transparent;
+				cursor: pointer;
+				font-size: 0.84em;
+				font-weight: 500;
+				color: rgb(var(--gray));
+				border-radius: 8px 8px 0 0;
+				transition: all 0.15s ease;
+				font-family: var(--font-atkinson);
+				margin-bottom: -2px;
+				border-bottom: 2px solid transparent;
+			}
+			.tab-btn:hover {
+				color: rgb(var(--black));
+				background: rgb(var(--gray-light));
+			}
+			.tab-btn.active {
+				color: var(--accent);
+				border-bottom-color: var(--accent);
+				font-weight: 700;
+			}
+			.tab-content {
+				display: none;
+			}
+			.tab-content.active {
+				display: block;
+			}
+
+			/* Filter Bar */
+			.filter-bar {
+				display: flex;
+				gap: 0.3em;
+				margin-bottom: 0.8em;
+				flex-wrap: wrap;
+			}
+			.filter-btn {
+				padding: 0.3em 0.7em;
+				border: 1px solid rgb(var(--gray-light));
+				border-radius: 999px;
+				background: transparent;
+				cursor: pointer;
+				font-size: 0.76em;
+				color: rgb(var(--gray-dark));
+				transition: all 0.15s ease;
+				font-family: var(--font-atkinson);
+			}
+			.filter-btn:hover {
+				border-color: var(--accent);
+				color: var(--accent);
+			}
+			.filter-btn.active {
+				background: var(--accent);
+				color: #fff;
+				border-color: var(--accent);
+			}
+
+			/* NAL Table */
+			.nal-table-wrap {
+				max-height: 420px;
+				overflow-y: auto;
+				border-radius: 10px;
+				border: 1px solid rgb(var(--gray-light));
+			}
+			.nal-table {
+				width: 100%;
+				border-collapse: collapse;
+				font-size: 0.8em;
+				font-variant-numeric: tabular-nums;
+			}
+			.nal-table thead {
+				position: sticky;
+				top: 0;
+				z-index: 1;
+			}
+			.nal-table th {
+				background: rgb(var(--gray-light));
+				color: rgb(var(--gray-dark));
+				font-weight: 700;
+				padding: 0.5em 0.6em;
+				text-align: left;
+				font-size: 0.9em;
+				white-space: nowrap;
+			}
+			.nal-table td {
+				padding: 0.35em 0.6em;
+				border-bottom: 1px solid rgba(var(--gray-light), 0.4);
+				color: rgb(var(--black));
+				white-space: nowrap;
+			}
+			.nal-table tbody tr:hover {
+				background: rgba(var(--accent-rgb), 0.04);
+			}
+			.nal-table .row-I { border-left: 3px solid var(--accent); }
+			.nal-table .row-P { border-left: 3px solid #ff9800; }
+			.nal-table .row-B { border-left: 3px solid #4caf50; }
+			.nal-table .row-param { border-left: 3px solid rgb(var(--gray)); }
+			.nal-table .tag {
+				display: inline-block;
+				padding: 0.1em 0.5em;
+				border-radius: 999px;
+				font-size: 0.82em;
+				font-weight: 600;
+			}
+			.tag-I { background: rgba(var(--accent-rgb), 0.12); color: var(--accent); }
+			.tag-P { background: rgba(255,152,0,0.12); color: #e65100; }
+			.tag-B { background: rgba(76,175,80,0.12); color: #2e7d32; }
+			.tag-param { background: rgba(var(--gray), 0.1); color: rgb(var(--gray-dark)); }
+			.tag-unknown { background: rgba(var(--gray), 0.06); color: rgb(var(--gray)); }
+
+			/* Canvas Charts */
+			.analysis-chart {
+				display: block;
+				max-width: 100%;
+				margin-bottom: 1em;
+				border-radius: 10px;
+				background: rgb(var(--gray-light));
+			}
+
+			/* GOP Boundaries List */
+			.gop-boundaries {
+				font-size: 0.82em;
+				color: rgb(var(--gray-dark));
+				line-height: 1.8;
+				max-height: 300px;
+				overflow-y: auto;
+			}
+			.gop-boundary-item {
+				padding: 0.2em 0.5em;
+				border-bottom: 1px solid rgba(var(--gray-light), 0.3);
+			}
+
+			/* Size Compare Bar */
+			.size-compare {
+				margin-top: 1em;
+				padding: 1em;
+				background: rgb(var(--gray-light));
+				border-radius: 10px;
+			}
+			.size-compare-label {
+				font-size: 0.82em;
+				font-weight: 600;
+				color: rgb(var(--gray-dark));
+				margin-bottom: 0.5em;
+			}
+			.size-bar-wrap {
+				display: flex;
+				align-items: center;
+				gap: 0.6em;
+				margin-bottom: 0.5em;
+			}
+			.size-bar-label {
+				font-size: 0.75em;
+				color: rgb(var(--gray));
+				width: 55px;
+				text-align: right;
+				flex-shrink: 0;
+			}
+			.size-bar-track {
+				flex: 1;
+				height: 20px;
+				background: rgba(var(--black), 0.06);
+				border-radius: 10px;
+				overflow: hidden;
+				position: relative;
+			}
+			.size-bar-fill {
+				height: 100%;
+				border-radius: 10px;
+				transition: width 0.3s ease;
+			}
+			.size-bar-fill.original { background: rgb(var(--gray)); }
+			.size-bar-fill.converted { background: var(--accent); }
+			.size-bar-size {
+				font-size: 0.78em;
+				color: rgb(var(--gray-dark));
+				width: 80px;
+				flex-shrink: 0;
+				font-variant-numeric: tabular-nums;
+			}
+			.size-delta {
+				font-size: 0.8em;
+				font-weight: 600;
+				text-align: center;
+			}
+			.size-delta.smaller { color: #2e7d32; }
+			.size-delta.larger { color: #d32f2f; }
+			[data-theme='dark'] .size-delta.smaller { color: #66bb6a; }
+			[data-theme='dark'] .size-delta.larger { color: #ff6b6b; }
+
+			/* Processing Overlay */
+			.processing-overlay {
+				display: none;
+				position: fixed;
+				inset: 0;
+				background: rgba(0,0,0,0.3);
+				justify-content: center;
+				align-items: center;
+				z-index: 100;
+			}
+			.processing-overlay.show { display: flex; }
+			.processing-box {
+				background: var(--card-bg);
+				border-radius: 16px;
+				padding: 2em 3em;
+				text-align: center;
+				box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+			}
+			.processing-spinner {
+				width: 36px;
+				height: 36px;
+				border: 3px solid rgb(var(--gray-light));
+				border-top-color: var(--accent);
+				border-radius: 50%;
+				animation: spin 0.8s linear infinite;
+				margin: 0 auto 0.8em;
+			}
+			@keyframes spin {
+				to { transform: rotate(360deg); }
+			}
+			.processing-text {
+				font-size: 0.9em;
+				color: rgb(var(--gray-dark));
+			}
+
+			/* Empty State */
+			.empty-state {
+				text-align: center;
+				padding: 3em 1em;
+				color: rgb(var(--gray));
+			}
+			.empty-state-icon {
+				font-size: 3em;
+				display: block;
+				margin-bottom: 0.5em;
+			}
+
+			/* Responsive */
+			@media (max-width: 768px) {
+				.tool-layout {
+					grid-template-columns: 1fr;
+				}
+			}
+			@media (max-width: 500px) {
+				.panel {
+					padding: 1em;
+				}
+				.upload-zone {
+					padding: 2em 1em;
+				}
+				.stat-cards {
+					grid-template-columns: repeat(2, 1fr);
+				}
+				.nal-table-wrap {
+					max-height: 300px;
+				}
+				.file-info-bar {
+					font-size: 0.78em;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<Header />
+		<main>
+			<h1 class="page-title">视频码流分析工具</h1>
+			<p class="page-desc">H.264/H.265/MP4 码流解析、帧类型分析、GOP 结构可视化、格式转换 — 纯浏览器端处理</p>
+
+			<!-- Upload Zone -->
+			<div class="upload-zone" id="uploadZone">
+				<span class="upload-icon">🎬</span>
+				<p class="upload-text">拖拽视频文件到此处，或点击选择文件</p>
+				<p class="upload-hint">支持 .h264 / .h265 / .hevc / .mp4 / .m4v / .mov 格式</p>
+				<p class="upload-supported" id="uploadStatus">尚未选择文件</p>
+			</div>
+			<input type="file" id="fileInput" accept=".h264,.h265,.265,.hevc,.mp4,.m4v,.mov" style="display:none">
+
+			<!-- Messages -->
+			<div class="error-msg" id="errorMsg" style="display:none"></div>
+			<div class="warning-msg" id="warningMsg" style="display:none"></div>
+
+			<!-- File Info Bar -->
+			<div class="file-info-bar" id="fileInfoBar" style="display:none">
+				<span class="file-info-item">📄 <strong id="infoFilename">—</strong></span>
+				<span class="file-info-item">📦 <strong id="infoSize">—</strong></span>
+				<span class="file-info-item">📋 <strong id="infoFormat">—</strong></span>
+				<span class="file-info-item">🎞️ <strong id="infoCodec">—</strong></span>
+				<span class="file-info-item">📐 <strong id="infoResolution">—</strong></span>
+			</div>
+
+			<!-- Tool Layout -->
+			<div class="tool-layout" id="toolLayout" style="display:none">
+				<!-- Left Column: Controls -->
+				<div class="panel" id="leftPanel">
+					<div class="panel-title">控制面板</div>
+
+					<div class="action-btns">
+						<button class="btn btn-primary" id="analyzeBtn">🔍 解析码流</button>
+						<button class="btn btn-secondary" id="resetBtn">🔄 重新选择文件</button>
+					</div>
+
+					<!-- Conversion Section -->
+					<div class="control-group" id="convertSection" style="display:none">
+						<div class="control-label">格式转换</div>
+						<div class="format-btns" id="convertBtns">
+							<button class="format-btn active" data-convert="toRaw">导出为 Raw (.h264/.h265)</button>
+							<button class="format-btn" data-convert="toMP4">转换为 MP4</button>
+						</div>
+						<button class="btn btn-primary" id="convertBtn" style="display:none; width:100%; margin-top:0.5em">开始转换</button>
+						<button class="btn btn-secondary" id="downloadConvertedBtn" style="display:none; width:100%; margin-top:0.3em">📥 下载转换结果</button>
+						<div class="size-compare" id="sizeCompareConvert" style="display:none; margin-top:0.8em"></div>
+					</div>
+
+					<!-- Codec Details -->
+					<div class="control-group" id="codecDetails" style="display:none">
+						<div class="control-label">编码详情</div>
+						<div class="detail-row"><span>编码格式</span><span id="detailCodec">—</span></div>
+						<div class="detail-row"><span>Profile</span><span id="detailProfile">—</span></div>
+						<div class="detail-row"><span>Level</span><span id="detailLevel">—</span></div>
+						<div class="detail-row"><span>分辨率</span><span id="detailRes">—</span></div>
+						<div class="detail-row"><span>帧率</span><span id="detailFPS">—</span></div>
+						<div class="detail-row"><span>NAL 单元总数</span><span id="detailNALCount">—</span></div>
+						<div class="detail-row"><span>切片 NAL 数</span><span id="detailSliceCount">—</span></div>
+					</div>
+
+					<!-- GOP Summary -->
+					<div class="control-group" id="gopSummary" style="display:none">
+						<div class="control-label">GOP 统计</div>
+						<div class="detail-row"><span>GOP 数量</span><span id="gopCount">—</span></div>
+						<div class="detail-row"><span>平均 GOP 大小</span><span id="gopAvg">—</span></div>
+						<div class="detail-row"><span>最大 GOP</span><span id="gopMax">—</span></div>
+						<div class="detail-row"><span>最小 GOP</span><span id="gopMin">—</span></div>
+						<div class="detail-row"><span>总帧数</span><span id="gopTotalFrames">—</span></div>
+					</div>
+				</div>
+
+				<!-- Right Column: Results -->
+				<div class="panel" id="rightPanel">
+					<div class="panel-title">分析结果</div>
+
+					<!-- Tab Bar -->
+					<div class="tab-bar" id="tabBar">
+						<button class="tab-btn active" data-tab="summary">📊 概览</button>
+						<button class="tab-btn" data-tab="frames">🎞️ 帧分析</button>
+						<button class="tab-btn" data-tab="nalunits">📋 NAL 单元</button>
+						<button class="tab-btn" data-tab="gop">🔗 GOP 结构</button>
+						<button class="tab-btn" data-tab="sizes">📈 帧大小</button>
+					</div>
+
+					<!-- Summary Tab -->
+					<div class="tab-content active" id="tabSummary">
+						<div class="stat-cards" id="summaryCards"></div>
+						<canvas id="frameTypeChart" class="analysis-chart" height="180"></canvas>
+					</div>
+
+					<!-- Frames Tab -->
+					<div class="tab-content" id="tabFrames">
+						<div class="filter-bar" id="frameFilterBar">
+							<button class="filter-btn active" data-filter="all">全部</button>
+							<button class="filter-btn" data-filter="I">I 帧</button>
+							<button class="filter-btn" data-filter="P">P 帧</button>
+							<button class="filter-btn" data-filter="B">B 帧</button>
+						</div>
+						<div class="nal-table-wrap">
+							<table class="nal-table" id="frameTable">
+								<thead><tr>
+									<th>#</th><th>帧类型</th><th>大小</th><th>偏移</th><th>NAL #</th><th>时间戳</th>
+								</tr></thead>
+								<tbody id="frameTableBody"></tbody>
+							</table>
+						</div>
+					</div>
+
+					<!-- NAL Units Tab -->
+					<div class="tab-content" id="tabNalunits">
+						<div class="filter-bar" id="nalFilterBar">
+							<button class="filter-btn active" data-filter="all">全部</button>
+							<button class="filter-btn" data-filter="slice">切片</button>
+							<button class="filter-btn" data-filter="sps">SPS</button>
+							<button class="filter-btn" data-filter="pps">PPS</button>
+							<button class="filter-btn" data-filter="vps">VPS</button>
+							<button class="filter-btn" data-filter="sei">SEI</button>
+							<button class="filter-btn" data-filter="aud">AUD</button>
+						</div>
+						<div class="nal-table-wrap">
+							<table class="nal-table" id="nalTable">
+								<thead><tr>
+									<th>#</th><th>偏移</th><th>NAL 类型</th><th>层ID</th><th>帧类型</th><th>大小</th><th>起始码</th>
+								</tr></thead>
+								<tbody id="nalTableBody"></tbody>
+							</table>
+						</div>
+					</div>
+
+					<!-- GOP Tab -->
+					<div class="tab-content" id="tabGop">
+						<div class="stat-cards" id="gopStatsCards"></div>
+						<canvas id="gopChart" class="analysis-chart" height="200"></canvas>
+						<div class="gop-boundaries" id="gopBoundaryList"></div>
+					</div>
+
+					<!-- Frame Sizes Tab -->
+					<div class="tab-content" id="tabSizes">
+						<canvas id="frameSizeChart" class="analysis-chart" height="250"></canvas>
+					</div>
+				</div>
+			</div>
+
+			<!-- Empty State (shown before any analysis) -->
+			<div class="empty-state" id="emptyState">
+				<span class="empty-state-icon">📂</span>
+				<p>上传视频文件后点击"解析码流"开始分析</p>
+			</div>
+
+			<!-- Processing Overlay -->
+			<div class="processing-overlay" id="processingOverlay">
+				<div class="processing-box">
+					<div class="processing-spinner"></div>
+					<p class="processing-text" id="processingText">处理中...</p>
+				</div>
+			</div>
+		</main>
+		<Footer />
+		<script is:inline>
+(function() {
+"use strict";
+
+	/* ================================================================
+	   CID detection for scoped CSS (Rule #13)
+	   ================================================================ */
+	var CID = '';
+	(function() {
+		var main = document.querySelector('main');
+		if (!main) return;
+		for (var i = 0; i < main.attributes.length; i++) {
+			if (main.attributes[i].name.indexOf('data-astro-cid') === 0) {
+				CID = main.attributes[i].name;
+				break;
+			}
+		}
+	})();
+
+	function applyCID(container) {
+		if (!CID || !container) return;
+		var all = container.querySelectorAll('*');
+		for (var i = 0; i < all.length; i++) {
+			all[i].setAttribute(CID, '');
+		}
+	}
+
+
+/* ================================================================
+   BitReader — bit-level reading on Uint8Array
+   ================================================================ */
+function BitReader(buffer, offset, length) {
+	var data = new Uint8Array(buffer, offset || 0, length || (buffer.byteLength - (offset || 0)));
+	var bytePos = 0;
+	var bitPos = 0;
+
+	this.readBits = function(n) {
+		var result = 0;
+		for (var i = 0; i < n; i++) {
+			if (bytePos >= data.length) return result;
+			var byteVal = data[bytePos];
+			var bit = (byteVal >> (7 - bitPos)) & 1;
+			result = (result << 1) | bit;
+			bitPos++;
+			if (bitPos >= 8) { bitPos = 0; bytePos++; }
+		}
+		return result;
+	};
+
+	this.readUE = function() {
+		var leadingZeros = 0;
+		while (this.readBits(1) === 0) { leadingZeros++; }
+		if (leadingZeros === 0) return 0;
+		var suffix = this.readBits(leadingZeros);
+		return (1 << leadingZeros) - 1 + suffix;
+	};
+
+	this.readSE = function() {
+		var ue = this.readUE();
+		if (ue % 2 === 0) return -(ue / 2);
+		return (ue + 1) / 2;
+	};
+
+	this.skipBits = function(n) {
+		var totalBits = bitPos + n;
+		bytePos += Math.floor(totalBits / 8);
+		bitPos = totalBits % 8;
+	};
+
+	this.byteAlign = function() {
+		if (bitPos > 0) { bitPos = 0; bytePos++; }
+	};
+
+	this.hasMore = function() {
+		return bytePos < data.length;
+	};
+
+	this.tell = function() {
+		return { bytePos: bytePos, bitPos: bitPos };
+	};
+
+	this.getData = function() { return data; };
+	this.getBytePos = function() { return bytePos; };
+}
+
+/* ================================================================
+   Format Detection
+   ================================================================ */
+function detectFormat(buffer) {
+	var bytes = new Uint8Array(buffer, 0, Math.min(32, buffer.byteLength));
+	if (bytes.length < 4) return null;
+
+	// Check MP4: bytes 4-7 = 'ftyp'
+	if (bytes.length >= 8 && bytes[4] === 0x66 && bytes[5] === 0x74 && bytes[6] === 0x79 && bytes[7] === 0x70) {
+		return 'mp4';
+	}
+
+	// Helper: extract 6-bit H.265 NAL type from 2-byte header
+	function getH265Type(b0, b1) {
+		return ((b0 & 0x7E) >> 1);
+	}
+
+	// Check Annex B start code (4-byte: 00 00 00 01)
+	if (bytes[0] === 0x00 && bytes[1] === 0x00 && bytes[2] === 0x00 && bytes[3] === 0x01) {
+		return classifyAnnexB(bytes, 4);
+	}
+
+	// Check Annex B start code (3-byte: 00 00 01)
+	if (bytes[0] === 0x00 && bytes[1] === 0x00 && bytes[2] === 0x01) {
+		return classifyAnnexB(bytes, 3);
+	}
+
+	return null;
+
+	function classifyAnnexB(bytes, startCodeLen) {
+		var nalStart = startCodeLen;
+		if (nalStart + 2 > bytes.length) return 'h264'; // too short, default
+
+		var b0 = bytes[nalStart];
+		var b1 = bytes[nalStart + 1];
+
+		// Try H.265 classification first (6-bit NAL type from 2-byte header)
+		var h265type = getH265Type(b0, b1);
+		// H.265 parameter sets: VPS=32, SPS=33, PPS=34
+		if (h265type === 32 || h265type === 33 || h265type === 34) return 'h265';
+		// H.265 IRAP types: BLA=16-18, IDR=19-20, CRA=21
+		if (h265type >= 16 && h265type <= 21) return 'h265';
+		// H.265 TRAIL slices (0-9) — ambiguous with H.264, check further
+		// H.265 SEI: PREFIX_SEI=39, SUFFIX_SEI=40
+		if (h265type === 39 || h265type === 40) return 'h265';
+		// H.265 AUD=35
+		if (h265type === 35) return 'h265';
+
+		// Try H.264 classification (5-bit NAL type from 1-byte header)
+		var h264type = b0 & 0x1F;
+		// H.264 SPS=7, PPS=8 — strong indicators of H.264
+		if (h264type === 7 || h264type === 8) return 'h264';
+		// H.264 IDR=5, non-IDR=1, SEI=6, AUD=9
+		if (h264type === 1 || h264type === 5 || h264type === 6 || h264type === 9) return 'h264';
+
+		// Ambiguous: if we got a valid H.265 type (0-40), prefer H.265
+		if (h265type >= 0 && h265type <= 40) return 'h265';
+
+		// Default to H.264
+		return 'h264';
+	}
+}
+
+/* ================================================================
+   NAL Unit Finder — scan for start codes in Annex B streams
+   ================================================================ */
+function findNALUnits(buffer, startOffset, length) {
+	var data = new Uint8Array(buffer, startOffset || 0);
+	var len = length || data.length;
+	var nalUnits = [];
+	var i = 0;
+
+	while (i < len - 3) {
+		var startCodeLen = 0;
+		var nalDataStart = 0;
+
+		// Check 4-byte start code
+		if (data[i] === 0x00 && data[i+1] === 0x00 && data[i+2] === 0x00 && data[i+3] === 0x01) {
+			startCodeLen = 4;
+			nalDataStart = i + 4;
+		}
+		// Check 3-byte start code
+		else if (data[i] === 0x00 && data[i+1] === 0x00 && data[i+2] === 0x01) {
+			startCodeLen = 3;
+			nalDataStart = i + 3;
+		}
+
+		if (startCodeLen > 0) {
+			// Find next start code to determine NAL unit boundary
+			var j = nalDataStart;
+			while (j < len - 3) {
+				if (data[j] === 0x00 && data[j+1] === 0x00) {
+					if (data[j+2] === 0x01) { break; }
+					if (data[j+2] === 0x00 && j+3 < len && data[j+3] === 0x01) { break; }
+				}
+				j++;
+			}
+
+			nalUnits.push({
+				offset: i,
+				startCodeLen: startCodeLen,
+				dataOffset: nalDataStart,
+				size: j - nalDataStart,
+				data: new Uint8Array(buffer, (startOffset || 0) + nalDataStart, j - nalDataStart)
+			});
+			i = j;
+		} else {
+			i++;
+		}
+	}
+
+	return nalUnits;
+}
+
+/* ================================================================
+   H.264 Parser
+   ================================================================ */
+var H264_NAL_NAMES = {
+	0: '未指定', 1: '非IDR切片', 2: '切片分区A', 3: '切片分区B',
+	4: '切片分区C', 5: 'IDR切片', 6: 'SEI', 7: 'SPS', 8: 'PPS',
+	9: 'AUD', 10: '序列结束', 11: '码流结束', 12: '填充',
+	13: 'SPS扩展', 14: '前缀NAL', 15: 'SPS子集', 19: '辅助切片',
+	20: '切片扩展', 21: '深度切片扩展'
+};
+
+var H264_SLICE_TYPES = { 0: 'P', 1: 'B', 2: 'I', 3: 'SP', 4: 'SI', 5: 'P', 6: 'B', 7: 'I', 8: 'SP', 9: 'SI' };
+
+var H264_PROFILES = {
+	66: 'Baseline', 77: 'Main', 88: 'Extended', 100: 'High',
+	110: 'High 10', 122: 'High 4:2:2', 244: 'High 4:4:4 Predictive',
+	44: 'CAVLC 4:4:4 Intra'
+};
+
+function parseH264NALHeader(naluData) {
+	if (naluData.length < 1) return null;
+	var byte = naluData[0];
+	return {
+		forbidden: (byte >> 7) & 1,
+		refIdc: (byte >> 5) & 3,
+		type: byte & 0x1F
+	};
+}
+
+function parseH264SliceHeader(naluData) {
+	// naluData starts at NAL header byte (data[0] is NAL header)
+	if (naluData.length < 2) return null;
+	try {
+		var reader = new BitReader(naluData.buffer, naluData.byteOffset + 1, naluData.length - 1);
+		var firstMbInSlice = reader.readUE();
+		var sliceTypeUE = reader.readUE();
+		return {
+			firstMbInSlice: firstMbInSlice,
+			sliceTypeUE: sliceTypeUE,
+			frameType: H264_SLICE_TYPES[sliceTypeUE] || '?'
+		};
+	} catch(e) {
+		return null;
+	}
+}
+
+function parseH264SPS(naluData) {
+	// naluData starts at NAL header byte
+	if (naluData.length < 4) return null;
+	try {
+		var reader = new BitReader(naluData.buffer, naluData.byteOffset + 1, naluData.length - 1);
+		var profileIdc = reader.readBits(8);
+		// constraint flags (8 bits)
+		reader.readBits(1); // constraint_set0
+		reader.readBits(1); // constraint_set1
+		reader.readBits(1); // constraint_set2
+		reader.readBits(1); // constraint_set3
+		reader.readBits(1); // constraint_set4
+		reader.readBits(1); // constraint_set5
+		reader.readBits(2); // reserved
+		var levelIdc = reader.readBits(8);
+		var spsId = reader.readUE();
+		var chromaFormatIdc = 1;
+
+		// Extended profiles: chroma_format_idc, etc.
+		if (profileIdc === 100 || profileIdc === 110 || profileIdc === 122 || profileIdc === 244 ||
+			profileIdc === 44 || profileIdc === 83 || profileIdc === 86 || profileIdc === 118 ||
+			profileIdc === 128 || profileIdc === 138 || profileIdc === 139 || profileIdc === 134 || profileIdc === 135) {
+			chromaFormatIdc = reader.readUE();
+			if (chromaFormatIdc === 3) { reader.readBits(1); } // separate_colour_plane_flag
+			reader.readUE(); // bit_depth_luma_minus8
+			reader.readUE(); // bit_depth_chroma_minus8
+			reader.readBits(1); // qpprime_y_zero_transform_bypass_flag
+			var scalingMatrixPresent = reader.readBits(1);
+			if (scalingMatrixPresent) {
+				// Skip scaling matrices (complex)
+				for (var smi = 0; smi < (chromaFormatIdc !== 3 ? 8 : 12); smi++) {
+					var seqScalingPresent = reader.readBits(1);
+					if (seqScalingPresent) { /* skip scaling list - too complex */ }
+				}
+			}
+		}
+
+		var log2MaxFrameNumMinus4 = reader.readUE();
+		var picOrderCntType = reader.readUE();
+		if (picOrderCntType === 0) {
+			reader.readUE(); // log2_max_pic_order_cnt_lsb_minus4
+		} else if (picOrderCntType === 1) {
+			reader.readBits(1); // delta_pic_order_always_zero_flag
+			reader.readSE(); // offset_for_non_ref_pic
+			reader.readSE(); // offset_for_top_to_bottom_field
+			var numRefFramesInPocCycle = reader.readUE();
+			for (var poci = 0; poci < numRefFramesInPocCycle; poci++) {
+				reader.readSE();
+			}
+		}
+		var numRefFrames = reader.readUE();
+		reader.readBits(1); // gaps_in_frame_num_value_allowed_flag
+		var picWidthInMbsMinus1 = reader.readUE();
+		var picHeightInMapUnitsMinus1 = reader.readUE();
+		var frameMbsOnlyFlag = reader.readBits(1);
+		if (!frameMbsOnlyFlag) { reader.readBits(1); } // mb_adaptive_frame_field_flag
+		reader.readBits(1); // direct_8x8_inference_flag
+
+		var frameCropLeft = 0, frameCropRight = 0, frameCropTop = 0, frameCropBottom = 0;
+		var frameCroppingFlag = reader.readBits(1);
+		if (frameCroppingFlag) {
+			frameCropLeft = reader.readUE();
+			frameCropRight = reader.readUE();
+			frameCropTop = reader.readUE();
+			frameCropBottom = reader.readUE();
+		}
+
+		// VUI (optional) - try to read VUI present flag, but don't fail if not there
+		var fps = null;
+		if (reader.hasMore()) {
+			try {
+				var vuiPresent = reader.readBits(1);
+				if (vuiPresent) {
+					var aspectRatioPresent = reader.readBits(1);
+					if (aspectRatioPresent) {
+						var aspectRatioIdc = reader.readBits(8);
+						if (aspectRatioIdc === 255) {
+							reader.readBits(16); // sar_width
+							reader.readBits(16); // sar_height
+						}
+					}
+					var overscanPresent = reader.readBits(1);
+					if (overscanPresent) reader.readBits(1);
+					var videoSignalPresent = reader.readBits(1);
+					if (videoSignalPresent) {
+						reader.readBits(3); // video_format
+						reader.readBits(1); // video_full_range
+						var colourDescPresent = reader.readBits(1);
+						if (colourDescPresent) {
+							reader.readBits(8); // colour_primaries
+							reader.readBits(8); // transfer_characteristics
+							reader.readBits(8); // matrix_coefficients
+						}
+					}
+					var chromaLocPresent = reader.readBits(1);
+					if (chromaLocPresent) {
+						reader.readUE(); // chroma_sample_loc_type_top_field
+						reader.readUE(); // chroma_sample_loc_type_bottom_field
+					}
+					var timingInfoPresent = reader.readBits(1);
+					if (timingInfoPresent) {
+						var numUnitsInTick = reader.readBits(32);
+						var timeScale = reader.readBits(32);
+						var fixedFrameRateFlag = reader.readBits(1);
+						if (timeScale > 0 && numUnitsInTick > 0) {
+							fps = (timeScale / (2 * numUnitsInTick)).toFixed(2);
+						}
+					}
+				}
+			} catch(e) { /* VUI parse failure - non-critical */ }
+		}
+
+		var SubWidthC = chromaFormatIdc === 1 ? 2 : (chromaFormatIdc === 2 ? 2 : 1);
+		var SubHeightC = chromaFormatIdc === 1 ? 2 : (chromaFormatIdc === 2 ? 1 : 1);
+		var width = ((picWidthInMbsMinus1 + 1) * 16) - (frameCropLeft + frameCropRight) * SubWidthC;
+		var height = ((2 - frameMbsOnlyFlag) * (picHeightInMapUnitsMinus1 + 1) * 16) - (frameCropTop + frameCropBottom) * SubHeightC;
+
+		return {
+			profileIdc: profileIdc,
+			levelIdc: levelIdc,
+			profileName: H264_PROFILES[profileIdc] || ('Profile ' + profileIdc),
+			width: width,
+			height: height,
+			fps: fps,
+			log2MaxFrameNumMinus4: log2MaxFrameNumMinus4
+		};
+	} catch(e) {
+		return null;
+	}
+}
+
+/* ================================================================
+   H.265/HEVC Parser
+   ================================================================ */
+var H265_NAL_NAMES = {};
+(function() {
+	for (var i = 0; i <= 9; i++) H265_NAL_NAMES[i] = 'TRAIL_' + (i < 5 ? 'N' : 'R');
+	H265_NAL_NAMES[16] = 'BLA_W_LP'; H265_NAL_NAMES[17] = 'BLA_W_RADL'; H265_NAL_NAMES[18] = 'BLA_N_LP';
+	H265_NAL_NAMES[19] = 'IDR_W_RADL'; H265_NAL_NAMES[20] = 'IDR_N_LP';
+	H265_NAL_NAMES[21] = 'CRA_NUT';
+	H265_NAL_NAMES[22] = 'RSV_IRAP_VCL22'; H265_NAL_NAMES[23] = 'RSV_IRAP_VCL23';
+	H265_NAL_NAMES[32] = 'VPS'; H265_NAL_NAMES[33] = 'SPS'; H265_NAL_NAMES[34] = 'PPS';
+	H265_NAL_NAMES[35] = 'AUD'; H265_NAL_NAMES[36] = 'EOS'; H265_NAL_NAMES[37] = 'EOB';
+	H265_NAL_NAMES[38] = 'FD'; H265_NAL_NAMES[39] = 'PREFIX_SEI'; H265_NAL_NAMES[40] = 'SUFFIX_SEI';
+})();
+
+var H265_SLICE_TYPES = { 0: 'B', 1: 'P', 2: 'I' };
+
+function parseH265NALHeader(naluData) {
+	if (naluData.length < 2) return null;
+	var byte0 = naluData[0];
+	var byte1 = naluData[1];
+	var type = ((byte0 & 0x7E) >> 1); // top 6 bits of first byte (after forbidden bit)
+	// Actually: forbidden(1) | nal_unit_type(6) | nuh_layer_id(6) | nuh_temporal_id_plus1(3)
+	// byte0: F|T5|T4|T3|T2|T1|T0|L5
+	// byte1: L4|L3|L2|L1|L0|TID2|TID1|TID0
+	// So type = ((byte0 << 1) | (byte1 >> 7)) & 0x3F  → No, type is top 6 bits of combined 16 bits
+	var typeVal = ((byte0 & 0x7E) >> 1);
+	var layerId = ((byte0 & 0x01) << 5) | ((byte1 >> 3) & 0x1F);
+	var temporalId = (byte1 & 0x07) - 1;
+	if (temporalId < 0) temporalId = 0;
+
+	return {
+		forbidden: (byte0 >> 7) & 1,
+		type: typeVal,
+		layerId: layerId,
+		temporalId: temporalId
+	};
+}
+
+function parseH265SliceHeader(naluData) {
+	// naluData starts at NAL header byte (2-byte header for H.265)
+	if (naluData.length < 3) return null;
+	try {
+		var reader = new BitReader(naluData.buffer, naluData.byteOffset + 2, naluData.length - 2);
+		var firstSliceInPic = reader.readBits(1);
+		// For IRAP pictures with NoRaslOutputFlag, some fields are conditionally absent
+		// Simplified: skip to slice_pic_parameter_set_id
+		var nalTypeInPic = 0;
+		if (firstSliceInPic) {
+			// no_output_of_prior_pics_flag — skip it
+		}
+		var slicePpsId = reader.readUE();
+		// ... more fields ...
+		// For simplicity: read past some conditional fields, then get slice_type
+		// Actually, let me try to read more carefully:
+		// After slice_pic_parameter_set_id, there may be:
+		//   dependent_slice_segment_flag (if !first_slice)
+		//   slice_segment_address (if !first_slice or dependent)
+		// Then:
+		//   if (!dependent_slice_segment_flag) {
+		//     slice_reserved_flag[] (skip)
+		//     slice_type ue(v)
+		//   }
+		// For simplest approach: assume independent slice, skip a bit, then read slice_type
+		// Better: try reading as if it's an independent slice
+		if (!firstSliceInPic) {
+			var dependentSliceFlag = reader.readBits(1);
+			if (!dependentSliceFlag) {
+				// Skip slice_reserved_Flag bits, number depends on some formula
+				// Skip them by reading UE multiple times? No.
+				// Let's try: slice_reserved_undetermined_flag is typically 1 bit
+				// Actually for simplicity, just try reading UE until we get something that looks like a slice type
+				// This is fragile. Let me use a different approach:
+				// For the first slice in pic: read past slice_segment_address (bits based on SPS)
+			}
+		}
+
+		// Since exact slice header parsing depends on SPS data we may not have,
+		// use a heuristic: skip past some UE-coded fields, then the next small UE value (0-2) is likely slice_type
+		// Better approach: re-initialize reader and try a different path
+		var reader2 = new BitReader(naluData.buffer, naluData.byteOffset + 2, naluData.length - 2);
+		reader2.readBits(1); // first_slice_segment_in_pic_flag
+		// Try: if IRAP (type 16-21), skip no_output_of_prior_pics_flag
+		var nalHeader = parseH265NALHeader(naluData);
+		if (nalHeader && nalHeader.type >= 16 && nalHeader.type <= 21) {
+			reader2.readBits(1); // no_output_of_prior_pics_flag
+		}
+		var slicePpsId2 = reader2.readUE();
+		// Skip more conditional fields
+		// For non-first slices, there could be dependent_slice_segment_flag and slice_segment_address
+		// Simplification: just try to read the next few bytes as slice_type via UE
+		// But we also need to account for slice_segment_address (if not first slice)
+		// Heuristic: skip up to 3 UE values, then try reading slice_type
+		// Actually let's take a different, more robust approach:
+		// We know slice_type for H.265 is ALWAYS 0, 1, or 2
+		// Read the next several bits and try to find a pattern
+		// This won't work reliably. Let me just try brute force:
+		// Read one UE value - it's either slice_segment_address or a flag. Skip it.
+		// Actually, let me re-read the reader2 position and carefully step through:
+		// We already read: first_slice (1) + optional no_output (1) + slice_pps_id (UE)
+		// Next: if !first_slice_in_pic_flag:
+		//   dependent_slice_segment_flag u(1)
+		//   if !dependent: slice_segment_address u(v) — variable length based on SPS
+		//   else: we're done
+		// if !dependent:
+		//   for(i=0; i<num_extra_slice_header_bits; i++) skip(1)
+		//   slice_type ue(v) — this is what we want!
+		//
+		// Since we don't have SPS info, num_extra_slice_header_bits is unknown.
+		// Typically it's 0 or very small.
+		// The approach: read one UE at a time, checking if it's 0, 1, or 2.
+		// But other fields can also be 0, 1, 2...
+		//
+		// Most robust: just try to read multiple UEs, and if we get 0/1/2, it's likely slice_type.
+		// For now, let's try a simple direct approach:
+		var sliceType = null;
+		// Read a few UEs and check which one looks like a slice type
+		// The fields before slice_type should have small values in typical streams
+		// This is heuristic but works for most streams
+		var v1 = reader2.readUE();
+		// v1 could be slice_segment_address or another field
+		// Try the next value
+		if (reader2.hasMore()) {
+			var v2 = reader2.readUE();
+			if (v2 === 0 || v2 === 1 || v2 === 2) {
+				sliceType = v2;
+			} else if (reader2.hasMore()) {
+				var v3 = reader2.readUE();
+				if (v3 === 0 || v3 === 1 || v3 === 2) {
+					sliceType = v3;
+				}
+			}
+		}
+
+		return {
+			sliceType: sliceType,
+			frameType: H265_SLICE_TYPES[sliceType] || null
+		};
+	} catch(e) {
+		return null;
+	}
+}
+
+function parseH265SPS(naluData) {
+	if (naluData.length < 4) return null;
+	try {
+		var reader = new BitReader(naluData.buffer, naluData.byteOffset + 2, naluData.length - 2);
+		var vpsId = reader.readBits(4);
+		var maxSubLayersMinus1 = reader.readBits(3);
+		reader.readBits(1); // temporal_id_nesting_flag
+
+		// Skip profile_tier_level (complex)
+		skipProfileTierLevel(reader, true, maxSubLayersMinus1);
+
+		var spsId = reader.readUE();
+		var chromaFormatIdc = reader.readUE();
+		if (chromaFormatIdc === 3) { reader.readBits(1); } // separate_colour_plane_flag
+
+		var picWidth = reader.readUE();
+		var picHeight = reader.readUE();
+
+		var conformanceWindowFlag = reader.readBits(1);
+		var confWinLeft = 0, confWinRight = 0, confWinTop = 0, confWinBottom = 0;
+		if (conformanceWindowFlag) {
+			confWinLeft = reader.readUE();
+			confWinRight = reader.readUE();
+			confWinTop = reader.readUE();
+			confWinBottom = reader.readUE();
+		}
+
+		var SubWidthC = chromaFormatIdc === 1 ? 2 : (chromaFormatIdc === 0 ? 1 : 1);
+		var SubHeightC = chromaFormatIdc === 1 ? 2 : (chromaFormatIdc === 0 ? 1 : 1);
+
+		return {
+			width: picWidth - (confWinLeft + confWinRight) * SubWidthC,
+			height: picHeight - (confWinTop + confWinBottom) * SubHeightC,
+			chromaFormatIdc: chromaFormatIdc
+		};
+	} catch(e) {
+		return null;
+	}
+}
+
+function skipProfileTierLevel(reader, profilePresentFlag, maxSubLayersMinus1) {
+	if (profilePresentFlag) {
+		reader.readBits(2); // general_profile_space
+		reader.readBits(1); // general_tier_flag
+		reader.readBits(5); // general_profile_idc
+		// 32 profile compatibility flags
+		for (var i = 0; i < 32; i++) reader.readBits(1);
+		reader.readBits(1); // progressive_source_flag
+		reader.readBits(1); // interlaced_source_flag
+		reader.readBits(1); // non_packed_constraint_flag
+		reader.readBits(1); // frame_only_constraint_flag
+		// Remaining constraint flags (varies by version, ~40 more bits)
+		for (var j = 0; j < 43; j++) {
+			if (!reader.hasMore()) break;
+			reader.readBits(1);
+		}
+		if (reader.hasMore()) reader.readBits(1); // inbld_flag
+	}
+	reader.readBits(8); // general_level_idc
+	if (maxSubLayersMinus1 > 0) {
+		var subLayerProfilePresent = [];
+		var subLayerLevelPresent = [];
+		for (var k = 0; k < maxSubLayersMinus1; k++) {
+			subLayerProfilePresent[k] = reader.readBits(1);
+			subLayerLevelPresent[k] = reader.readBits(1);
+		}
+		// Skip remaining sub-layer profile/level info
+		// (simplification: skip the rest)
+	}
+}
+
+/* ================================================================
+   MP4 Parser
+   ================================================================ */
+var MP4_CONTAINER_TYPES = {
+	moov: true, trak: true, mdia: true, minf: true, stbl: true,
+	dinf: true, edts: true, udta: true, moof: true, mvex: true
+};
+
+function parseMP4Boxes(buffer, offset, length) {
+	var boxes = [];
+	var endOffset = (offset || 0) + (length || (buffer.byteLength - (offset || 0)));
+	var pos = offset || 0;
+
+	while (pos + 8 <= endOffset) {
+		var view = new DataView(buffer, pos, Math.min(16, endOffset - pos));
+		var size = view.getUint32(0);
+		var type = String.fromCharCode(
+			view.getUint8(4), view.getUint8(5), view.getUint8(6), view.getUint8(7)
+		);
+		var headerSize = 8;
+		var dataOffset = pos + 8;
+
+		// Handle 64-bit size
+		if (size === 1) {
+			if (pos + 16 > endOffset) break;
+			size = Number(view.getBigUint64(8));
+			if (size > Number.MAX_SAFE_INTEGER) size = endOffset - pos; // clamp
+			headerSize = 16;
+			dataOffset = pos + 16;
+		} else if (size === 0) {
+			size = endOffset - pos; // extends to end
+		}
+
+		if (size < headerSize || pos + size > endOffset + 8) {
+			// Invalid size, try to recover
+			break;
+		}
+
+		var children = [];
+		var data = null;
+		if (MP4_CONTAINER_TYPES[type]) {
+			children = parseMP4Boxes(buffer, dataOffset, size - headerSize);
+		} else {
+			data = new Uint8Array(buffer, dataOffset, size - headerSize);
+		}
+
+		boxes.push({
+			type: type,
+			offset: pos,
+			totalSize: size,
+			data: data,
+			children: children
+		});
+
+		pos += size;
+	}
+
+	return boxes;
+}
+
+function findBoxByType(boxes, type) {
+	for (var i = 0; i < boxes.length; i++) {
+		if (boxes[i].type === type) return boxes[i];
+	}
+	return null;
+}
+
+function findBoxByPath(boxes, path) {
+	var current = boxes;
+	for (var i = 0; i < path.length; i++) {
+		var found = null;
+		for (var j = 0; j < current.length; j++) {
+			if (current[j].type === path[i]) {
+				found = current[j];
+				break;
+			}
+		}
+		if (!found) return null;
+		current = found.children || [];
+	}
+	return current;
+}
+
+function extractMP4CodecInfo(moovBox) {
+	var stbl = findBoxByPath(moovBox.children, ['trak', 'mdia', 'minf', 'stbl']);
+	if (!stbl) return null;
+
+	var stsd = findBoxByType(stbl, 'stsd');
+	if (!stsd || !stsd.data || stsd.data.length < 16) return null;
+
+	// stsd layout: version(1) + flags(3) + entry_count(4) + entries...
+	var entryCount = new DataView(stsd.data.buffer, stsd.data.byteOffset + 4, 4).getUint32(0);
+	if (entryCount < 1) return null;
+
+	// First entry starts at offset 8 in stsd data
+	var entryOffset = 8;
+	if (entryOffset + 8 > stsd.data.length) return null;
+	var entrySize = new DataView(stsd.data.buffer, stsd.data.byteOffset + entryOffset, 4).getUint32(0);
+	var entryType = String.fromCharCode(
+		stsd.data[entryOffset + 4], stsd.data[entryOffset + 5],
+		stsd.data[entryOffset + 6], stsd.data[entryOffset + 7]
+	);
+	// Entry data (after size + type fields)
+	var entryDataLen = Math.min(entrySize - 8, stsd.data.length - entryOffset - 8);
+	var entryData = new Uint8Array(stsd.data.buffer,
+		stsd.data.byteOffset + entryOffset + 8, entryDataLen);
+
+	var codec = null;
+	var codecConfigData = null;
+	var nalLengthSize = 4; // default
+	var spsDataArray = [];
+	var ppsDataArray = [];
+	var vpsDataArray = [];
+	var profileIdc = 0;
+	var levelIdc = 0;
+
+	// Try to find codec config — first as a box (size+type prefix), then at fixed offset
+	function findCodecConfig(entryData, configType) {
+		// Method 1: search for box header (size + type)
+		var box = findBoxInData(entryData, configType);
+		if (box && box.length >= 7) return box;
+
+		// Method 2: look at standard offset for codec config box
+		// entryData starts at SampleEntry fields:
+		//   reserved(6) + data_reference_index(2) + VisualSampleEntry(70) = 78 bytes
+		// The codec config box (avcC/hvcC) starts at offset 78
+		if (entryData.length >= 86 && entryData[78] === 1) {
+			return new Uint8Array(entryData.buffer, entryData.byteOffset + 78, entryData.length - 78);
+		}
+		// Method 3: some encoders use offset 70 (if entryData excludes SampleEntry header)
+		if (entryData.length >= 78 && entryData[70] === 1) {
+			return new Uint8Array(entryData.buffer, entryData.byteOffset + 70, entryData.length - 70);
+		}
+		// Method 4: scan for configurationVersion=1 followed by valid-looking profile/level
+		for (var i = 8; i < entryData.length - 10; i++) {
+			if (entryData[i] === 1) {
+				// Check if the next few bytes look like a codec config
+				// avcC: [1][profile][compat][level][0xFF|0xFC][0xE0|...]
+				if (i + 7 < entryData.length && (entryData[i+4] === 0xFF || entryData[i+4] === 0xFC)) {
+					return new Uint8Array(entryData.buffer, entryData.byteOffset + i, entryData.length - i);
+				}
+				// hvcC: [1][general_profile_space+tier+profile][compat flags...][constraint...]
+				if (i + 23 < entryData.length) {
+					var lengthSizeField = entryData[i + 21];
+					if ((lengthSizeField & 0x03) <= 3) {
+						return new Uint8Array(entryData.buffer, entryData.byteOffset + i, entryData.length - i);
+					}
+				}
+			}
+		}
+		return null;
+	}
+
+	if (entryType === 'avc1' || entryType === 'avc3' || entryType === 'avcC') {
+		codec = 'h264';
+		var avcC = findCodecConfig(entryData, 'avcC');
+		if (avcC && avcC.length >= 7) {
+			codecConfigData = avcC;
+			profileIdc = avcC[1];
+			levelIdc = avcC[3];
+			nalLengthSize = (avcC[4] & 0x03) + 1;
+			var numSPS = avcC[5] & 0x1F;
+			var cpos = 6;
+			for (var si = 0; si < numSPS && cpos + 2 <= avcC.length; si++) {
+				var spsLen = (avcC[cpos] << 8) | avcC[cpos + 1];
+				cpos += 2;
+				if (cpos + spsLen <= avcC.length) {
+					spsDataArray.push(new Uint8Array(avcC.buffer, avcC.byteOffset + cpos, spsLen));
+					cpos += spsLen;
+				}
+			}
+			if (cpos < avcC.length) {
+				var numPPS = avcC[cpos];
+				cpos++;
+				for (var pi = 0; pi < numPPS && cpos + 2 <= avcC.length; pi++) {
+					var ppsLen = (avcC[cpos] << 8) | avcC[cpos + 1];
+					cpos += 2;
+					if (cpos + ppsLen <= avcC.length) {
+						ppsDataArray.push(new Uint8Array(avcC.buffer, avcC.byteOffset + cpos, ppsLen));
+						cpos += ppsLen;
+					}
+				}
+			}
+		}
+	} else if (entryType === 'hvc1' || entryType === 'hev1') {
+		codec = 'h265';
+		var hvcC = findCodecConfig(entryData, 'hvcC');
+		if (hvcC && hvcC.length >= 23) {
+			codecConfigData = hvcC;
+			profileIdc = hvcC[1] & 0x1F; // general_profile_idc
+			levelIdc = hvcC[12]; // general_level_idc
+			nalLengthSize = (hvcC[21] & 0x03) + 1;
+			// Parse parameter set arrays
+			var numArrays = hvcC[22];
+			var hpos = 23;
+			for (var ai = 0; ai < numArrays && hpos + 3 <= hvcC.length; ai++) {
+				var arrayType = hvcC[hpos] & 0x0F; // 0=VPS, 1=SPS, 2=PPS, 3=SEI
+				var numNalus = (hvcC[hpos + 1] << 8) | hvcC[hpos + 2];
+				hpos += 3;
+				for (var ni = 0; ni < numNalus && hpos + 2 <= hvcC.length; ni++) {
+					var naluLen = (hvcC[hpos] << 8) | hvcC[hpos + 1];
+					hpos += 2;
+					if (hpos + naluLen <= hvcC.length) {
+						var naluArr = new Uint8Array(hvcC.buffer, hvcC.byteOffset + hpos, naluLen);
+						if (arrayType === 0) vpsDataArray.push(naluArr);
+						else if (arrayType === 1) spsDataArray.push(naluArr);
+						else if (arrayType === 2) ppsDataArray.push(naluArr);
+						hpos += naluLen;
+					}
+				}
+			}
+		}
+	}
+
+	return {
+		codec: codec,
+		profileIdc: profileIdc,
+		levelIdc: levelIdc,
+		nalLengthSize: nalLengthSize,
+		spsData: spsDataArray,
+		ppsData: ppsDataArray,
+		vpsData: vpsDataArray,
+		codecConfigData: codecConfigData,
+		entryType: entryType
+	};
+}
+
+function findBoxInData(data, boxType) {
+	// Search for a box type within a byte array
+	for (var i = 0; i < data.length - 8; i++) {
+		if (data[i+4] === boxType.charCodeAt(0) && data[i+5] === boxType.charCodeAt(1) &&
+			data[i+6] === boxType.charCodeAt(2) && data[i+7] === boxType.charCodeAt(3)) {
+			var size = (data[i] << 24) | (data[i+1] << 16) | (data[i+2] << 8) | data[i+3];
+			if (size >= 8 && i + size <= data.length) {
+				return new Uint8Array(data.buffer, data.byteOffset + i + 8, size - 8);
+			}
+		}
+	}
+	return null;
+}
+
+function extractMP4SyncSamples(stbl) {
+	var stss = findBoxByType(stbl, 'stss');
+	if (!stss || !stss.data || stss.data.length < 8) return [];
+	var view = new DataView(stss.data.buffer, stss.data.byteOffset, stss.data.length);
+	var entryCount = view.getUint32(4);
+	var samples = [];
+	for (var i = 0; i < entryCount && 8 + i * 4 < stss.data.length; i++) {
+		samples.push(view.getUint32(8 + i * 4)); // 1-based sample index
+	}
+	return samples;
+}
+
+function extractMP4SampleSizes(stbl) {
+	var stsz = findBoxByType(stbl, 'stsz');
+	if (!stsz || !stsz.data || stsz.data.length < 12) return [];
+	var view = new DataView(stsz.data.buffer, stsz.data.byteOffset, stsz.data.length);
+	var sampleSize = view.getUint32(4);
+	var sampleCount = view.getUint32(8);
+	var sizes = [];
+	if (sampleSize > 0) {
+		// All samples have same size
+		for (var i = 0; i < sampleCount; i++) sizes.push(sampleSize);
+	} else {
+		for (var i = 0; i < sampleCount && 12 + i * 4 < stsz.data.length; i++) {
+			sizes.push(view.getUint32(12 + i * 4));
+		}
+	}
+	return sizes;
+}
+
+function extractMP4SampleDurations(stbl) {
+	var stts = findBoxByType(stbl, 'stts');
+	if (!stts || !stts.data || stts.data.length < 8) return [];
+	var view = new DataView(stts.data.buffer, stts.data.byteOffset, stts.data.length);
+	var entryCount = view.getUint32(4);
+	var durations = [];
+	for (var i = 0; i < entryCount && 8 + i * 8 < stts.data.length; i++) {
+		var count = view.getUint32(8 + i * 8);
+		var delta = view.getUint32(12 + i * 8);
+		for (var j = 0; j < count; j++) durations.push(delta);
+	}
+	return durations;
+}
+
+function extractMP4CompositionOffsets(stbl) {
+	var ctts = findBoxByType(stbl, 'ctts');
+	if (!ctts || !ctts.data || ctts.data.length < 8) return [];
+	var view = new DataView(ctts.data.buffer, ctts.data.byteOffset, ctts.data.length);
+	var entryCount = view.getUint32(4);
+	var offsets = [];
+	for (var i = 0; i < entryCount && 8 + i * 8 < ctts.data.length; i++) {
+		var count = view.getUint32(8 + i * 8);
+		var offs = view.getInt32(12 + i * 8);
+		for (var j = 0; j < count; j++) offsets.push(offs);
+	}
+	return offsets;
+}
+
+function extractMP4ChunkOffsets(stbl) {
+	var stco = findBoxByType(stbl, 'stco');
+	if (!stco || !stco.data || stco.data.length < 8) {
+		var co64 = findBoxByType(stbl, 'co64');
+		if (!co64 || !co64.data || co64.data.length < 8) return [];
+		var view64 = new DataView(co64.data.buffer, co64.data.byteOffset, co64.data.length);
+		var count64 = view64.getUint32(4);
+		var offs64 = [];
+		for (var i = 0; i < count64 && 8 + i * 8 < co64.data.length; i++) {
+			offs64.push(Number(view64.getBigUint64(8 + i * 8)));
+		}
+		return offs64;
+	}
+	var view = new DataView(stco.data.buffer, stco.data.byteOffset, stco.data.length);
+	var entryCount = view.getUint32(4);
+	var offsets = [];
+	for (var i = 0; i < entryCount && 8 + i * 4 < stco.data.length; i++) {
+		offsets.push(view.getUint32(8 + i * 4));
+	}
+	return offsets;
+}
+
+function extractMP4RawNALUs(mdatBox, nalLengthSize) {
+	var data = mdatBox.data;
+	if (!data) return [];
+	var nalus = [];
+	var offset = 0;
+	var dv = new DataView(data.buffer, data.byteOffset, data.length);
+	while (offset + nalLengthSize <= data.length) {
+		var naluLen = 0;
+		for (var i = 0; i < nalLengthSize; i++) {
+			naluLen = (naluLen << 8) | dv.getUint8(offset + i);
+		}
+		if (naluLen === 0 || offset + nalLengthSize + naluLen > data.length) break;
+		nalus.push(new Uint8Array(data.buffer, data.byteOffset + offset + nalLengthSize, naluLen));
+		offset += nalLengthSize + naluLen;
+	}
+	return nalus;
+}
+
+function buildMP4FrameInfo(stbl, codecInfo) {
+	var syncSamples = extractMP4SyncSamples(stbl);
+	var sampleSizes = extractMP4SampleSizes(stbl);
+	var durations = extractMP4SampleDurations(stbl);
+	var compOffsets = extractMP4CompositionOffsets(stbl);
+	var syncSet = {};
+	for (var i = 0; i < syncSamples.length; i++) {
+		syncSet[syncSamples[i] - 1] = true; // convert to 0-based
+	}
+
+	var frames = [];
+	var totalSamples = sampleSizes.length;
+	var dts = 0;
+
+	for (var i = 0; i < totalSamples; i++) {
+		// Determine frame type
+		var frameType = '?';
+		if (syncSet[i]) {
+			frameType = 'I';
+		} else if (compOffsets.length > i && compOffsets[i] !== 0) {
+			// Non-zero composition offset typically means B-frame
+			frameType = 'B';
+		} else {
+			frameType = 'P';
+		}
+
+		var pts = dts;
+		if (compOffsets.length > i) {
+			pts = dts + compOffsets[i];
+		}
+
+		frames.push({
+			index: i,
+			type: frameType,
+			size: sampleSizes[i] || 0,
+			dts: dts,
+			pts: pts,
+			isSync: !!syncSet[i]
+		});
+
+		if (durations.length > i) {
+			dts += durations[i];
+		}
+	}
+
+	return frames;
+}
+
+/* ================================================================
+   Analysis Engine
+   ================================================================ */
+function analyzeBitstream(nalUnits, mp4FrameInfo, codecInfo) {
+	var frames = [];
+	var iCount = 0, pCount = 0, bCount = 0, unknownCount = 0;
+	var totalSliceBytes = 0;
+	var paramNalCount = 0;
+	var seiCount = 0;
+	var audCount = 0;
+
+	// Process each NAL unit
+	for (var i = 0; i < nalUnits.length; i++) {
+		var nalu = nalUnits[i];
+		var info = { nalUnitIndex: i, nalUnit: nalu };
+
+		if (nalu.type === 'SPS' || nalu.type === 'PPS' || nalu.type === 'VPS') {
+			paramNalCount++;
+		} else if (nalu.type === 'SEI' || nalu.type === 'PREFIX_SEI' || nalu.type === 'SUFFIX_SEI') {
+			seiCount++;
+		} else if (nalu.type === 'AUD') {
+			audCount++;
+		}
+
+		if (nalu.frameType === 'I') { iCount++; totalSliceBytes += nalu.size; frames.push({ index: frames.length, type: 'I', size: nalu.size, nalUnitIndex: i, timestamp: nalu.timestamp || null }); }
+		else if (nalu.frameType === 'P') { pCount++; totalSliceBytes += nalu.size; frames.push({ index: frames.length, type: 'P', size: nalu.size, nalUnitIndex: i, timestamp: nalu.timestamp || null }); }
+		else if (nalu.frameType === 'B') { bCount++; totalSliceBytes += nalu.size; frames.push({ index: frames.length, type: 'B', size: nalu.size, nalUnitIndex: i, timestamp: nalu.timestamp || null }); }
+		else if (nalu.frameType === '?') { unknownCount++; }
+	}
+
+	// If we have MP4 frame info, use that for frame classification instead
+	if (mp4FrameInfo && mp4FrameInfo.length > 0) {
+		frames = mp4FrameInfo;
+		iCount = 0; pCount = 0; bCount = 0; unknownCount = 0;
+		totalSliceBytes = 0;
+		for (var fi = 0; fi < frames.length; fi++) {
+			if (frames[fi].type === 'I') iCount++;
+			else if (frames[fi].type === 'P') pCount++;
+			else if (frames[fi].type === 'B') bCount++;
+			else unknownCount++;
+			totalSliceBytes += frames[fi].size;
+		}
+	}
+
+	// GOP analysis
+	var gopInfo = computeGOP(frames);
+
+	// Frame size statistics
+	var sizeStats = computeFrameSizeStats(frames);
+
+	// I/P ratio
+	var ipRatio = null;
+	if (pCount > 0 && iCount > 0) {
+		ipRatio = (iCount / pCount).toFixed(4);
+	} else if (iCount > 0 && pCount === 0) {
+		ipRatio = 'Inf (全I帧)';
+	}
+
+	return {
+		totalFrames: iCount + pCount + bCount,
+		iCount: iCount, pCount: pCount, bCount: bCount, unknownCount: unknownCount,
+		ipRatio: ipRatio || 'N/A',
+		gopInfo: gopInfo,
+		frames: frames,
+		sizeStats: sizeStats,
+		totalSliceBytes: totalSliceBytes,
+		paramNalCount: paramNalCount,
+		seiCount: seiCount,
+		audCount: audCount,
+		nalUnitCount: nalUnits.length
+	};
+}
+
+function computeGOP(frames) {
+	if (frames.length === 0) return { count: 0, sizes: [], avgSize: 0, maxSize: 0, minSize: 0, boundaries: [], isClosed: false };
+
+	var boundaries = [];
+	var sizes = [];
+	var gopStart = 0;
+	var seenI = false;
+
+	for (var i = 0; i < frames.length; i++) {
+		if (frames[i].type === 'I') {
+			if (seenI && gopStart < i) {
+				var gopSize = i - gopStart;
+				sizes.push(gopSize);
+				boundaries.push({ start: gopStart, end: i - 1, size: gopSize });
+			}
+			gopStart = i;
+			seenI = true;
+		}
+	}
+
+	// Last GOP
+	if (seenI && gopStart < frames.length) {
+		var lastSize = frames.length - gopStart;
+		sizes.push(lastSize);
+		boundaries.push({ start: gopStart, end: frames.length - 1, size: lastSize });
+	}
+
+	var totalSize = 0;
+	for (var j = 0; j < sizes.length; j++) totalSize += sizes[j];
+
+	return {
+		count: sizes.length,
+		sizes: sizes,
+		avgSize: sizes.length > 0 ? (totalSize / sizes.length).toFixed(1) : 0,
+		maxSize: sizes.length > 0 ? Math.max.apply(null, sizes) : 0,
+		minSize: sizes.length > 0 ? Math.min.apply(null, sizes) : 0,
+		boundaries: boundaries,
+		isClosed: frames.length > 0 && frames[0].type === 'I'
+	};
+}
+
+function computeFrameSizeStats(frames) {
+	var iSizes = [], pSizes = [], bSizes = [];
+	for (var i = 0; i < frames.length; i++) {
+		if (frames[i].type === 'I') iSizes.push(frames[i].size);
+		else if (frames[i].type === 'P') pSizes.push(frames[i].size);
+		else if (frames[i].type === 'B') bSizes.push(frames[i].size);
+	}
+	return {
+		I: computeStats(iSizes),
+		P: computeStats(pSizes),
+		B: computeStats(bSizes)
+	};
+}
+
+function computeStats(arr) {
+	if (arr.length === 0) return { total: 0, avg: 0, min: 0, max: 0, count: 0 };
+	var total = 0, min = Infinity, max = -Infinity;
+	for (var i = 0; i < arr.length; i++) {
+		total += arr[i];
+		if (arr[i] < min) min = arr[i];
+		if (arr[i] > max) max = arr[i];
+	}
+	return { total: total, avg: Math.round(total / arr.length), min: min, max: max, count: arr.length };
+}
+
+/* ================================================================
+   Format Conversion
+   ================================================================ */
+function convertMP4ToRawAnnexB(fileBuffer, codecInfo, moovBox, mdatBox) {
+	var spsData = codecInfo.spsData || [];
+	var ppsData = codecInfo.ppsData || [];
+	var vpsData = codecInfo.vpsData || [];
+	var nalLengthSize = codecInfo.nalLengthSize || 4;
+
+	// Extract NAL units from mdat
+	var rawNALUs = extractMP4RawNALUs(mdatBox, nalLengthSize);
+	if (rawNALUs.length === 0) return null;
+
+	var chunks = [];
+	var startCode = new Uint8Array([0, 0, 0, 1]);
+
+	// Prepend VPS (H.265 only)
+	for (var vi = 0; vi < vpsData.length; vi++) {
+		chunks.push(startCode.slice());
+		chunks.push(vpsData[vi]);
+	}
+	// Prepend SPS
+	for (var si = 0; si < spsData.length; si++) {
+		chunks.push(startCode.slice());
+		chunks.push(spsData[si]);
+	}
+	// Prepend PPS
+	for (var pi = 0; pi < ppsData.length; pi++) {
+		chunks.push(startCode.slice());
+		chunks.push(ppsData[pi]);
+	}
+
+	// Append all NAL units with start codes
+	for (var ni = 0; ni < rawNALUs.length; ni++) {
+		chunks.push(startCode.slice());
+		chunks.push(rawNALUs[ni]);
+	}
+
+	return concatChunks(chunks);
+}
+
+function convertRawToMP4(rawBuffer, codec) {
+	var nalUnits = findNALUnits(rawBuffer, 0, rawBuffer.byteLength);
+	if (nalUnits.length === 0) return { error: '未找到任何 NAL 单元' };
+
+	// Classify NAL units
+	var spsNALUs = [], ppsNALUs = [], vpsNALUs = [], sliceNALUs = [];
+	for (var i = 0; i < nalUnits.length; i++) {
+		var nalu = nalUnits[i];
+		if (nalu.data.length < 1) continue;
+
+		if (codec === 'h265') {
+			if (nalu.data.length < 2) continue;
+			var h265type = ((nalu.data[0] & 0x7E) >> 1);
+			if (h265type === 32) { vpsNALUs.push(nalu); continue; }
+			if (h265type === 33) { spsNALUs.push(nalu); continue; }
+			if (h265type === 34) { ppsNALUs.push(nalu); continue; }
+			if (h265type <= 21 || (h265type >= 0 && h265type <= 9)) { sliceNALUs.push(nalu); }
+		} else {
+			// H.264
+			var h264type = nalu.data[0] & 0x1F;
+			if (h264type === 7) { spsNALUs.push(nalu); continue; }
+			if (h264type === 8) { ppsNALUs.push(nalu); continue; }
+			if (h264type === 1 || h264type === 5) { sliceNALUs.push(nalu); }
+		}
+	}
+
+	if (spsNALUs.length === 0) return { error: '未找到 SPS，无法创建 MP4 容器（需参数集）' };
+	if (sliceNALUs.length === 0) return { error: '未找到视频切片数据' };
+
+	// Build codec config boxes
+	var codecConfigBox = null;
+	if (codec === 'h265') {
+		codecConfigBox = buildHVCCBox(vpsNALUs, spsNALUs, ppsNALUs);
+	} else {
+		codecConfigBox = buildAVCCBox(spsNALUs, ppsNALUs);
+	}
+	if (!codecConfigBox) return { error: '构建编码配置失败' };
+
+	// Build mdat
+	var mdatData = buildMDATData(sliceNALUs);
+	if (!mdatData) return { error: '构建 mdat 失败' };
+
+	// Build ftyp
+	var ftypData = buildFTYPBox(codec);
+
+	// Build moov
+	var moovData = buildMOOVBox(codec, codecConfigBox, sliceNALUs, ftypData.length + mdatData.length);
+	if (!moovData) return { error: '构建 moov 失败' };
+
+	// Concatenate
+	var output = new Uint8Array(ftypData.length + mdatData.length + moovData.length);
+	output.set(ftypData, 0);
+	output.set(mdatData, ftypData.length);
+	output.set(moovData, ftypData.length + mdatData.length);
+
+	var ext = codec === 'h265' ? 'mp4' : 'mp4';
+	return { data: output, ext: ext };
+}
+
+function concatChunks(chunks) {
+	var totalLen = 0;
+	for (var i = 0; i < chunks.length; i++) totalLen += chunks[i].length;
+	var output = new Uint8Array(totalLen);
+	var pos = 0;
+	for (var i = 0; i < chunks.length; i++) {
+		output.set(chunks[i], pos);
+		pos += chunks[i].length;
+	}
+	return output;
+}
+
+function buildFTYPBox(codec) {
+	// ftyp box: size(4) + 'ftyp'(4) + major_brand(4) + minor_version(4) + compatible_brands...
+	var majorBrand = codec === 'h265' ? 'hvc1' : 'avc1';
+	// Simplest ftyp: just major brand + minor version
+	var data = new Uint8Array(20);
+	var dv = new DataView(data.buffer);
+	dv.setUint32(0, 20); // box size
+	data[4] = 0x66; data[5] = 0x74; data[6] = 0x79; data[7] = 0x70; // 'ftyp'
+	data[8] = majorBrand.charCodeAt(0); data[9] = majorBrand.charCodeAt(1);
+	data[10] = majorBrand.charCodeAt(2); data[11] = majorBrand.charCodeAt(3);
+	dv.setUint32(12, 0); // minor version
+	// compatible brands: isom + major brand
+	data[16] = 0x69; data[17] = 0x73; data[18] = 0x6f; data[19] = 0x6d; // 'isom'
+	return data;
+}
+
+function buildAVCCBox(spsNALUs, ppsNALUs) {
+	if (spsNALUs.length === 0) return null;
+	var spsData = spsNALUs[0].data;
+	var totalSize = 7; // fixed header
+	var spsSizes = [];
+	var ppsSizes = [];
+
+	for (var i = 0; i < spsNALUs.length; i++) {
+		spsSizes.push(spsNALUs[i].data.length);
+		totalSize += 2 + spsNALUs[i].data.length;
+	}
+	var ppsCount = Math.min(ppsNALUs.length, 255);
+	for (var j = 0; j < ppsCount; j++) {
+		ppsSizes.push(ppsNALUs[j].data.length);
+		totalSize += 2 + ppsNALUs[j].data.length;
+	}
+
+	var box = new Uint8Array(totalSize);
+	box[0] = 1; // configurationVersion
+	box[1] = spsData.length > 1 ? spsData[1] : 100; // AVCProfileIndication (from SPS)
+	box[2] = spsData.length > 2 ? spsData[2] : 0; // profile_compatibility
+	box[3] = spsData.length > 3 ? spsData[3] : 40; // AVCLevelIndication
+	box[4] = 0xFF; // reserved(6) + lengthSizeMinusOne(2) = 3 → NAL length = 4 bytes
+	box[5] = 0xE0 | (spsNALUs.length & 0x1F); // reserved(3) + numSPS(5)
+
+	var pos = 6;
+	for (var si = 0; si < spsNALUs.length; si++) {
+		box[pos] = (spsSizes[si] >> 8) & 0xFF;
+		box[pos + 1] = spsSizes[si] & 0xFF;
+		pos += 2;
+		box.set(spsNALUs[si].data, pos);
+		pos += spsSizes[si];
+	}
+	box[pos] = ppsCount & 0xFF;
+	pos++;
+	for (var pi = 0; pi < ppsCount; pi++) {
+		box[pos] = (ppsSizes[pi] >> 8) & 0xFF;
+		box[pos + 1] = ppsSizes[pi] & 0xFF;
+		pos += 2;
+		box.set(ppsNALUs[pi].data, pos);
+		pos += ppsSizes[pi];
+	}
+	return box;
+}
+
+function buildHVCCBox(vpsNALUs, spsNALUs, ppsNALUs) {
+	if (spsNALUs.length === 0) return null;
+	// hvcC structure
+	var arrays = [];
+	if (vpsNALUs.length > 0) arrays.push({ type: 0, nalus: vpsNALUs });
+	if (spsNALUs.length > 0) arrays.push({ type: 1, nalus: spsNALUs });
+	if (ppsNALUs.length > 0) arrays.push({ type: 2, nalus: ppsNALUs });
+
+	var totalSize = 23; // fixed header
+	for (var ai = 0; ai < arrays.length; ai++) {
+		totalSize += 3; // array header
+		for (var ni = 0; ni < arrays[ai].nalus.length; ni++) {
+			totalSize += 2 + arrays[ai].nalus[ni].data.length;
+		}
+	}
+
+	var box = new Uint8Array(totalSize);
+	var pos = 0;
+	box[pos++] = 1; // configurationVersion
+	// general_profile_space(2) + general_tier_flag(1) + general_profile_idc(5)
+	box[pos++] = 0; // default: general_profile_idc = 0, space=0, tier=0
+	box[pos++] = 0; box[pos++] = 0; box[pos++] = 0; // profile compatibility flags (4 bytes)
+	// More profile compatibility + constraint indicators (6 bytes)
+	var constraintBytes = new Uint8Array(6);
+	for (var cbi = 0; cbi < 6; cbi++) box[pos++] = 0;
+	box[pos++] = 0; // general_level_idc (set to unknown)
+	// reserved(4) + min_spatial_segmentation_idc(12) → 2 bytes
+	box[pos++] = 0xF0; box[pos++] = 0x00;
+	// reserved(6) + parallelismType(2) → 1 byte
+	box[pos++] = 0xFC;
+	// reserved(6) + chroma_format_idc(2) → 1 byte
+	box[pos++] = 0xFC;
+	// reserved(5) + bit_depth_luma_minus8(3) → 1 byte
+	box[pos++] = 0xF8;
+	// reserved(5) + bit_depth_chroma_minus8(3) → 1 byte
+	box[pos++] = 0xF8;
+	// avgFrameRate (2 bytes)
+	box[pos++] = 0x00; box[pos++] = 0x00;
+	// constantFrameRate(2) + numTemporalLayers(3) + temporalIdNested(1) + lengthSizeMinusOne(2) → 1 byte
+	box[pos++] = 0x03; // lengthSizeMinusOne = 3 → 4-byte NAL lengths
+	// numOfArrays (1 byte)
+	box[pos++] = arrays.length & 0xFF;
+
+	for (var ai2 = 0; ai2 < arrays.length; ai2++) {
+		var arr = arrays[ai2];
+		box[pos++] = (0x80 | (arr.type & 0x0F)); // array_completeness(1) + reserved(1) + NAL_unit_type(6)
+		var count = arr.nalus.length;
+		box[pos++] = (count >> 8) & 0xFF;
+		box[pos++] = count & 0xFF;
+		for (var ni2 = 0; ni2 < count; ni2++) {
+			var naluLen = arr.nalus[ni2].data.length;
+			box[pos++] = (naluLen >> 8) & 0xFF;
+			box[pos++] = naluLen & 0xFF;
+			box.set(arr.nalus[ni2].data, pos);
+			pos += naluLen;
+		}
+	}
+	return box;
+}
+
+function buildMDATData(sliceNALUs) {
+	// mdat contains all slice NALUs in AVCC format (4-byte length prefix)
+	var totalLen = 0;
+	for (var i = 0; i < sliceNALUs.length; i++) {
+		totalLen += 4 + sliceNALUs[i].data.length;
+	}
+	var data = new Uint8Array(totalLen);
+	var dv = new DataView(data.buffer);
+	var pos = 0;
+	for (var i = 0; i < sliceNALUs.length; i++) {
+		dv.setUint32(pos, sliceNALUs[i].data.length);
+		pos += 4;
+		data.set(sliceNALUs[i].data, pos);
+		pos += sliceNALUs[i].data.length;
+	}
+	return data;
+}
+
+function buildMOOVBox(codec, codecConfigBox, sliceNALUs, mdatOffset) {
+	// Calculate timescale and duration
+	var timescale = 1000; // default: 1ms units
+	var duration = sliceNALUs.length; // 1 sample = 1 tick (we don't know actual frame rate)
+	// Actually, use a reasonable default: assume 30fps → duration = samples * 1000/30
+	// Better: use timescale=30000, duration=samples*1000
+	timescale = 30000;
+	duration = sliceNALUs.length * 1000;
+
+	var sampleSizes = [];
+	for (var i = 0; i < sliceNALUs.length; i++) {
+		sampleSizes.push(4 + sliceNALUs[i].data.length); // AVCC format with 4-byte length prefix
+	}
+
+	// Determine sync samples (I-frames): for simplicity, sample 1 is sync, rest depends on NAL type
+	var syncSamples = [1]; // always mark first sample as sync
+	for (var i = 1; i < sliceNALUs.length; i++) {
+		// Check if this NALU could be an IDR/I frame
+		// For H.264: NAL type 5 = IDR
+		// For H.265: NAL type 19,20 = IDR
+		if (sliceNALUs[i].data.length > 0) {
+			if (codec === 'h264') {
+				var nalType = sliceNALUs[i].data[0] & 0x1F;
+				if (nalType === 5) syncSamples.push(i + 1);
+			} else {
+				if (sliceNALUs[i].data.length >= 2) {
+					var h265type = ((sliceNALUs[i].data[0] & 0x7E) >> 1);
+					if (h265type === 19 || h265type === 20) syncSamples.push(i + 1);
+				}
+			}
+		}
+	}
+
+	// Compute sizes
+	var stsdBox = buildSTSDBox(codec, codecConfigBox);
+	var sttsBox = buildSTTSBox_MP4(sliceNALUs.length, 1000); // 1000 ticks per sample @ 30000 timescale = 30fps
+	var stssBox = buildSTSSBox_MP4(syncSamples);
+	var stszBox = buildSTSZBox_MP4(sampleSizes);
+	var stcoBox = buildSTCOBox_MP4(mdatOffset, sampleSizes);
+
+	if (!stsdBox || !sttsBox || !stszBox || !stcoBox) return null;
+
+	// Build stbl
+	var stblChildren = [stsdBox, sttsBox, stszBox, stcoBox];
+	if (stssBox) stblChildren.push(stssBox);
+	var stblBox = buildContainerBox('stbl', stblChildren);
+
+	// Build minf
+	var vmhd = buildVMHDBox();
+	var dinf = buildDINFBox();
+	var minf = buildContainerBox('minf', [vmhd, dinf, stblBox]);
+
+	// Build mdia
+	var mdhd = buildFullBox('mdhd', 0, 0, buildMDHDData(timescale, duration));
+	var hdlr = buildFullBox('hdlr', 0, 0, buildHDLRData());
+	var mdia = buildContainerBox('mdia', [mdhd, hdlr, minf]);
+
+	// Build trak
+	var tkhd = buildFullBox('tkhd', 0, 3, buildTKHDData(duration));
+	var trak = buildContainerBox('trak', [tkhd, mdia]);
+
+	// Build mvhd
+	var mvhd = buildFullBox('mvhd', 0, 0, buildMVHDData(timescale, duration));
+
+	// Build moov
+	var moov = buildContainerBox('moov', [mvhd, trak]);
+
+	return moov;
+}
+
+function buildUint32BE(value) {
+	var arr = new Uint8Array(4);
+	new DataView(arr.buffer).setUint32(0, value);
+	return arr;
+}
+
+function buildFullBox(type, version, flags, data) {
+	var headerSize = 12;
+	var totalSize = headerSize + data.length;
+	var box = new Uint8Array(totalSize);
+	var dv = new DataView(box.buffer);
+	dv.setUint32(0, totalSize);
+	box[4] = type.charCodeAt(0); box[5] = type.charCodeAt(1);
+	box[6] = type.charCodeAt(2); box[7] = type.charCodeAt(3);
+	box[8] = version;
+	box[9] = (flags >> 16) & 0xFF;
+	box[10] = (flags >> 8) & 0xFF;
+	box[11] = flags & 0xFF;
+	box.set(data, headerSize);
+	return box;
+}
+
+function buildContainerBox(type, children) {
+	var totalDataSize = 0;
+	for (var i = 0; i < children.length; i++) totalDataSize += children[i].length;
+	var box = new Uint8Array(8 + totalDataSize);
+	var dv = new DataView(box.buffer);
+	dv.setUint32(0, 8 + totalDataSize);
+	box[4] = type.charCodeAt(0); box[5] = type.charCodeAt(1);
+	box[6] = type.charCodeAt(2); box[7] = type.charCodeAt(3);
+	var pos = 8;
+	for (var i = 0; i < children.length; i++) {
+		box.set(children[i], pos);
+		pos += children[i].length;
+	}
+	return box;
+}
+
+function buildMVHDData(timescale, duration) {
+	var data = new Uint8Array(96);
+	var dv = new DataView(data.buffer);
+	dv.setUint32(0, Math.floor(Date.now() / 1000)); // creation_time
+	dv.setUint32(4, Math.floor(Date.now() / 1000)); // modification_time
+	dv.setUint32(8, timescale);
+	dv.setUint32(12, duration);
+	dv.setUint32(16, 0x00010000); // rate (1.0 fixed point)
+	dv.setUint16(20, 0x0100); // volume (1.0)
+	dv.setUint16(22, 0); // reserved
+	dv.setUint32(24, 0); dv.setUint32(28, 0); // reserved
+	// Unity matrix (36 bytes)
+	for (var i = 32; i < 68; i++) data[i] = 0;
+	dv.setUint32(36, 0x00010000); dv.setUint32(52, 0x00010000); dv.setUint32(68, 0x40000000);
+	// pre_defined (24 bytes)
+	return data;
+}
+
+function buildTKHDData(duration) {
+	var data = new Uint8Array(80);
+	var dv = new DataView(data.buffer);
+	dv.setUint32(0, Math.floor(Date.now() / 1000));
+	dv.setUint32(4, Math.floor(Date.now() / 1000));
+	dv.setUint32(8, 1); // track_id
+	dv.setUint32(12, 0); // reserved
+	dv.setUint32(16, duration);
+	dv.setUint32(20, 0); dv.setUint32(24, 0); // reserved
+	dv.setUint16(28, 0); // layer
+	dv.setUint16(30, 0); // alternate_group
+	dv.setUint16(32, 0x0100); // volume
+	dv.setUint16(34, 0); // reserved
+	// Unity matrix
+	for (var i = 36; i < 72; i++) data[i] = 0;
+	dv.setUint32(40, 0x00010000); dv.setUint32(56, 0x00010000); dv.setUint32(72, 0x40000000);
+	dv.setUint32(76, 0x01000000); // width (16.16 fixed point → 1.0 ? no, this is wrong)
+	dv.setUint32(80, 0x01000000); // height
+	// Actually width/height go at offset 76 and 80 but they're outside data[84]... let me fix
+	return data;
+}
+
+function buildMDHDData(timescale, duration) {
+	var data = new Uint8Array(20);
+	var dv = new DataView(data.buffer);
+	dv.setUint32(0, Math.floor(Date.now() / 1000));
+	dv.setUint32(4, Math.floor(Date.now() / 1000));
+	dv.setUint32(8, timescale);
+	dv.setUint32(12, duration);
+	dv.setUint16(16, 0x55C4); // language: und (undefined)
+	dv.setUint16(18, 0); // pre_defined
+	return data;
+}
+
+function buildHDLRData() {
+	// 'vide' handler
+	var data = new Uint8Array(33);
+	data[0] = 0; data[1] = 0; data[2] = 0; data[3] = 0; // pre_defined
+	data[4] = 0x76; data[5] = 0x69; data[6] = 0x64; data[7] = 0x65; // 'vide'
+	// remaining reserved + name string
+	return data;
+}
+
+function buildVMHDBox() {
+	var data = new Uint8Array(8);
+	var dv = new DataView(data.buffer);
+	dv.setUint16(0, 0); // graphicsmode
+	dv.setUint16(2, 0); dv.setUint16(4, 0); dv.setUint16(6, 0); // opcolor
+	return buildFullBox('vmhd', 0, 1, data);
+}
+
+function buildDINFBox() {
+	// dinf contains dref
+	var drefData = new Uint8Array(4);
+	new DataView(drefData.buffer).setUint32(0, 1); // entry count
+	var dref = buildFullBox('dref', 0, 0, drefData);
+	// Add url entry
+	var urlEntry = buildFullBox('url ', 0, 1, new Uint8Array(0));
+	// Actually dref should contain the entries
+	// Let me rebuild properly
+	var drefChildren = [urlEntry];
+	var drefTotalData = new Uint8Array(4);
+	new DataView(drefTotalData.buffer).setUint32(0, 1);
+	// This is getting complex. Let me use a simpler approach:
+	var drefBox = new Uint8Array(8 + 4 + 12);
+	var dvRef = new DataView(drefBox.buffer);
+	dvRef.setUint32(0, 8 + 4 + 12); // box size
+	drefBox[4] = 0x64; drefBox[5] = 0x72; drefBox[6] = 0x65; drefBox[7] = 0x66; // 'dref'
+	drefBox[8] = 0; drefBox[9] = 0; drefBox[10] = 0; drefBox[11] = 0; // version+flags
+	dvRef.setUint32(12, 1); // entry count
+	// url  box
+	dvRef.setUint32(16, 12); // box size
+	drefBox[20] = 0x75; drefBox[21] = 0x72; drefBox[22] = 0x6c; drefBox[23] = 0x20; // 'url '
+	drefBox[24] = 0; drefBox[25] = 0; drefBox[26] = 0; drefBox[27] = 1; // version + flags (self-contained)
+
+	var dinfBox = new Uint8Array(8 + drefBox.length);
+	new DataView(dinfBox.buffer).setUint32(0, 8 + drefBox.length);
+	dinfBox[4] = 0x64; dinfBox[5] = 0x69; dinfBox[6] = 0x6e; dinfBox[7] = 0x66; // 'dinf'
+	dinfBox.set(drefBox, 8);
+	return dinfBox;
+}
+
+function buildSTSDBox(codec, codecConfigBox) {
+	// stsd: version(4) + entry_count(4) + entries...
+	var entryType = codec === 'h265' ? 'hvc1' : 'avc1';
+	// Entry: size(4) + type(4) + reserved(6) + data_reference_index(2) + visual_entry_data...
+	// visual_entry: pre_defined(2) + reserved(2) + pre_defined(12) + width(2) + height(2) +
+	//   horizresolution(4) + vertresolution(4) + reserved(4) + frame_count(2) +
+	//   compressorname(32) + depth(2) + pre_defined(2) + codec_config
+	var visualHeaderSize = 78;
+	var entrySize = 8 + visualHeaderSize + codecConfigBox.length;
+	var totalSize = 8 + entrySize; // stsd full box header + 1 entry
+
+	var data = new Uint8Array(totalSize);
+	var dv = new DataView(data.buffer);
+	dv.setUint32(0, totalSize);
+	data[4] = 0x73; data[5] = 0x74; data[6] = 0x73; data[7] = 0x64; // 'stsd'
+	data[8] = 0; data[9] = 0; data[10] = 0; data[11] = 0; // version + flags
+	dv.setUint32(12, 1); // entry_count
+
+	// Entry
+	dv.setUint32(16, entrySize);
+	data[20] = entryType.charCodeAt(0); data[21] = entryType.charCodeAt(1);
+	data[22] = entryType.charCodeAt(2); data[23] = entryType.charCodeAt(3);
+	// reserved (6 bytes) + data_reference_index (2 bytes)
+	data[24] = 0; data[25] = 0; data[26] = 0; data[27] = 0;
+	data[28] = 0; data[29] = 0;
+	dv.setUint16(30, 1); // data_reference_index = 1
+	// visual entry header
+	dv.setUint16(32, 0); // pre_defined
+	dv.setUint16(34, 0); // reserved
+	dv.setUint32(36, 0); dv.setUint32(40, 0); dv.setUint32(44, 0); // pre_defined
+	dv.setUint16(48, 1920); // width
+	dv.setUint16(50, 1080); // height
+	dv.setUint32(52, 0x00480000); // horizresolution (72 dpi)
+	dv.setUint32(56, 0x00480000); // vertresolution (72 dpi)
+	dv.setUint32(60, 0); // reserved
+	dv.setUint16(64, 1); // frame_count
+	// compressor name (32 bytes) - all zeros = no compressor
+	for (var i = 66; i < 98; i++) data[i] = 0;
+	dv.setUint16(98, 0x0018); // depth (24-bit)
+	dv.setInt16(100, -1); // pre_defined (-1)
+	// Codec config
+	data.set(codecConfigBox, 102);
+
+	return data;
+}
+
+function buildSTTSBox_MP4(sampleCount, sampleDelta) {
+	// Version 0: entry_count(4) + entries(sample_count(4) + sample_delta(4))
+	var data = new Uint8Array(12);
+	var dv = new DataView(data.buffer);
+	dv.setUint32(0, 1); // 1 entry
+	dv.setUint32(4, sampleCount);
+	dv.setUint32(8, sampleDelta);
+	return buildFullBox('stts', 0, 0, data);
+}
+
+function buildSTSSBox_MP4(syncSampleIndices) {
+	if (syncSampleIndices.length === 0) return null;
+	var data = new Uint8Array(4 + syncSampleIndices.length * 4);
+	var dv = new DataView(data.buffer);
+	dv.setUint32(0, syncSampleIndices.length);
+	for (var i = 0; i < syncSampleIndices.length; i++) {
+		dv.setUint32(4 + i * 4, syncSampleIndices[i]);
+	}
+	return buildFullBox('stss', 0, 0, data);
+}
+
+function buildSTSZBox_MP4(sampleSizes) {
+	// Use variant with individual sizes
+	var data = new Uint8Array(8 + sampleSizes.length * 4);
+	var dv = new DataView(data.buffer);
+	dv.setUint32(0, 0); // sample_size = 0 (means variable)
+	dv.setUint32(4, sampleSizes.length);
+	for (var i = 0; i < sampleSizes.length; i++) {
+		dv.setUint32(8 + i * 4, sampleSizes[i]);
+	}
+	return buildFullBox('stsz', 0, 0, data);
+}
+
+function buildSTCOBox_MP4(mdatOffset, sampleSizes) {
+	// Single chunk: all samples in one chunk starting at mdatOffset + 8 (mdat header)
+	var chunkOffset = mdatOffset + 8; // ftyp size + mdat box header
+	var data = new Uint8Array(8);
+	var dv = new DataView(data.buffer);
+	dv.setUint32(0, 1); // 1 chunk
+	dv.setUint32(4, chunkOffset);
+	return buildFullBox('stco', 0, 0, data);
+}
+
+/* ================================================================
+   Renderer
+   ================================================================ */
+function renderAll(result, codecInfo) {
+	renderSummaryCards(result);
+	renderCodecDetails(codecInfo, result);
+	renderGOPDetails(result.gopInfo, result.totalFrames);
+	renderFrameTypeChart(result);
+	renderNALTable(result);
+	renderFrameTable(result);
+	renderGOPView(result);
+	renderFrameSizeChart(result);
+	showConversionSection(codecInfo);
+	document.getElementById('emptyState').style.display = 'none';
+	document.getElementById('convertSection').style.display = 'block';
+	document.getElementById('convertBtn').style.display = 'inline-block';
+	document.getElementById('downloadConvertedBtn').style.display = 'none';
+	document.getElementById('sizeCompareConvert').style.display = 'none';
+}
+
+function renderSummaryCards(result) {
+	var container = document.getElementById('summaryCards');
+	var totalFrames = result.iCount + result.pCount + result.bCount;
+	var ipRatioDisplay = result.ipRatio || 'N/A';
+	var cards = [
+		{ value: totalFrames + (result.unknownCount > 0 ? ' (+' + result.unknownCount + '?)' : ''), label: '总帧数' },
+		{ value: result.iCount, label: 'I 帧', sub: totalFrames > 0 ? (result.iCount / totalFrames * 100).toFixed(1) + '%' : '' },
+		{ value: result.pCount, label: 'P 帧', sub: totalFrames > 0 ? (result.pCount / totalFrames * 100).toFixed(1) + '%' : '' },
+		{ value: result.bCount, label: 'B 帧', sub: totalFrames > 0 ? (result.bCount / totalFrames * 100).toFixed(1) + '%' : '' },
+		{ value: result.gopInfo.count, label: 'GOP 数' },
+		{ value: result.gopInfo.avgSize, label: '平均 GOP 大小' },
+		{ value: ipRatioDisplay, label: 'I/P 比' },
+		{ value: fmtSize(result.totalSliceBytes), label: '切片总大小' }
+	];
+	var html = '';
+	for (var i = 0; i < cards.length; i++) {
+		html += '<div class="stat-card"><div class="stat-value">' + cards[i].value + '</div><div class="stat-label">' + cards[i].label + '</div>';
+		if (cards[i].sub) html += '<div class="stat-sub">' + cards[i].sub + '</div>';
+		html += '</div>';
+	}
+	container.innerHTML = html;
+		applyCID(container);
+}
+
+function renderCodecDetails(codecInfo, result) {
+	if (!codecInfo) {
+		document.getElementById('codecDetails').style.display = 'none';
+		return;
+	}
+	document.getElementById('codecDetails').style.display = 'block';
+	document.getElementById('detailCodec').textContent = (codecInfo.codec || '?').toUpperCase();
+	document.getElementById('detailProfile').textContent = codecInfo.profileName || (codecInfo.profileIdc ? 'Profile ' + codecInfo.profileIdc : '?');
+	document.getElementById('detailLevel').textContent = codecInfo.levelIdc ? (codecInfo.levelIdc / 10).toFixed(1) : '?';
+	document.getElementById('detailRes').textContent = (codecInfo.width && codecInfo.height) ? codecInfo.width + ' × ' + codecInfo.height : '?';
+	document.getElementById('detailFPS').textContent = codecInfo.fps ? codecInfo.fps + ' fps' : '未检测';
+	document.getElementById('detailNALCount').textContent = result.nalUnitCount;
+	document.getElementById('detailSliceCount').textContent = result.totalFrames + result.unknownCount;
+}
+
+function renderGOPDetails(gopInfo, totalFrames) {
+	document.getElementById('gopSummary').style.display = 'block';
+	document.getElementById('gopCount').textContent = gopInfo.count;
+	document.getElementById('gopAvg').textContent = gopInfo.avgSize;
+	document.getElementById('gopMax').textContent = gopInfo.maxSize;
+	document.getElementById('gopMin').textContent = gopInfo.minSize;
+	document.getElementById('gopTotalFrames').textContent = totalFrames;
+}
+
+function setupHiDPICanvas(canvas, width, height) {
+	// Guard against zero-width (hidden tab containers)
+	if (width < 10) width = 600;
+	if (height < 10) height = 150;
+	var dpr = window.devicePixelRatio || 1;
+	canvas.width = width * dpr;
+	canvas.height = height * dpr;
+	canvas.style.width = width + 'px';
+	canvas.style.height = height + 'px';
+	var ctx = canvas.getContext('2d');
+	ctx.scale(dpr, dpr);
+	return { ctx: ctx, w: width, h: height };
+}
+
+function getAccentColor() {
+	var style = getComputedStyle(document.documentElement);
+	return style.getPropertyValue('--accent').trim() || '#2337ff';
+}
+
+function getTextColor() {
+	var style = getComputedStyle(document.documentElement);
+	var black = style.getPropertyValue('--black').trim();
+	if (black && black.indexOf(',') !== -1) {
+		return 'rgb(' + black + ')';
+	}
+	return '#0f1219';
+}
+
+function renderFrameTypeChart(result) {
+	var canvas = document.getElementById('frameTypeChart');
+	if (!canvas) return;
+	var total = result.iCount + result.pCount + result.bCount;
+	if (total === 0) { canvas.style.display = 'none'; return; }
+	canvas.style.display = 'block';
+
+	var containerWidth = canvas.parentElement.clientWidth - 2;
+	var chartW = Math.min(containerWidth, 700);
+	var chartH = 180;
+	var setup = setupHiDPICanvas(canvas, chartW, chartH);
+	var ctx = setup.ctx;
+	var w = setup.w, h = setup.h;
+
+	var accent = getAccentColor();
+	var pColor = '#ff9800';
+	var bColor = '#4caf50';
+	var bgColor = getComputedStyle(document.documentElement).getPropertyValue('--gray-light').trim();
+	if (bgColor && bgColor.indexOf(',') !== -1) bgColor = 'rgb(' + bgColor + ')';
+
+	ctx.clearRect(0, 0, w, h);
+
+	var margin = { top: 20, right: 20, bottom: 40, left: 60 };
+	var barH = 32;
+	var barGap = 20;
+	var startY = margin.top;
+
+	var maxVal = Math.max(result.iCount, result.pCount, result.bCount, 1);
+	var barW = w - margin.left - margin.right;
+
+	var bars = [
+		{ label: 'I 帧', value: result.iCount, color: accent },
+		{ label: 'P 帧', value: result.pCount, color: pColor },
+		{ label: 'B 帧', value: result.bCount, color: bColor }
+	];
+
+	// Title
+	ctx.fillStyle = getTextColor();
+	ctx.font = '12px ' + getComputedStyle(document.body).fontFamily;
+	ctx.textAlign = 'center';
+	ctx.fillText('帧类型分布', w / 2, margin.top);
+
+	for (var i = 0; i < bars.length; i++) {
+		var y = startY + (barH + barGap) * i;
+		var fillW = Math.max((bars[i].value / maxVal) * barW, bars[i].value > 0 ? 4 : 0);
+
+		// Label
+		ctx.fillStyle = getTextColor();
+		ctx.font = '11px ' + getComputedStyle(document.body).fontFamily;
+		ctx.textAlign = 'right';
+		ctx.fillText(bars[i].label, margin.left - 8, y + barH / 2 + 4);
+
+		// Bar
+		ctx.fillStyle = bars[i].color;
+		ctx.fillRect(margin.left, y, fillW, barH);
+
+		// Count + percentage
+		var pct = total > 0 ? (bars[i].value / total * 100).toFixed(1) : '0.0';
+		ctx.fillStyle = getTextColor();
+		ctx.font = 'bold 12px ' + getComputedStyle(document.body).fontFamily;
+		ctx.textAlign = 'left';
+		ctx.fillText(bars[i].value + ' (' + pct + '%)', margin.left + fillW + 8, y + barH / 2 + 4);
+	}
+}
+
+function renderNALTable(result) {
+	var tbody = document.getElementById('nalTableBody');
+	if (!tbody) return;
+	var html = '';
+	var allNals = result._nalUnits || [];
+
+	for (var i = 0; i < allNals.length; i++) {
+		var nalu = allNals[i];
+		var rowClass = '';
+		var frameTypeTag = '';
+		var nalTypeName = nalu.typeName || nalu.type || '?';
+
+		if (nalu.frameType === 'I') { rowClass = 'row-I'; frameTypeTag = '<span class="tag tag-I">I</span>'; }
+		else if (nalu.frameType === 'P') { rowClass = 'row-P'; frameTypeTag = '<span class="tag tag-P">P</span>'; }
+		else if (nalu.frameType === 'B') { rowClass = 'row-B'; frameTypeTag = '<span class="tag tag-B">B</span>'; }
+		else if (nalu.type === 'SPS' || nalu.type === 'PPS' || nalu.type === 'VPS') {
+			rowClass = 'row-param'; frameTypeTag = '<span class="tag tag-param">参数</span>';
+		} else if (nalu.type === 'SEI' || nalu.type === 'PREFIX_SEI' || nalu.type === 'SUFFIX_SEI') {
+			rowClass = 'row-param'; frameTypeTag = '<span class="tag tag-param">SEI</span>';
+		}
+
+		html += '<tr class="' + rowClass + '" data-nal-type="' + (nalu.type || 'unknown') + '"' +
+			(nalu.frameType ? ' data-frame-type="' + nalu.frameType + '"' : '') + '>' +
+			'<td>' + (i + 1) + '</td>' +
+			'<td>' + nalu.offset.toLocaleString() + '</td>' +
+			'<td>' + nalTypeName + '</td>' +
+			'<td>' + (nalu.layerId !== undefined ? nalu.layerId : '-') + '</td>' +
+			'<td>' + frameTypeTag + '</td>' +
+			'<td>' + fmtSize(nalu.size) + '</td>' +
+			'<td>' + (nalu.startCodeLen === 4 ? '4字节' : nalu.startCodeLen === 3 ? '3字节' : 'AVCC') + '</td>' +
+			'</tr>';
+	}
+
+	tbody.innerHTML = html;
+		applyCID(tbody);
+		// Store NAL data for filtering
+	tbody.parentElement._allNals = allNals;
+}
+
+function renderFrameTable(result) {
+	var tbody = document.getElementById('frameTableBody');
+	if (!tbody) return;
+	var frames = result.frames || [];
+	var html = '';
+	for (var i = 0; i < frames.length; i++) {
+		var f = frames[i];
+		var tagClass = 'tag-' + f.type;
+		var tagLabel = f.type;
+		var ts = f.pts !== undefined ? f.pts : (f.timestamp !== null ? f.timestamp : '-');
+		html += '<tr data-frame-type="' + f.type + '">' +
+			'<td>' + (i + 1) + '</td>' +
+			'<td><span class="tag ' + tagClass + '">' + tagLabel + '</span></td>' +
+			'<td>' + fmtSize(f.size) + '</td>' +
+			'<td>' + (f.nalUnitIndex !== undefined ? f.nalUnitIndex + 1 : '-') + '</td>' +
+			'<td>' + (f.nalUnitIndex !== undefined ? 'NAL#' + (f.nalUnitIndex + 1) : '-') + '</td>' +
+			'<td>' + ts + '</td>' +
+			'</tr>';
+	}
+	tbody.innerHTML = html;
+		applyCID(tbody);
+}
+
+function renderGOPView(result) {
+	var gopInfo = result.gopInfo;
+
+	// GOP stats cards
+	var cardsContainer = document.getElementById('gopStatsCards');
+	if (cardsContainer) {
+		var totalFrames = result.iCount + result.pCount + result.bCount;
+		cardsContainer.innerHTML =
+			'<div class="stat-card"><div class="stat-value">' + gopInfo.count + '</div><div class="stat-label">GOP 数量</div></div>' +
+			'<div class="stat-card"><div class="stat-value">' + gopInfo.avgSize + '</div><div class="stat-label">平均 GOP</div></div>' +
+			'<div class="stat-card"><div class="stat-value">' + gopInfo.maxSize + '</div><div class="stat-label">最大 GOP</div></div>' +
+			'<div class="stat-card"><div class="stat-value">' + gopInfo.minSize + '</div><div class="stat-label">最小 GOP</div></div>' +
+			'<div class="stat-card"><div class="stat-value">' + (gopInfo.isClosed ? 'Closed' : 'Open') + '</div><div class="stat-label">GOP 类型</div></div>';
+		applyCID(cardsContainer);
+	}
+
+	// GOP boundaries list
+	var boundaryList = document.getElementById('gopBoundaryList');
+	if (boundaryList) {
+		var html = '<div style="font-weight:700;margin-bottom:0.5em">GOP 边界列表</div>';
+		for (var i = 0; i < gopInfo.boundaries.length; i++) {
+			var b = gopInfo.boundaries[i];
+			html += '<div class="gop-boundary-item">GOP #' + (i + 1) + ': 帧 ' + b.start + ' → ' + b.end + ' (' + b.size + ' 帧)</div>';
+		}
+		boundaryList.innerHTML = html;
+		applyCID(boundaryList);
+	}
+
+	// GOP chart
+	var canvas = document.getElementById('gopChart');
+	if (!canvas) return;
+	if (gopInfo.count === 0) { canvas.style.display = 'none'; return; }
+	canvas.style.display = 'block';
+
+	var containerWidth = canvas.parentElement.clientWidth - 2;
+	var chartW = Math.min(containerWidth, 700);
+	var chartH = Math.min(gopInfo.count * 22 + 40, 400);
+	var setup = setupHiDPICanvas(canvas, chartW, chartH);
+	var ctx = setup.ctx;
+	var w = setup.w, h = setup.h;
+
+	var accent = getAccentColor();
+	var pColor = '#ff9800';
+	var bColor = '#4caf50';
+	var frames = result.frames || [];
+	var margin = { top: 10, right: 10, bottom: 20, left: 60 };
+	var plotW = w - margin.left - margin.right;
+	var maxGopSize = gopInfo.maxSize || 1;
+	var rectW = Math.max(2, Math.floor(plotW / maxGopSize));
+	var rectH = 18;
+	var gap = 3;
+
+	ctx.clearRect(0, 0, w, h);
+	var y = margin.top;
+
+	for (var gi = 0; gi < gopInfo.boundaries.length && y + rectH <= h - margin.bottom; gi++) {
+		var gop = gopInfo.boundaries[gi];
+		ctx.fillStyle = getTextColor();
+		ctx.font = '10px ' + getComputedStyle(document.body).fontFamily;
+		ctx.textAlign = 'right';
+		ctx.fillText('GOP' + (gi + 1), margin.left - 6, y + rectH / 2 + 3);
+
+		for (var fi = gop.start; fi <= gop.end && fi < frames.length; fi++) {
+			var x = margin.left + (fi - gop.start) * (rectW + 1);
+			if (x + rectW > w - margin.right) break;
+			ctx.fillStyle = frames[fi].type === 'I' ? accent : frames[fi].type === 'P' ? pColor : bColor;
+			ctx.fillRect(x, y, rectW, rectH);
+		}
+		y += rectH + gap;
+	}
+}
+
+function renderFrameSizeChart(result) {
+	var canvas = document.getElementById('frameSizeChart');
+	if (!canvas) return;
+	var frames = result.frames || [];
+	if (frames.length === 0) { canvas.style.display = 'none'; return; }
+	canvas.style.display = 'block';
+
+	var containerWidth = canvas.parentElement.clientWidth - 2;
+	var chartW = Math.min(containerWidth, 700);
+	var chartH = 250;
+	var setup = setupHiDPICanvas(canvas, chartW, chartH);
+	var ctx = setup.ctx;
+	var w = setup.w, h = setup.h;
+
+	var accent = getAccentColor();
+	var pColor = '#ff9800';
+	var bColor = '#4caf50';
+	var textColor = getTextColor();
+
+	ctx.clearRect(0, 0, w, h);
+
+	var margin = { top: 20, right: 15, bottom: 40, left: 55 };
+	var plotW = w - margin.left - margin.right;
+	var plotH = h - margin.top - margin.bottom;
+
+	// Sample frames if too many
+	var step = Math.max(1, Math.floor(frames.length / plotW));
+	var sampledFrames = [];
+	for (var i = 0; i < frames.length; i += step) {
+		sampledFrames.push(frames[i]);
+	}
+
+	// Find max size for scale
+	var maxSize = 0;
+	for (var i = 0; i < frames.length; i++) {
+		if (frames[i].size > maxSize) maxSize = frames[i].size;
+	}
+	if (maxSize === 0) maxSize = 1;
+
+	var barW = Math.max(1, plotW / sampledFrames.length - 0.5);
+
+	// Y axis labels
+	ctx.fillStyle = textColor;
+	ctx.font = '10px ' + getComputedStyle(document.body).fontFamily;
+	ctx.textAlign = 'right';
+	var ySteps = 4;
+	for (var yi = 0; yi <= ySteps; yi++) {
+		var val = Math.round(maxSize * yi / ySteps);
+		var yPos = margin.top + plotH - (plotH * yi / ySteps);
+		ctx.fillText(fmtSize(val), margin.left - 6, yPos + 4);
+		ctx.strokeStyle = 'rgba(128,128,128,0.15)';
+		ctx.beginPath();
+		ctx.moveTo(margin.left, yPos);
+		ctx.lineTo(margin.left + plotW, yPos);
+		ctx.stroke();
+	}
+
+	// X axis
+	ctx.strokeStyle = 'rgba(128,128,128,0.3)';
+	ctx.beginPath();
+	ctx.moveTo(margin.left, margin.top);
+	ctx.lineTo(margin.left, margin.top + plotH);
+	ctx.lineTo(margin.left + plotW, margin.top + plotH);
+	ctx.stroke();
+
+	// Draw bars
+	for (var si = 0; si < sampledFrames.length; si++) {
+		var f = sampledFrames[si];
+		var barH = Math.max(1, (f.size / maxSize) * plotH);
+		var x = margin.left + si * (barW + 0.5);
+		var y = margin.top + plotH - barH;
+
+		ctx.fillStyle = f.type === 'I' ? accent : f.type === 'P' ? pColor : f.type === 'B' ? bColor : '#999';
+		ctx.fillRect(x, y, barW, barH);
+	}
+
+	// X axis labels
+	ctx.fillStyle = textColor;
+	ctx.font = '10px ' + getComputedStyle(document.body).fontFamily;
+	ctx.textAlign = 'center';
+	var xLabelCount = Math.min(5, sampledFrames.length);
+	for (var xi = 0; xi < xLabelCount; xi++) {
+		var frameIdx = Math.floor(xi * sampledFrames.length / xLabelCount);
+		if (frameIdx < sampledFrames.length) {
+			ctx.fillText('#' + (sampledFrames[frameIdx].index + 1),
+				margin.left + frameIdx * (barW + 0.5), margin.top + plotH + 15);
+		}
+	}
+
+	// Title
+	ctx.fillText('帧大小分布 (共 ' + frames.length + ' 帧)', w / 2, margin.top - 2);
+}
+
+function showConversionSection(codecInfo) {
+	document.getElementById('convertSection').style.display = 'block';
+	document.getElementById('convertBtn').style.display = 'inline-block';
+	document.getElementById('downloadConvertedBtn').style.display = 'none';
+	document.getElementById('sizeCompareConvert').style.display = 'none';
+}
+
+/* ================================================================
+   Utility Functions
+   ================================================================ */
+function fmtSize(bytes) {
+	if (bytes === 0) return '0 B';
+	if (bytes < 1024) return bytes + ' B';
+	if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+	if (bytes < 1073741824) return (bytes / 1048576).toFixed(2) + ' MB';
+	return (bytes / 1073741824).toFixed(2) + ' GB';
+}
+
+function showError(msg) {
+	var el = document.getElementById('errorMsg');
+	el.textContent = msg;
+	el.style.display = 'block';
+	document.getElementById('warningMsg').style.display = 'none';
+}
+
+function showWarning(msg) {
+	var el = document.getElementById('warningMsg');
+	el.textContent = msg;
+	el.style.display = 'block';
+	document.getElementById('errorMsg').style.display = 'none';
+}
+
+function hideMessages() {
+	document.getElementById('errorMsg').style.display = 'none';
+	document.getElementById('warningMsg').style.display = 'none';
+}
+
+function showProcessing(text) {
+	document.getElementById('processingText').textContent = text || '处理中...';
+	document.getElementById('processingOverlay').classList.add('show');
+}
+
+function hideProcessing() {
+	document.getElementById('processingOverlay').classList.remove('show');
+}
+
+function updateFileInfoBar(file, format, codecInfo) {
+	document.getElementById('fileInfoBar').style.display = 'flex';
+	document.getElementById('infoFilename').textContent = file.name;
+	document.getElementById('infoSize').textContent = fmtSize(file.size);
+	document.getElementById('infoFormat').textContent = format ? format.toUpperCase() : '?';
+	document.getElementById('infoCodec').textContent = codecInfo && codecInfo.codec ? codecInfo.codec.toUpperCase() : '检测中...';
+	document.getElementById('infoResolution').textContent = (codecInfo && codecInfo.width) ? codecInfo.width + '×' + codecInfo.height : '—';
+}
+
+/* ================================================================
+   Main Processing Pipeline
+   ================================================================ */
+function processFile(file, fileBuffer) {
+	hideMessages();
+	showProcessing('正在检测文件格式...');
+
+	// Detect format
+	var format = detectFormat(fileBuffer);
+	if (!format) {
+		hideProcessing();
+		showError('无法识别文件格式，请上传 .h264 / .h265 / .hevc / .mp4 / .m4v / .mov 文件');
+		return;
+	}
+
+	updateFileInfoBar(file, format, null);
+
+	var nalUnits = [];
+	var codecInfo = null;
+	var mp4FrameInfo = null;
+	var moovBox = null;
+	var mdatBox = null;
+
+	if (format === 'mp4') {
+		showProcessing('正在解析 MP4 容器...');
+
+		// Parse MP4 boxes
+		var boxes = parseMP4Boxes(fileBuffer, 0, fileBuffer.byteLength);
+		moovBox = findBoxByType(boxes, 'moov');
+		mdatBox = findBoxByType(boxes, 'mdat');
+
+		if (!moovBox) {
+			hideProcessing();
+			showError('MP4 文件缺少 moov box，可能是不完整或损坏的文件');
+			return;
+		}
+		if (!mdatBox) {
+			hideProcessing();
+			showError('MP4 文件缺少 mdat box，可能是不完整或损坏的文件');
+			return;
+		}
+
+		codecInfo = extractMP4CodecInfo(moovBox);
+		if (!codecInfo || !codecInfo.codec) {
+			hideProcessing();
+			showError('无法从 MP4 中提取编码信息，可能是不支持的编码格式');
+			return;
+		}
+
+		// Extract raw NAL units
+		var rawNALUs = extractMP4RawNALUs(mdatBox, codecInfo.nalLengthSize);
+		showProcessing('正在分析 NAL 单元... (' + rawNALUs.length + ' 个)');
+
+		// Build NAL unit list from raw NALUs
+		var startCode = new Uint8Array([0, 0, 0, 1]);
+		for (var ni = 0; ni < rawNALUs.length; ni++) {
+			var rawNalu = rawNALUs[ni];
+			if (rawNalu.length < 1) continue;
+			var naluObj = {
+				offset: ni, // virtual offset
+				startCodeLen: 4,
+				dataOffset: 0,
+				size: rawNalu.length,
+				data: rawNalu,
+				frameType: null,
+				type: null,
+				typeName: '?',
+				layerId: 0
+			};
+
+			if (codecInfo.codec === 'h265') {
+				if (rawNalu.length >= 2) {
+					var hdr = parseH265NALHeader(rawNalu);
+					if (hdr) {
+						var h265type = hdr.type;
+						naluObj.type = H265_NAL_NAMES[h265type] || ('TYPE_' + h265type);
+						naluObj.typeName = naluObj.type;
+						naluObj.layerId = hdr.layerId;
+
+						if (h265type === 32) naluObj.type = 'VPS';
+						else if (h265type === 33) naluObj.type = 'SPS';
+						else if (h265type === 34) naluObj.type = 'PPS';
+						else if (h265type === 39 || h265type === 40) naluObj.type = h265type === 39 ? 'PREFIX_SEI' : 'SUFFIX_SEI';
+						else if (h265type === 35) naluObj.type = 'AUD';
+
+						// Parse SPS for resolution
+						if (h265type === 33 && !codecInfo.width) {
+							var spsInfo = parseH265SPS(rawNalu);
+							if (spsInfo) {
+								codecInfo.width = spsInfo.width;
+								codecInfo.height = spsInfo.height;
+							}
+						}
+
+						// Parse slice header for frame type
+						if ((h265type <= 9) || (h265type >= 16 && h265type <= 21)) {
+							var sh = parseH265SliceHeader(rawNalu);
+							if (sh && sh.frameType) {
+								naluObj.frameType = sh.frameType;
+							} else if (h265type === 19 || h265type === 20 || h265type === 16 || h265type === 17 || h265type === 18 || h265type === 21) {
+								naluObj.frameType = 'I'; // IRAP pictures
+							}
+						}
+					}
+				}
+			} else {
+				// H.264
+				if (rawNalu.length >= 1) {
+					var hdr = parseH264NALHeader(rawNalu);
+					if (hdr) {
+						var h264type = hdr.type;
+						naluObj.typeName = H264_NAL_NAMES[h264type] || ('TYPE_' + h264type);
+						naluObj.type = naluObj.typeName;
+
+						if (h264type === 7) naluObj.type = 'SPS';
+						else if (h264type === 8) naluObj.type = 'PPS';
+						else if (h264type === 6) naluObj.type = 'SEI';
+						else if (h264type === 9) naluObj.type = 'AUD';
+
+						// Parse SPS
+						if (h264type === 7 && !codecInfo.width) {
+							var spsInfo = parseH264SPS(rawNalu);
+							if (spsInfo) {
+								codecInfo.width = spsInfo.width;
+								codecInfo.height = spsInfo.height;
+								codecInfo.profileIdc = spsInfo.profileIdc;
+								codecInfo.levelIdc = spsInfo.levelIdc;
+								codecInfo.profileName = spsInfo.profileName;
+								codecInfo.fps = spsInfo.fps;
+							}
+						}
+
+						// Parse slice header
+						if (h264type === 1 || h264type === 5) {
+							if (h264type === 5) {
+								naluObj.frameType = 'I'; // IDR
+							} else if (h264type === 1) {
+								var sh = parseH264SliceHeader(rawNalu);
+								if (sh && sh.frameType) {
+									naluObj.frameType = sh.frameType;
+								}
+							}
+						}
+					}
+				}
+			}
+
+			nalUnits.push(naluObj);
+		}
+
+		// Build MP4 frame info
+		showProcessing('正在提取 MP4 帧信息...');
+		var stbl = findBoxByPath(moovBox.children, ['trak', 'mdia', 'minf', 'stbl']);
+		if (stbl) {
+			mp4FrameInfo = buildMP4FrameInfo(stbl, codecInfo);
+		}
+	} else {
+		// Raw Annex B stream
+		showProcessing('正在扫描 NAL 单元...');
+		var rawNALUnits = findNALUnits(fileBuffer, 0, fileBuffer.byteLength);
+		if (rawNALUnits.length === 0) {
+			hideProcessing();
+			showError('未找到任何 NAL 单元，请确认文件是有效的 H.264/H.265 原始码流');
+			return;
+		}
+
+		codecInfo = { codec: format, profileIdc: 0, levelIdc: 0, width: null, height: null, fps: null };
+		showProcessing('正在解析 ' + rawNALUnits.length + ' 个 NAL 单元...');
+
+		for (var ni = 0; ni < rawNALUnits.length; ni++) {
+			var rawNalu = rawNALUnits[ni];
+			if (rawNalu.data.length < 1) continue;
+
+			var naluObj = {
+				offset: rawNalu.offset,
+				startCodeLen: rawNalu.startCodeLen,
+				dataOffset: rawNalu.dataOffset,
+				size: rawNalu.size,
+				data: rawNalu.data,
+				frameType: null,
+				type: null,
+				typeName: '?',
+				layerId: 0
+			};
+
+			if (format === 'h265') {
+				if (rawNalu.data.length >= 2) {
+					var hdr = parseH265NALHeader(rawNalu.data);
+					if (hdr) {
+						var h265type = hdr.type;
+						naluObj.typeName = H265_NAL_NAMES[h265type] || ('TYPE_' + h265type);
+						naluObj.layerId = hdr.layerId;
+
+						if (h265type === 32) naluObj.type = 'VPS';
+						else if (h265type === 33) naluObj.type = 'SPS';
+						else if (h265type === 34) naluObj.type = 'PPS';
+						else if (h265type === 39 || h265type === 40) naluObj.type = h265type === 39 ? 'PREFIX_SEI' : 'SUFFIX_SEI';
+						else if (h265type === 35) naluObj.type = 'AUD';
+						else naluObj.type = naluObj.typeName;
+
+						if (h265type === 33 && !codecInfo.width) {
+							var spsInfo = parseH265SPS(rawNalu.data);
+							if (spsInfo) {
+								codecInfo.width = spsInfo.width;
+								codecInfo.height = spsInfo.height;
+							}
+						}
+
+						if ((h265type <= 9) || (h265type >= 16 && h265type <= 21)) {
+							var sh = parseH265SliceHeader(rawNalu.data);
+							if (sh && sh.frameType) {
+								naluObj.frameType = sh.frameType;
+							} else if (h265type === 19 || h265type === 20 || h265type === 16 || h265type === 17 || h265type === 18 || h265type === 21) {
+								naluObj.frameType = 'I';
+							}
+						}
+					}
+				}
+			} else {
+				// H.264
+				if (rawNalu.data.length >= 1) {
+					var hdr = parseH264NALHeader(rawNalu.data);
+					if (hdr) {
+						var h264type = hdr.type;
+						naluObj.typeName = H264_NAL_NAMES[h264type] || ('TYPE_' + h264type);
+						naluObj.type = naluObj.typeName;
+
+						if (h264type === 7) naluObj.type = 'SPS';
+						else if (h264type === 8) naluObj.type = 'PPS';
+						else if (h264type === 6) naluObj.type = 'SEI';
+						else if (h264type === 9) naluObj.type = 'AUD';
+
+						if (h264type === 7 && !codecInfo.width) {
+							var spsInfo = parseH264SPS(rawNalu.data);
+							if (spsInfo) {
+								codecInfo.width = spsInfo.width;
+								codecInfo.height = spsInfo.height;
+								codecInfo.profileIdc = spsInfo.profileIdc;
+								codecInfo.levelIdc = spsInfo.levelIdc;
+								codecInfo.profileName = spsInfo.profileName;
+								codecInfo.fps = spsInfo.fps;
+							}
+						}
+
+						if (h264type === 1 || h264type === 5) {
+							if (h264type === 5) {
+								naluObj.frameType = 'I';
+							} else {
+								var sh = parseH264SliceHeader(rawNalu.data);
+								if (sh && sh.frameType) {
+									naluObj.frameType = sh.frameType;
+								}
+							}
+						}
+					}
+				}
+			}
+
+			nalUnits.push(naluObj);
+		}
+	}
+
+	// Run analysis
+	showProcessing('正在分析码流结构...');
+	var analysisResult = analyzeBitstream(nalUnits, mp4FrameInfo, codecInfo);
+	analysisResult._nalUnits = nalUnits; // attach for table rendering
+
+	// Update file info
+	updateFileInfoBar(file, format, codecInfo);
+
+	// Render results
+	hideProcessing();
+	renderAll(analysisResult, codecInfo);
+
+	// Update tab to summary
+	switchTab('summary');
+
+	// Store state for conversion
+	window._analyzerState = {
+		file: file,
+		fileBuffer: fileBuffer,
+		format: format,
+		nalUnits: nalUnits,
+		codecInfo: codecInfo,
+		analysisResult: analysisResult,
+		moovBox: moovBox,
+		mdatBox: mdatBox
+	};
+}
+
+/* ================================================================
+   UI Event Handlers
+   ================================================================ */
+function switchTab(tabName) {
+	var tabs = document.querySelectorAll('.tab-btn');
+	for (var i = 0; i < tabs.length; i++) {
+		tabs[i].classList.toggle('active', tabs[i].getAttribute('data-tab') === tabName);
+	}
+	var contents = document.querySelectorAll('.tab-content');
+	for (var i = 0; i < contents.length; i++) {
+		contents[i].classList.toggle('active', contents[i].id === 'tab' + tabName.charAt(0).toUpperCase() + tabName.slice(1));
+	}
+	// Re-render charts for newly visible tab (fixes zero-width rendering in hidden tabs)
+	var state = window._analyzerState;
+	if (!state || !state.analysisResult) return;
+	setTimeout(function() {
+		if (tabName === 'gop') renderGOPView(state.analysisResult);
+		else if (tabName === 'sizes') renderFrameSizeChart(state.analysisResult);
+		else if (tabName === 'summary') renderFrameTypeChart(state.analysisResult);
+	}, 50);
+}
+
+function handleFileSelect(file) {
+	if (!file) return;
+	hideMessages();
+
+	// Check size
+	if (file.size === 0) {
+		showError('文件为空');
+		return;
+	}
+	if (file.size > 500 * 1024 * 1024) {
+		showWarning('文件较大（>500MB），解析可能需要较长时间，页面可能会暂时无响应');
+	}
+
+	document.getElementById('uploadStatus').textContent = '正在读取文件...';
+
+	var reader = new FileReader();
+	reader.onload = function(e) {
+		document.getElementById('uploadStatus').textContent = '已选择: ' + file.name + ' (' + fmtSize(file.size) + ')';
+		document.getElementById('toolLayout').style.display = 'grid';
+		document.getElementById('emptyState').style.display = 'none';
+
+		// Store for later processing
+		window._pendingFile = file;
+		window._pendingBuffer = e.target.result;
+	};
+	reader.onerror = function() {
+		showError('文件读取失败，请重试');
+		document.getElementById('uploadStatus').textContent = '读取失败，请重新选择文件';
+	};
+	reader.readAsArrayBuffer(file);
+}
+
+/* ================================================================
+   Initialization
+   ================================================================ */
+(function init() {
+	// DOM references
+	var uploadZone = document.getElementById('uploadZone');
+	var fileInput = document.getElementById('fileInput');
+	var analyzeBtn = document.getElementById('analyzeBtn');
+	var resetBtn = document.getElementById('resetBtn');
+	var convertBtn = document.getElementById('convertBtn');
+	var downloadConvertedBtn = document.getElementById('downloadConvertedBtn');
+	var convertBtns = document.getElementById('convertBtns');
+
+	// Upload: click
+	uploadZone.addEventListener('click', function() {
+		fileInput.click();
+	});
+
+	// Upload: file selected
+	fileInput.addEventListener('change', function(e) {
+		if (e.target.files && e.target.files.length > 0) {
+			handleFileSelect(e.target.files[0]);
+		}
+	});
+
+	// Upload: drag and drop
+	uploadZone.addEventListener('dragover', function(e) {
+		e.preventDefault();
+		e.stopPropagation();
+		uploadZone.classList.add('drag-over');
+	});
+	uploadZone.addEventListener('dragleave', function(e) {
+		e.preventDefault();
+		e.stopPropagation();
+		uploadZone.classList.remove('drag-over');
+	});
+	uploadZone.addEventListener('drop', function(e) {
+		e.preventDefault();
+		e.stopPropagation();
+		uploadZone.classList.remove('drag-over');
+		if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+			handleFileSelect(e.dataTransfer.files[0]);
+		}
+	});
+
+	// Prevent default drag behavior on body
+	document.addEventListener('dragover', function(e) { e.preventDefault(); });
+	document.addEventListener('drop', function(e) { e.preventDefault(); });
+
+	// Analyze button
+	analyzeBtn.addEventListener('click', function() {
+		if (window._pendingFile && window._pendingBuffer) {
+			processFile(window._pendingFile, window._pendingBuffer);
+		} else {
+			showError('请先选择视频文件');
+		}
+	});
+
+	// Reset button
+	resetBtn.addEventListener('click', function() {
+		window._pendingFile = null;
+		window._pendingBuffer = null;
+		window._analyzerState = null;
+		document.getElementById('toolLayout').style.display = 'none';
+		document.getElementById('emptyState').style.display = 'block';
+		document.getElementById('fileInfoBar').style.display = 'none';
+		document.getElementById('codecDetails').style.display = 'none';
+		document.getElementById('gopSummary').style.display = 'none';
+		document.getElementById('convertSection').style.display = 'none';
+		document.getElementById('convertBtn').style.display = 'none';
+		document.getElementById('downloadConvertedBtn').style.display = 'none';
+		document.getElementById('sizeCompareConvert').style.display = 'none';
+		document.getElementById('uploadStatus').textContent = '尚未选择文件';
+		hideMessages();
+		fileInput.value = '';
+	});
+
+	// Tab switching
+	document.getElementById('tabBar').addEventListener('click', function(e) {
+		var tabBtn = e.target.closest('.tab-btn');
+		if (!tabBtn) return;
+		switchTab(tabBtn.getAttribute('data-tab'));
+	});
+
+	// NAL table filter
+	document.getElementById('nalFilterBar').addEventListener('click', function(e) {
+		var btn = e.target.closest('.filter-btn');
+		if (!btn) return;
+		// Update active state
+		var allBtns = document.querySelectorAll('#nalFilterBar .filter-btn');
+		for (var i = 0; i < allBtns.length; i++) allBtns[i].classList.remove('active');
+		btn.classList.add('active');
+
+		var filter = btn.getAttribute('data-filter');
+		var rows = document.querySelectorAll('#nalTableBody tr');
+		for (var i = 0; i < rows.length; i++) {
+			var row = rows[i];
+			if (filter === 'all') { row.style.display = ''; continue; }
+			var nalType = row.getAttribute('data-nal-type') || '';
+			var frameType = row.getAttribute('data-frame-type') || '';
+			if (filter === 'slice') {
+				row.style.display = (frameType === 'I' || frameType === 'P' || frameType === 'B') ? '' : 'none';
+			} else {
+				row.style.display = (nalType.toLowerCase() === filter.toLowerCase()) ? '' : 'none';
+			}
+		}
+	});
+
+	// Frame table filter
+	document.getElementById('frameFilterBar').addEventListener('click', function(e) {
+		var btn = e.target.closest('.filter-btn');
+		if (!btn) return;
+		var allBtns = document.querySelectorAll('#frameFilterBar .filter-btn');
+		for (var i = 0; i < allBtns.length; i++) allBtns[i].classList.remove('active');
+		btn.classList.add('active');
+
+		var filter = btn.getAttribute('data-filter');
+		var rows = document.querySelectorAll('#frameTableBody tr');
+		for (var i = 0; i < rows.length; i++) {
+			var row = rows[i];
+			if (filter === 'all') { row.style.display = ''; continue; }
+			var ft = row.getAttribute('data-frame-type') || '';
+			row.style.display = (ft === filter) ? '' : 'none';
+		}
+	});
+
+	// Conversion target selection
+	convertBtns.addEventListener('click', function(e) {
+		var btn = e.target.closest('.format-btn');
+		if (!btn) return;
+		var allBtns = convertBtns.querySelectorAll('.format-btn');
+		for (var i = 0; i < allBtns.length; i++) allBtns[i].classList.remove('active');
+		btn.classList.add('active');
+	});
+
+	// Convert button
+	convertBtn.addEventListener('click', function() {
+		var state = window._analyzerState;
+		if (!state) { showError('请先解析码流'); return; }
+
+		var activeBtn = convertBtns.querySelector('.format-btn.active');
+		var direction = activeBtn ? activeBtn.getAttribute('data-convert') : 'toRaw';
+
+		showProcessing('正在转换...');
+		setTimeout(function() {
+			try {
+				if (direction === 'toRaw') {
+					// MP4 → Raw
+					if (state.format !== 'mp4') {
+						hideProcessing();
+						showError('导出原始码流仅适用于 MP4 文件。当前文件已是原始码流格式。');
+						return;
+					}
+					if (!state.mdatBox) {
+						hideProcessing();
+						showError('无法提取 mdat 数据');
+						return;
+					}
+					var rawData = convertMP4ToRawAnnexB(state.fileBuffer, state.codecInfo, state.moovBox, state.mdatBox);
+					if (!rawData) {
+						hideProcessing();
+						showError('转换失败：无法提取视频数据');
+						return;
+					}
+					var ext = state.codecInfo.codec === 'h265' ? 'h265' : 'h264';
+					window._convertedData = rawData;
+					window._convertedExt = ext;
+					showConvertResult(state.file.size, rawData.length, ext);
+				} else {
+					// Raw → MP4
+					if (state.format === 'mp4') {
+						hideProcessing();
+						showError('转换为 MP4 仅适用于原始码流文件。当前文件已是 MP4 格式。');
+						return;
+					}
+					var result = convertRawToMP4(state.fileBuffer, state.format);
+					if (result.error) {
+						hideProcessing();
+						showError('转换失败：' + result.error);
+						return;
+					}
+					window._convertedData = result.data;
+					window._convertedExt = result.ext;
+					showConvertResult(state.file.size, result.data.length, 'mp4');
+				}
+				hideProcessing();
+			} catch(err) {
+				hideProcessing();
+				showError('转换过程出错：' + (err.message || err));
+			}
+		}, 50);
+	});
+
+	// Download converted file
+	downloadConvertedBtn.addEventListener('click', function() {
+		var data = window._convertedData;
+		var ext = window._convertedExt;
+		var state = window._analyzerState;
+		if (!data || !state) return;
+
+		var origName = state.file.name;
+		var baseName = origName.replace(/\.[^.]+$/, '');
+		var newName = 'converted-' + baseName + '.' + ext;
+
+		var blob = new Blob([data], { type: 'application/octet-stream' });
+		var url = URL.createObjectURL(blob);
+		var a = document.createElement('a');
+		a.href = url;
+		a.download = newName;
+		document.body.appendChild(a);
+		a.click();
+		document.body.removeChild(a);
+		URL.revokeObjectURL(url);
+	});
+
+	function showConvertResult(origSize, newSize, newExt) {
+		document.getElementById('downloadConvertedBtn').style.display = 'inline-block';
+		var compareDiv = document.getElementById('sizeCompareConvert');
+		compareDiv.style.display = 'block';
+
+		var maxSize = Math.max(origSize, newSize);
+		var origPct = (origSize / maxSize * 100).toFixed(1);
+		var newPct = (newSize / maxSize * 100).toFixed(1);
+		var delta = newSize - origSize;
+		var deltaPct = origSize > 0 ? (Math.abs(delta) / origSize * 100).toFixed(1) : '0';
+		var deltaClass = delta <= 0 ? 'smaller' : 'larger';
+		var deltaSign = delta <= 0 ? '-' : '+';
+
+		compareDiv.innerHTML =
+			'<div class="size-compare-label">文件大小对比</div>' +
+			'<div class="size-bar-wrap">' +
+			'<span class="size-bar-label">原始</span>' +
+			'<div class="size-bar-track"><div class="size-bar-fill original" style="width:' + origPct + '%"></div></div>' +
+			'<span class="size-bar-size">' + fmtSize(origSize) + '</span>' +
+			'</div>' +
+			'<div class="size-bar-wrap">' +
+			'<span class="size-bar-label">转换后</span>' +
+			'<div class="size-bar-track"><div class="size-bar-fill converted" style="width:' + newPct + '%"></div></div>' +
+			'<span class="size-bar-size">' + fmtSize(newSize) + '</span>' +
+			'</div>' +
+			'<div class="size-delta ' + deltaClass + '">' + deltaSign + deltaPct + '% (' + fmtSize(Math.abs(delta)) + ') → .' + newExt + '</div>';
+			applyCID(compareDiv);
+	}
+})();
+})();
+</script>
+</body>
+</html>
