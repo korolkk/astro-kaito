@@ -309,6 +309,86 @@ import { SITE_TITLE } from '../../consts';
 				color: #fff;
 			}
 
+			/* Mode switch */
+			.mode-switch {
+				display: flex;
+				gap: 0.4em;
+				margin-bottom: 1.2em;
+			}
+			.mode-btn {
+				flex: 1;
+				padding: 0.5em 0.3em;
+				border: 1.5px solid rgb(var(--gray-light));
+				border-radius: 8px;
+				background: var(--card-bg);
+				color: rgb(var(--gray-dark));
+				font-family: inherit;
+				font-size: 0.82em;
+				font-weight: 600;
+				cursor: pointer;
+				transition: all 0.2s ease;
+				text-align: center;
+			}
+			.mode-btn:hover {
+				border-color: var(--accent);
+				color: var(--accent);
+			}
+			.mode-btn.active {
+				background: var(--accent);
+				border-color: var(--accent);
+				color: #fff;
+			}
+
+			/* Grid size buttons */
+			.grid-size-btns {
+				display: flex;
+				gap: 0.4em;
+			}
+			.grid-size-btn {
+				flex: 1;
+				padding: 0.5em 0.3em;
+				border: 1.5px solid rgb(var(--gray-light));
+				border-radius: 8px;
+				background: var(--card-bg);
+				color: rgb(var(--gray-dark));
+				font-family: inherit;
+				font-size: 0.82em;
+				font-weight: 600;
+				cursor: pointer;
+				transition: all 0.2s ease;
+				text-align: center;
+			}
+			.grid-size-btn:hover {
+				border-color: var(--accent);
+				color: var(--accent);
+			}
+			.grid-size-btn.active {
+				background: var(--accent);
+				border-color: var(--accent);
+				color: #fff;
+			}
+
+			/* Shuffle randomize button */
+			.shuffle-btn {
+				width: 100%;
+				padding: 0.55em;
+				border: 1.5px solid rgb(var(--gray-light));
+				border-radius: 10px;
+				background: var(--card-bg);
+				color: rgb(var(--gray-dark));
+				font-family: inherit;
+				font-size: 0.85em;
+				font-weight: 600;
+				cursor: pointer;
+				transition: all 0.2s ease;
+				margin-top: 0.3em;
+			}
+			.shuffle-btn:hover {
+				border-color: var(--accent);
+				color: var(--accent);
+				background: rgba(var(--accent-rgb), 0.04);
+			}
+
 			/* Preview panel */
 			.preview-dual {
 				display: grid;
@@ -427,6 +507,78 @@ import { SITE_TITLE } from '../../consts';
 				opacity: 0.45;
 			}
 
+			/* Lightbox */
+			.lightbox-overlay {
+				display: none;
+				position: fixed;
+				inset: 0;
+				background: rgba(0, 0, 0, 0.85);
+				z-index: 9999;
+				align-items: center;
+				justify-content: center;
+				cursor: pointer;
+			}
+			.lightbox-overlay.active {
+				display: flex;
+			}
+			.lightbox-content {
+				position: relative;
+				max-width: 95vw;
+				max-height: 95vh;
+				cursor: default;
+			}
+			.lightbox-content img {
+				display: block;
+				max-width: 95vw;
+				max-height: 90vh;
+				object-fit: contain;
+				border-radius: 4px;
+				box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+			}
+			.lightbox-close {
+				position: absolute;
+				top: -40px;
+				right: 0;
+				width: 36px;
+				height: 36px;
+				border: none;
+				background: rgba(255,255,255,0.15);
+				color: #fff;
+				font-size: 1.3em;
+				border-radius: 50%;
+				cursor: pointer;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				transition: background 0.2s;
+			}
+			.lightbox-close:hover {
+				background: rgba(255,255,255,0.3);
+			}
+			.lightbox-label {
+				color: rgba(255,255,255,0.7);
+				font-size: 0.85em;
+				text-align: center;
+				margin-top: 0.5em;
+			}
+			.preview-canvas-wrap {
+				cursor: pointer;
+				position: relative;
+			}
+			.preview-canvas-wrap::after {
+				content: '🔍';
+				position: absolute;
+				top: 6px;
+				right: 8px;
+				font-size: 0.75em;
+				opacity: 0;
+				transition: opacity 0.2s;
+				pointer-events: none;
+			}
+			.preview-canvas-wrap:hover::after {
+				opacity: 0.7;
+			}
+
 			@media (max-width: 768px) {
 				.tool-layout {
 					grid-template-columns: 1fr;
@@ -482,45 +634,73 @@ import { SITE_TITLE } from '../../consts';
 				<div class="panel" id="controlsPanel">
 					<div class="panel-title">⚙️ 控制面板</div>
 
-					<div class="control-group">
-						<div class="control-label">
-							<span>压缩质量</span>
-							<span class="control-value" id="qualityValue">85%</span>
-						</div>
-						<input type="range" id="qualitySlider" min="10" max="100" value="85" step="1">
+					<!-- Mode Switch -->
+					<div class="mode-switch" id="modeSwitch">
+						<button class="mode-btn active" data-mode="basic">基础处理</button>
+						<button class="mode-btn" data-mode="shuffle">网格打乱</button>
 					</div>
 
-					<div class="control-group">
-						<div class="control-label">输出格式</div>
-						<div class="format-btns" id="formatBtns">
-							<button class="format-btn active" data-format="image/jpeg">JPEG</button>
-							<button class="format-btn" data-format="image/png">PNG</button>
-							<button class="format-btn" data-format="image/webp">WebP</button>
+					<!-- Basic Controls -->
+					<div id="basicControls">
+						<div class="control-group">
+							<div class="control-label">
+								<span>压缩质量</span>
+								<span class="control-value" id="qualityValue">85%</span>
+							</div>
+							<input type="range" id="qualitySlider" min="10" max="100" value="85" step="1">
+						</div>
+
+						<div class="control-group">
+							<div class="control-label">输出格式</div>
+							<div class="format-btns" id="formatBtns">
+								<button class="format-btn active" data-format="image/jpeg">JPEG</button>
+								<button class="format-btn" data-format="image/png">PNG</button>
+								<button class="format-btn" data-format="image/webp">WebP</button>
+							</div>
+						</div>
+
+						<div class="control-group">
+							<div class="control-label">图片尺寸</div>
+							<div class="resize-row">
+								<input type="number" class="resize-input" id="widthInput" placeholder="宽度" min="1" max="4096">
+								<span class="resize-sep">×</span>
+								<input type="number" class="resize-input" id="heightInput" placeholder="高度" min="1" max="4096">
+								<button class="lock-btn locked" id="lockBtn" title="锁定宽高比">
+									<svg id="lockIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+								</button>
+							</div>
+						</div>
+
+						<div class="control-group">
+							<div class="control-label">滤镜效果</div>
+							<div class="filter-btns" id="filterBtns">
+								<button class="filter-btn active" data-filter="none">原图</button>
+								<button class="filter-btn" data-filter="grayscale(1)">灰度</button>
+								<button class="filter-btn" data-filter="sepia(0.75)">复古</button>
+								<button class="filter-btn" data-filter="brightness(1.2)">提亮</button>
+								<button class="filter-btn" data-filter="brightness(0.75)">压暗</button>
+								<button class="filter-btn" data-filter="contrast(1.3)">增强对比</button>
+							</div>
 						</div>
 					</div>
 
-					<div class="control-group">
-						<div class="control-label">图片尺寸</div>
-						<div class="resize-row">
-							<input type="number" class="resize-input" id="widthInput" placeholder="宽度" min="1" max="4096">
-							<span class="resize-sep">×</span>
-							<input type="number" class="resize-input" id="heightInput" placeholder="高度" min="1" max="4096">
-							<button class="lock-btn locked" id="lockBtn" title="锁定宽高比">
-								<svg id="lockIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-							</button>
+					<!-- Shuffle Controls (hidden by default) -->
+					<div id="shuffleControls" style="display:none">
+						<div class="control-group">
+							<div class="control-label">网格大小</div>
+							<div class="grid-size-btns" id="gridSizeBtns">
+								<button class="grid-size-btn active" data-grid="3">3×3</button>
+								<button class="grid-size-btn" data-grid="4">4×4</button>
+							</div>
 						</div>
-					</div>
-
-					<div class="control-group">
-						<div class="control-label">滤镜效果</div>
-						<div class="filter-btns" id="filterBtns">
-							<button class="filter-btn active" data-filter="none">原图</button>
-							<button class="filter-btn" data-filter="grayscale(1)">灰度</button>
-							<button class="filter-btn" data-filter="sepia(0.75)">复古</button>
-							<button class="filter-btn" data-filter="brightness(1.2)">提亮</button>
-							<button class="filter-btn" data-filter="brightness(0.75)">压暗</button>
-							<button class="filter-btn" data-filter="contrast(1.3)">增强对比</button>
+						<div class="control-group">
+							<div class="control-label">
+								<span>打乱数量</span>
+								<span class="control-value" id="shuffleCountValue">5</span>
+							</div>
+							<input type="range" id="shuffleCountSlider" min="1" max="9" value="5" step="1">
 						</div>
+						<button class="shuffle-btn" id="reshuffleBtn">🎲 重新随机</button>
 					</div>
 
 					<div class="action-btns">
@@ -562,6 +742,15 @@ import { SITE_TITLE } from '../../consts';
 							<span>处理后: <span class="size-processed-val" id="sizeProcessed">—</span></span>
 						</div>
 					</div>
+
+					<!-- Lightbox -->
+					<div class="lightbox-overlay" id="lightboxOverlay">
+						<div class="lightbox-content">
+							<button class="lightbox-close" id="lightboxClose">✕</button>
+							<img id="lightboxImg" src="" alt="预览大图">
+							<div class="lightbox-label" id="lightboxLabel"></div>
+						</div>
+					</div>
 				</div>
 			</div>
 		</main>
@@ -593,6 +782,13 @@ import { SITE_TITLE } from '../../consts';
 				var sizeBarProcessed = document.getElementById('sizeBarProcessed');
 				var sizeOriginal = document.getElementById('sizeOriginal');
 				var sizeProcessed = document.getElementById('sizeProcessed');
+				var modeSwitch = document.getElementById('modeSwitch');
+				var basicControls = document.getElementById('basicControls');
+				var shuffleControls = document.getElementById('shuffleControls');
+				var gridSizeBtns = document.getElementById('gridSizeBtns');
+				var shuffleCountSlider = document.getElementById('shuffleCountSlider');
+				var shuffleCountValue = document.getElementById('shuffleCountValue');
+				var reshuffleBtn = document.getElementById('reshuffleBtn');
 
 				// ========== State ==========
 				var originalImage = null;
@@ -609,6 +805,9 @@ import { SITE_TITLE } from '../../consts';
 				var aspectLocked = true;
 				var activeFilter = 'none';
 				var updateTimer = 0;
+				var mode = 'basic';
+				var gridSize = 3;
+				var shuffleCount = 5;
 
 				// ========== Helpers ==========
 				function fmtSize(bytes) {
@@ -771,6 +970,11 @@ import { SITE_TITLE } from '../../consts';
 				function processImage() {
 					if (!originalImage) return;
 
+					if (mode === 'shuffle') {
+						shuffleImage();
+						return;
+					}
+
 					// Create offscreen canvas at target dimensions
 					var offscreen = document.createElement('canvas');
 					offscreen.width = targetWidth;
@@ -819,6 +1023,127 @@ import { SITE_TITLE } from '../../consts';
 					currentBlob = new Blob([ab], { type: mimeType });
 					updateSizeDisplay();
 					renderAfterPreview();
+				}
+
+				// ========== Grid Shuffle ==========
+				function shuffleImage() {
+					if (!originalImage) return;
+
+					var grid = gridSize;
+					var totalCells = grid * grid;
+					var cellW = Math.floor(targetWidth / grid);
+					var cellH = Math.floor(targetHeight / grid);
+	
+					// Step 1: draw original to offscreen canvas
+					var offscreen = document.createElement('canvas');
+					offscreen.width = targetWidth;
+					offscreen.height = targetHeight;
+					var octx = offscreen.getContext('2d');
+					octx.imageSmoothingEnabled = true;
+					octx.imageSmoothingQuality = 'high';
+					octx.drawImage(originalImage, 0, 0, targetWidth, targetHeight);
+
+					// Step 2: record each cell's source rect (no ImageData needed)
+					var cells = [];
+					for (var row = 0; row < grid; row++) {
+						for (var col = 0; col < grid; col++) {
+							var x = col * cellW;
+							var y = row * cellH;
+							var w = (col === grid - 1) ? targetWidth - x : cellW;
+							var h = (row === grid - 1) ? targetHeight - y : cellH;
+							cells.push({ x: x, y: y, w: w, h: h, idx: row * grid + col });
+						}
+					}
+
+					// Step 3: select cells to shuffle
+					var count = Math.min(shuffleCount, totalCells);
+					var allIndices = [];
+					for (var i = 0; i < totalCells; i++) allIndices.push(i);
+					for (var i = 0; i < count; i++) {
+						var rand = i + Math.floor(Math.random() * (totalCells - i));
+						var tmp = allIndices[i];
+						allIndices[i] = allIndices[rand];
+						allIndices[rand] = tmp;
+					}
+					var selectedPositions = allIndices.slice(0, count);
+
+					// Step 4: Fisher-Yates shuffle the selected positions to create mapping
+					var shuffledPositions = selectedPositions.slice();
+					for (var i = shuffledPositions.length - 1; i > 0; i--) {
+						var j = Math.floor(Math.random() * (i + 1));
+						var t = shuffledPositions[i];
+						shuffledPositions[i] = shuffledPositions[j];
+						shuffledPositions[j] = t;
+					}
+
+					// Build mapping: selectedPositions[i] → shuffledPositions[i]
+					var mapping = {};
+					for (var i = 0; i < selectedPositions.length; i++) {
+						mapping[selectedPositions[i]] = shuffledPositions[i];
+					}
+
+					// Step 5: draw cells at full size, then overlay grid lines
+					var result = document.createElement('canvas');
+					result.width = targetWidth;
+					result.height = targetHeight;
+					var rctx = result.getContext('2d');
+
+					// Draw each cell: source determines content, destination determines size
+					for (var i = 0; i < totalCells; i++) {
+						var destIdx = mapping[i] !== undefined ? mapping[i] : i;
+						var srcCell = cells[i];
+						var destCol = destIdx % grid;
+						var destRow = Math.floor(destIdx / grid);
+
+						// Source rect (where to read from the offscreen canvas)
+						var sx = srcCell.x, sy = srcCell.y, sw = srcCell.w, sh = srcCell.h;
+						// Destination rect (size matches DESTINATION column/row)
+						var dx = destCol * cellW;
+						var dy = destRow * cellH;
+						var dw = (destCol === grid - 1) ? (targetWidth - dx) : cellW;
+						var dh = (destRow === grid - 1) ? (targetHeight - dy) : cellH;
+
+						rctx.drawImage(offscreen, sx, sy, sw, sh, dx, dy, dw, dh);
+					}
+
+					// Overlay 1px white grid lines for visual separation
+					rctx.strokeStyle = '#ffffff';
+					rctx.lineWidth = 4;
+					for (var col = 1; col < grid; col++) {
+						rctx.beginPath();
+						rctx.moveTo(col * cellW + 0.5, 0);
+						rctx.lineTo(col * cellW + 0.5, targetHeight);
+						rctx.stroke();
+					}
+					for (var row = 1; row < grid; row++) {
+						rctx.beginPath();
+						rctx.moveTo(0, row * cellH + 0.5);
+						rctx.lineTo(targetWidth, row * cellH + 0.5);
+						rctx.stroke();
+					}
+
+					processedCanvas = result;
+
+					// Update preview immediately (synchronous)
+					renderAfterPreview();
+
+					// Step 6: convert to blob
+					var mimeType = format;
+					var q = isPNG() ? undefined : quality;
+
+					if (result.toBlob) {
+						result.toBlob(function (blob) {
+							if (!blob) {
+								blobFromDataURL(result, mimeType);
+								return;
+							}
+							currentBlob = blob;
+							updateSizeDisplay();
+							renderAfterPreview();
+						}, mimeType, q);
+					} else {
+						blobFromDataURL(result, mimeType);
+					}
 				}
 
 				function updateSizeDisplay() {
@@ -967,8 +1292,11 @@ import { SITE_TITLE } from '../../consts';
 					targetWidth = origWidth;
 					targetHeight = origHeight;
 					activeFilter = 'none';
+					gridSize = 9;
+					shuffleCount = 2;
+					processedCanvas = null;
 
-					// Reset UI
+					// Reset UI — basic controls
 					qualitySlider.value = '85';
 					qualityValue.textContent = '85%';
 					widthInput.value = targetWidth;
@@ -990,9 +1318,113 @@ import { SITE_TITLE } from '../../consts';
 						}
 					}
 
+					// Reset UI — shuffle controls
+					shuffleCountSlider.value = '5';
+					shuffleCountValue.textContent = '5';
+					shuffleCountSlider.max = '9';
+					var gBtns = gridSizeBtns.querySelectorAll('.grid-size-btn');
+					for (var k = 0; k < gBtns.length; k++) {
+						gBtns[k].classList.remove('active');
+						if (gBtns[k].getAttribute('data-grid') === '9') {
+							gBtns[k].classList.add('active');
+						}
+					}
+
+					// Switch to basic mode
+					if (mode === 'shuffle') {
+						mode = 'basic';
+						basicControls.style.display = '';
+						shuffleControls.style.display = 'none';
+						var mBtns = modeSwitch.querySelectorAll('.mode-btn');
+						for (var m = 0; m < mBtns.length; m++) {
+							mBtns[m].classList.remove('active');
+							if (mBtns[m].getAttribute('data-mode') === 'basic') {
+								mBtns[m].classList.add('active');
+							}
+						}
+					}
+
 					updateQualitySliderState();
 					renderPreview();
 					processImage();
+				});
+
+				// ========== Mode Switch ==========
+				modeSwitch.addEventListener('click', function (e) {
+					var btn = e.target.closest('.mode-btn');
+					if (!btn) return;
+
+					var newMode = btn.getAttribute('data-mode');
+					if (newMode === mode) return;
+
+					mode = newMode;
+
+					// Update active button
+					var btns = modeSwitch.querySelectorAll('.mode-btn');
+					for (var i = 0; i < btns.length; i++) {
+						btns[i].classList.remove('active');
+					}
+					btn.classList.add('active');
+
+					// Toggle controls visibility
+					if (mode === 'shuffle') {
+						basicControls.style.display = 'none';
+						shuffleControls.style.display = '';
+					} else {
+						basicControls.style.display = '';
+						shuffleControls.style.display = 'none';
+					}
+
+					// Reprocess with new mode
+					if (originalImage) {
+						processedCanvas = null;
+						processImage();
+					}
+				});
+
+				// ========== Grid Size ==========
+				gridSizeBtns.addEventListener('click', function (e) {
+					var btn = e.target.closest('.grid-size-btn');
+					if (!btn) return;
+
+					gridSize = parseInt(btn.getAttribute('data-grid'));
+					var maxCells = gridSize * gridSize;
+
+					// Update active button
+					var btns = gridSizeBtns.querySelectorAll('.grid-size-btn');
+					for (var i = 0; i < btns.length; i++) {
+						btns[i].classList.remove('active');
+					}
+					btn.classList.add('active');
+
+					// Update shuffle count slider max = total cells (gridSize²)
+					var maxCells = gridSize * gridSize;
+					shuffleCountSlider.max = maxCells;
+					// Proportionally adjust shuffleCount to new total
+					var oldMax = (gridSize === 3 ? 16 : 9);
+					shuffleCount = Math.max(1, Math.round(shuffleCount / oldMax * maxCells));
+					shuffleCountSlider.value = shuffleCount;
+					shuffleCountValue.textContent = shuffleCount;
+
+					if (mode === 'shuffle' && originalImage) {
+						processImage();
+					}
+				});
+
+				// ========== Shuffle Count Slider ==========
+				shuffleCountSlider.addEventListener('input', function () {
+					shuffleCount = parseInt(this.value);
+					shuffleCountValue.textContent = shuffleCount;
+					if (mode === 'shuffle' && originalImage) {
+						processImage();
+					}
+				});
+
+				// ========== Reshuffle Button ==========
+				reshuffleBtn.addEventListener('click', function () {
+					if (mode === 'shuffle' && originalImage) {
+						processImage();
+					}
 				});
 
 				// ========== Upload Handlers ==========
@@ -1046,6 +1478,54 @@ import { SITE_TITLE } from '../../consts';
 
 				// ========== Initial State ==========
 				setControlsEnabled(false);
+				// ========== Lightbox ==========
+				var lightboxOverlay = document.getElementById('lightboxOverlay');
+				var lightboxImg = document.getElementById('lightboxImg');
+				var lightboxLabel = document.getElementById('lightboxLabel');
+				var lightboxClose = document.getElementById('lightboxClose');
+
+				function openLightbox(canvas, label) {
+					lightboxImg.src = canvas.toDataURL();
+					lightboxLabel.textContent = label;
+					lightboxOverlay.classList.add('active');
+					document.body.style.overflow = 'hidden';
+				}
+
+				function closeLightbox() {
+					lightboxOverlay.classList.remove('active');
+					document.body.style.overflow = '';
+					lightboxImg.src = '';
+				}
+
+				document.getElementById('beforeCanvas').parentElement.addEventListener('click', function () {
+					if (originalImage) openLightbox(beforeCanvas, '原始图片');
+				});
+				document.getElementById('afterCanvas').parentElement.addEventListener('click', function () {
+					if (originalImage) {
+						var canvas = processedCanvas ? (function() {
+							var c = document.createElement('canvas');
+							c.width = processedCanvas.width;
+							c.height = processedCanvas.height;
+							c.getContext('2d').drawImage(processedCanvas, 0, 0);
+							return c;
+						})() : beforeCanvas;
+						openLightbox(canvas, mode === 'shuffle' ? '网格打乱' : '处理后');
+					}
+				});
+
+				lightboxClose.addEventListener('click', function (e) {
+					e.stopPropagation();
+					closeLightbox();
+				});
+				lightboxOverlay.addEventListener('click', function (e) {
+					if (e.target === lightboxOverlay) closeLightbox();
+				});
+				document.addEventListener('keydown', function (e) {
+					if (e.key === 'Escape' && lightboxOverlay.classList.contains('active')) {
+						closeLightbox();
+					}
+				});
+
 			})();
 		</script>
 	</body>
