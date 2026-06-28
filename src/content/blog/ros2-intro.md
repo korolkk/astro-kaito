@@ -124,7 +124,7 @@ colcon build --symlink-install
     
 *   参数-parameters
     
-    ![Nodes-TopicandService](ros2入门篇/Nodes-TopicandService-16542449255392.gif)
+    ![Nodes-TopicandService](ros2入门篇/Nodes-TopicandService.webp)
 
 ### 节点相关的CLI
 

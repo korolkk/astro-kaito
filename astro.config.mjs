@@ -8,7 +8,7 @@ import { defineConfig, fontProviders } from 'astro/config';
 export default defineConfig({
 	site: 'https://kaitolab.net',
 	base: process.env.BASE_URL || '/',
-	integrations: [mdx(), sitemap()],
+	integrations: [mdx(), sitemap({ filter: (page) => !page.includes('/admin/') })],
 	vite: {
 		server: {
 			proxy: {

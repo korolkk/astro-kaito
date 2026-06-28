@@ -5,6 +5,7 @@ const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
 ---
 
 <header data-base-url={import.meta.env.BASE_URL}>
+	<a class="skip-to-content" href="#main-content">跳到主要内容</a>
 	<nav class="nav-inner">
 		<h2><a href={base}>{SITE_TITLE}</a></h2>
 		<div class="internal-links">
@@ -74,6 +75,27 @@ const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
 	h2 a.active {
 		text-decoration: none;
 	}
+
+	/* Skip to content */
+	.skip-to-content {
+		position: absolute;
+		top: 0;
+		left: 50%;
+		transform: translateX(-50%) translateY(-100%);
+		background: var(--accent);
+		color: #fff;
+		padding: 0.5em 1em;
+		border-radius: 0 0 8px 8px;
+		z-index: 200;
+		font-size: 0.9em;
+		font-weight: 600;
+		text-decoration: none;
+		transition: transform 0.2s ease;
+	}
+	.skip-to-content:focus {
+		transform: translateX(-50%) translateY(0);
+	}
+
 	.nav-inner {
 		display: flex;
 		align-items: center;
@@ -266,7 +288,8 @@ const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
 		box-shadow: 0 4px 20px rgba(0,0,0,0.12);
 		z-index: 200;
 	}
-	.theme-switcher:hover .theme-dropdown {
+	.theme-switcher:hover .theme-dropdown,
+	.theme-switcher:focus-within .theme-dropdown {
 		display: flex;
 	}
 	.theme-option {

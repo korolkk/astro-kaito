@@ -441,11 +441,37 @@
 	}
 </style>
 
-<script is:inline src="https://cdn.jsdelivr.net/npm/marked@15.0.4/marked.min.js">
-</script>
-
 <script is:inline>
 	(function () {
+		var btn = document.getElementById('aiChatBtn');
+		var dialog = document.getElementById('aiChatDialog');
+		if (!btn || !dialog) return;
+
+		var _chatBooted = false;
+
+		btn.addEventListener('click', function boot(e) {
+			if (_chatBooted) return;
+			_chatBooted = true;
+			e.stopPropagation();
+			e.preventDefault();
+
+			// Dynamically load marked CDN
+			var s = document.createElement('script');
+			s.src = 'https://cdn.jsdelivr.net/npm/marked@15.0.4/marked.min.js';
+			s.onload = function () {
+				initAiChat();
+				// Re-trigger click to open dialog
+				setTimeout(function () { btn.click(); }, 150);
+			};
+			s.onerror = function () {
+				// marked failed, still boot (uses escapeHtml fallback)
+				initAiChat();
+				setTimeout(function () { btn.click(); }, 150);
+			};
+			document.head.appendChild(s);
+		}, { once: true });
+
+		function initAiChat() {
 		// Markdown rendering utilities
 
 		function escapeHtml(text) {
@@ -755,68 +781,7 @@
 					}
 				}
 			} catch (e) {}
-		})();
 
-		function onDragStart(e) {
-			if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
-			isDragging = true;
-			dragMoved = false;
-			var pos = getBtnPos();
-			btnStartRight = pos.right;
-			btnStartBottom = pos.bottom;
-			var clientX = e.touches ? e.touches[0].clientX : e.clientX;
-			var clientY = e.touches ? e.touches[0].clientY : e.clientY;
-			dragStartX = clientX;
-			dragStartY = clientY;
-			btn.classList.add('dragging');
 		}
-
-		function onDragMove(e) {
-			if (!isDragging) return;
-			var clientX = e.touches ? e.touches[0].clientX : e.clientX;
-			var clientY = e.touches ? e.touches[0].clientY : e.clientY;
-			var dx = clientX - dragStartX;
-			var dy = clientY - dragStartY;
-			if (Math.abs(dx) < DRAG_THRESHOLD && Math.abs(dy) < DRAG_THRESHOLD) return;
-			dragMoved = true;
-			var newRight = btnStartRight - dx;
-			var newBottom = btnStartBottom - dy;
-			var clamped = clampPos(newRight, newBottom);
-			btn.style.right = clamped.right + 'px';
-			btn.style.bottom = clamped.bottom + 'px';
-			positionDialog();
-			if (e.preventDefault) e.preventDefault();
-		}
-
-		function onDragEnd(e) {
-			if (!isDragging) return;
-			isDragging = false;
-			btn.classList.remove('dragging');
-			var pos = getBtnPos();
-			savePos(pos);
-			if (dragMoved) {
-				e.preventDefault && e.preventDefault();
-				e.stopPropagation && e.stopPropagation();
-			}
-		}
-
-		// Mouse events
-		btn.addEventListener('mousedown', onDragStart);
-		document.addEventListener('mousemove', onDragMove);
-		document.addEventListener('mouseup', onDragEnd);
-
-		// Touch events
-		btn.addEventListener('touchstart', onDragStart, { passive: false });
-		document.addEventListener('touchmove', onDragMove, { passive: false });
-		document.addEventListener('touchend', onDragEnd);
-
-		// Update dialog position on resize
-		window.addEventListener('resize', function () {
-			var pos = getBtnPos();
-			var clamped = clampPos(pos.right, pos.bottom);
-			applyPos(clamped);
-			positionDialog();
-		});
-
 	})();
 </script>
