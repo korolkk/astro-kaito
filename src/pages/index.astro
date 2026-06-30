@@ -4,6 +4,7 @@ import { Image } from 'astro:assets';
 import BaseHead from '../components/BaseHead.astro';
 import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
+import AiChat from '../components/AiChat.astro';
 import FormattedDate from '../components/FormattedDate.astro';
 import { SITE_TITLE, SITE_DESCRIPTION, SITE_START_DATE } from '../consts';
 import avatarPlaceholder from '../assets/kaito_1.jpg';
@@ -557,6 +558,7 @@ const stats = {
 			</div>
 		</main>
 		<Footer />
+		<AiChat />
 
 		<script is:inline>
 			(function () {

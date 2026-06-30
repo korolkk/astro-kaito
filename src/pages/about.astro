@@ -1,6 +1,10 @@
 ---
 import AboutHeroImage from '../assets/kaito_1.jpg';
 import { Image } from 'astro:assets';
+import { getCollection } from 'astro:content';
+
+const posts = await getCollection('blog');
+const articleCount = posts.length;
 import BaseHead from '../components/BaseHead.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
@@ -528,7 +532,7 @@ import Footer from '../components/Footer.astro';
 					</p>
 					<p>
 						工作之余运营 <strong>KaitoHub</strong> 技术博客，相信「输出倒逼输入」——
-						写作不仅是记录，更是深度思考的过程。目前已累计发表 77 篇文章，
+						写作不仅是记录，更是深度思考的过程。目前已累计发表 {articleCount} 篇文章，
 						内容覆盖嵌入式开发、算法题解、项目实战与工具教程。
 					</p>
 					<p>
@@ -572,7 +576,7 @@ import Footer from '../components/Footer.astro';
 						<h2 class="section-title">📊 博客数据</h2>
 						<div class="blog-stats">
 							<div class="bs-card">
-								<span class="bs-num">77</span>
+								<span class="bs-num">{articleCount}</span>
 								<span class="bs-label">技术文章</span>
 							</div>
 							<div class="bs-card">
@@ -606,7 +610,7 @@ import Footer from '../components/Footer.astro';
 								<span class="tl-duration">2 年</span>
 							</div>
 							<h3>KaitoHub · 技术写作</h3>
-							<div class="tl-sub">个人技术博客，累计文章 77 篇</div>
+							<div class="tl-sub">个人技术博客，累计文章 {articleCount} 篇</div>
 							<p>从 Hexo 迁移至 Astro 6 全面重设计，持续输出嵌入式、算法、项目实战内容。</p>
 							<div class="tl-skills">
 								<span>Astro</span><span>Markdown</span><span>SEO</span><span>AI 工具</span>

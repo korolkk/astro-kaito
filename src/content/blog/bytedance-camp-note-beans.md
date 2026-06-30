@@ -1,6 +1,6 @@
 ---
 title: '青训营 X 码上掘金 攒青豆 Golang'
-description: '暂无简介'
+description: '青训营×码上掘金「攒青豆」算法题——Golang实现接雨水变体问题'
 pubDate: 'Feb 07 2023'
 heroImage: '../../assets/blog-placeholder-2.jpg'
 tags: ['字节青训营', '后端', 'Go']

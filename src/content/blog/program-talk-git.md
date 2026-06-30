@@ -1,6 +1,6 @@
 ---
 title: '基于GitHub代码托管的团队合作开发常用git操作'
-description: '暂无简介'
+description: '基于GitHub代码托管的团队协作开发流程：Git常用操作与分支管理实践'
 pubDate: 'Feb 09 2023'
 heroImage: '../../assets/blog-placeholder-3.jpg'
 tags: ['Git', '工具']

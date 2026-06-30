@@ -1,6 +1,6 @@
 ---
 title: '分布式理论-现代架构基石 ｜ 字节跳动青训营笔记'
-description: '暂无简介'
+description: '分布式系统理论基础：CAP定理、一致性协议与共识算法等现代架构基石'
 pubDate: 'Feb 03 2023'
 heroImage: '../../assets/blog-placeholder-2.jpg'
 tags: ['字节青训营', '后端']

@@ -13,8 +13,6 @@ tags: ['LeetCode', '算法']
 
 **示例 1：**
 
-![img](https://www.kkkode.top/wp-content/uploads/2023/01/post-368-63bcfdfda14f7.png)
-
 ```
 输入：head = [[7,null],[13,0],[11,4],[10,2],[1,0]]
 输出：[[7,null],[13,0],[11,4],[10,2],[1,0]]
@@ -22,16 +20,12 @@ tags: ['LeetCode', '算法']
 
 **示例 2：**
 
-![img](https://www.kkkode.top/wp-content/uploads/2023/01/post-368-63bcfdfdb28ed.png)
-
 ```
 输入：head = [[1,1],[2,1]]
 输出：[[1,1],[2,1]]
 ```
 
 **示例 3：**
-
-**![img](https://www.kkkode.top/wp-content/uploads/2023/01/post-368-63bcfdfdc920f.png)**
 
 ```
 输入：head = [[3,null],[3,0],[3,null]]

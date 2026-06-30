@@ -329,7 +329,7 @@ const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
 			justify-content: center;
 		}
 		h2 { font-size: 0.9em; }
-		nav a { padding: 0.5em 0.4em; font-size: 0.88em; }
+		nav a { padding: 0.6em 0.6em; font-size: 0.88em; }
 		.search-btn,
 		.theme-btn { padding: 0.3em 0.45em; }
 		.search-btn svg,
@@ -340,7 +340,7 @@ const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
 	@media (max-width: 380px) {
 		.nav-inner { padding: 0.4em 0.5em; }
 		h2 { font-size: 0.8em; }
-		nav a { padding: 0.4em 0.25em; font-size: 0.8em; }
+		nav a { padding: 0.5em 0.4em; font-size: 0.8em; }
 		.nav-right { gap: 0.2em; }
 		.search-area.open .search-input { width: 100px; }
 	}
@@ -378,6 +378,40 @@ const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
 		const current = localStorage.getItem('theme') || 'system';
 		if (current === 'system') {
 			applyTheme('system');
+		}
+	});
+
+	// ========== Shared utilities for all inline scripts ==========
+	window.__kh = (function () {
+		function findCid(rootEl) {
+			if (!rootEl) return '';
+			for (var i = 0; i < rootEl.attributes.length; i++) {
+				if (rootEl.attributes[i].name.indexOf('data-astro-cid') === 0) {
+					return rootEl.attributes[i].name;
+				}
+			}
+			return '';
+		}
+
+		var _apiBase = '';
+		function apiUrl(path) {
+			if (!_apiBase) {
+				var header = document.querySelector('header');
+				var base = (header && header.dataset.baseUrl) || '/';
+				_apiBase = base.replace(/\/?$/, '');
+			}
+			return _apiBase + path;
+		}
+
+		return { findCid: findCid, apiUrl: apiUrl };
+	})();
+
+	// Ctrl+K / Cmd+K keyboard shortcut for search
+	document.addEventListener('keydown', function (e) {
+		if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+			e.preventDefault();
+			var searchBtn = document.getElementById('searchBtn');
+			if (searchBtn) searchBtn.click();
 		}
 	});
 

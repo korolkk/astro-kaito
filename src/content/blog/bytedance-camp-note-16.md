@@ -1,6 +1,6 @@
 ---
 title: '大项目Redis的原理及应用 ｜ 字节跳动青训营笔记'
-description: '暂无简介'
+description: 'Redis核心原理与实战应用，深入理解数据结构、持久化机制与缓存策略'
 pubDate: 'Feb 22 2023'
 heroImage: '../../assets/blog-placeholder-2.jpg'
 tags: ['字节青训营', '后端']

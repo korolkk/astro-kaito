@@ -1,6 +1,6 @@
 ---
 title: 'Go 高质量编程与性能调优 ｜ 字节跳动青训营笔记'
-description: '暂无简介'
+description: 'Go语言高质量编程规范与性能调优实战，涵盖边界条件、异常处理与代码可维护性'
 pubDate: 'Jan 18 2023'
 heroImage: '../../assets/blog-placeholder-2.jpg'
 tags: ['字节青训营', '后端']

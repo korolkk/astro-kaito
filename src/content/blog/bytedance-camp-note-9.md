@@ -1,6 +1,6 @@
 ---
 title: '微服务架构原理与治理实践 ｜ 字节跳动青训营笔记'
-description: '暂无简介'
+description: '微服务架构原理与服务治理实践，从单体拆分到服务注册发现的完整路径'
 pubDate: 'Feb 04 2023'
 heroImage: '../../assets/blog-placeholder-2.jpg'
 tags: ['字节青训营', '后端']

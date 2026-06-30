@@ -64,7 +64,7 @@
 		height: 48px;
 		border-radius: 50%;
 		border: none;
-		background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+		background: var(--gradient-accent);
 		color: #fff;
 		cursor: pointer;
 		display: flex;
@@ -164,7 +164,7 @@
 		width: 36px;
 		height: 36px;
 		border-radius: 50%;
-		background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+		background: var(--gradient-accent);
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -242,7 +242,7 @@
 		border-bottom-left-radius: 4px;
 	}
 	.ai-user .ai-chat-bubble {
-		background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+		background: var(--gradient-accent);
 		color: #fff;
 		border-bottom-right-radius: 4px;
 		box-shadow: 0 2px 8px rgba(99, 102, 241, 0.22);
@@ -409,7 +409,7 @@
 		height: 38px;
 		border-radius: 10px;
 		border: none;
-		background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+		background: var(--gradient-accent);
 		color: #fff;
 		cursor: pointer;
 		display: flex;
@@ -781,6 +781,7 @@
 					}
 				}
 			} catch (e) {}
+			})();
 
 		}
 	})();

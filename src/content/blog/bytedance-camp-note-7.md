@@ -1,6 +1,6 @@
 ---
 title: '架构初探-谁动了我的蛋糕 ｜ 字节跳动青训营笔记'
-description: '暂无简介'
+description: '软件架构初探：从单机到分布式，理解架构演进的驱动力与设计取舍'
 pubDate: 'Feb 03 2023'
 heroImage: '../../assets/blog-placeholder-2.jpg'
 tags: ['字节青训营', '后端']

@@ -1,6 +1,6 @@
 ---
 title: 'Go 语言基础及实战案例｜ 字节跳动青训营笔记'
-description: '暂无简介'
+description: 'Go语言开发环境搭建、基础语法与标准库使用入门｜字节跳动青训营笔记'
 pubDate: 'Jan 15 2023'
 heroImage: '../../assets/blog-placeholder-3.jpg'
 tags: ['字节青训营', '后端']

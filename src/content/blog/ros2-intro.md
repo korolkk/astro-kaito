@@ -1,6 +1,6 @@
 ---
 title: 'ROS2入门篇'
-description: '暂无简介'
+description: 'ROS2机器人操作系统入门指南：核心概念、架构设计与常用CLI工具'
 pubDate: 'Apr 28 2023'
 heroImage: '../../assets/blog-placeholder-3.jpg'
 tags: ['ROS2', '机器人']

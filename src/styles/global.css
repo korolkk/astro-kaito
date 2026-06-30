@@ -14,6 +14,9 @@
 	--accent: #2337ff;
 	--accent-dark: #000d8a;
 	--accent-rgb: 35, 55, 255;
+t--gradient-accent: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+t--gradient-accent-start: #6366f1;
+t--gradient-accent-end: #8b5cf6;
 	--black: 15, 18, 25;
 	--gray: 78, 93, 135;
 	--gray-light: 229, 233, 240;
@@ -31,6 +34,9 @@
 	--accent: #5b8af7;
 	--accent-dark: #8ba8f7;
 	--accent-rgb: 91, 138, 247;
+t--gradient-accent: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+t--gradient-accent-start: #6366f1;
+t--gradient-accent-end: #8b5cf6;
 	--black: 224, 224, 235;
 	--gray: 169, 177, 195;
 	--gray-light: 40, 45, 60;
@@ -180,4 +186,46 @@ select:focus-visible {
 	clip-path: inset(50%);
 	/* added line to stop words getting smushed together (as they go onto separate lines and some screen readers do not understand line feeds as a space */
 	white-space: nowrap;
+}
+
+/* ===== Print styles ===== */
+@media print {
+	header, footer, .nav-inner, .back-to-top,
+	#aiChatRoot, .toc-sidebar, .progress-bar,
+	.share-section, .ai-qa-section, .comments-section,
+	.comment-form, .post-nav, .search-area, .theme-switcher {
+		display: none !important;
+	}
+
+	body {
+		background: white !important;
+		color: black !important;
+		font-size: 12pt;
+		line-height: 1.5;
+	}
+
+	a[href]::after {
+		content: ' (' attr(href) ')';
+		font-size: 0.8em;
+		color: #666;
+	}
+	a[href^='#']::after,
+	a[href^='javascript']::after {
+		content: none;
+	}
+
+	h2, h3, h4 { page-break-after: avoid; }
+	pre, blockquote, img { page-break-inside: avoid; }
+
+	main, .prose, .article-wrapper {
+		width: 100% !important;
+		max-width: 100% !important;
+		margin: 0 !important;
+		padding: 0 !important;
+	}
+
+	.card, .nav-inner {
+		box-shadow: none !important;
+		border-radius: 0 !important;
+	}
 }

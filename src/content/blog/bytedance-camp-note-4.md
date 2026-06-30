@@ -1,6 +1,6 @@
 ---
 title: '高性能 Go 语言发行版优化的内存管理优化 ｜ 字节跳动青训营笔记'
-description: '暂无简介'
+description: '高性能Go语言发行版的内存管理优化，深入理解自动垃圾回收与内存分配策略'
 pubDate: 'Jan 20 2023'
 heroImage: '../../assets/blog-placeholder-2.jpg'
 tags: ['字节青训营', '后端']
