@@ -8,7 +8,7 @@ import { SITE_TITLE } from '../consts';
 <!doctype html>
 <html lang="zh-CN">
 	<head>
-		<BaseHead title={`自研工具 - ${SITE_TITLE}`} description="自研在线工具合集" />
+		<BaseHead title={`在线工具 - ${SITE_TITLE}`} description="在线工具合集" />
 		<style>
 			main {
 				width: 1140px;
@@ -23,27 +23,6 @@ import { SITE_TITLE } from '../consts';
 				margin-bottom: 0.6em;
 				text-align: center;
 			}
-			.ai-chat-notice {
-				display: flex;
-				align-items: center;
-				gap: 0.6em;
-				padding: 0.8em 1.2em;
-				background: rgba(var(--accent-rgb), 0.07);
-				border: 1px solid rgba(var(--accent-rgb), 0.15);
-				border-radius: 12px;
-				font-size: 0.9em;
-				color: rgb(var(--gray-dark));
-				margin-bottom: 2em;
-				line-height: 1.5;
-			}
-			.ai-chat-notice-icon {
-				font-size: 1.3em;
-				flex-shrink: 0;
-			}
-			.ai-chat-notice strong {
-				color: var(--accent);
-			}
-
 			/* Section */
 			.section {
 				background: var(--card-bg);
@@ -174,12 +153,7 @@ import { SITE_TITLE } from '../consts';
 	<body>
 		<Header />
 		<main id="main-content">
-			<h1 class="page-title">自研工具</h1>
-
-				<div class="ai-chat-notice">
-					<span class="ai-chat-notice-icon">💬</span>
-					<span>试试右下角的 <strong>Kaito AI</strong> 聊天吧！这是我的 AI 分身，可以回答技术问题、聊聊开发经验。</span>
-				</div>
+			<h1 class="page-title">在线工具</h1>
 
 			<section class="section">
 				<h2 class="section-title">
