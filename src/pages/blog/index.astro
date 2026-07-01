@@ -43,28 +43,68 @@ let currentYear = 0;
 				min-height: 85em;
 			}
 
-			/* Tag filter */
-			.tag-filter {
+			.control-bar {
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				gap: 0.8em;
+				margin-bottom: 1.5em;
+				padding-bottom: 1.2em;
+				border-bottom: 1px solid rgb(var(--gray-light));
+			}
+			.control-bar .sort-label {
+				font-size: 0.82em;
+				color: rgb(var(--gray));
+			}
+			.control-bar .sort-select {
+				padding: 0.3em 0.6em;
+				border: 1px solid rgb(var(--gray-light));
+				border-radius: 6px;
+				font-family: inherit;
+				font-size: 0.84em;
+				background: var(--card-bg);
+				color: rgb(var(--black));
+				cursor: pointer;
+				outline: none;
+			}
+			.control-bar .reset-btn {
+				padding: 0.3em 0.9em;
+				border: 1px solid rgb(var(--gray-light));
+				border-radius: 6px;
+				background: var(--card-bg);
+				color: rgb(var(--gray));
+				font-family: inherit;
+				font-size: 0.82em;
+				cursor: pointer;
+				transition: all 0.15s ease;
+			}
+			.control-bar .reset-btn:hover {
+				border-color: var(--accent);
+				color: var(--accent);
+			}
+
+			/* Tag pills */
+			.tag-pills {
 				display: flex;
 				flex-wrap: wrap;
-				gap: 0.4em;
-				justify-content: center;
-				margin-bottom: 2.5em;
+				gap: 0.3em;
 			}
-			.tag-filter-btn {
-				padding: 0.3em 0.85em;
-				font-size: 0.82em;
+			.tag-pill {
+				padding: 0.25em 0.7em;
+				font-size: 0.78em;
+				font-family: inherit;
 				color: var(--accent);
 				background: transparent;
 				border: 1px solid rgba(var(--accent-rgb), 0.25);
 				border-radius: 999px;
 				cursor: pointer;
-				font-family: inherit;
 				transition: all 0.2s ease;
 				white-space: nowrap;
 			}
-			.tag-filter-btn:hover,
-			.tag-filter-btn.active {
+			.tag-pill:hover {
+				background: rgba(var(--accent-rgb), 0.08);
+			}
+			.tag-pill.active {
 				background: var(--accent);
 				color: #fff;
 				border-color: var(--accent);
@@ -229,7 +269,6 @@ let currentYear = 0;
 			.pagination.hidden {
 				display: none;
 			}
-
 			.page-arrow,
 			.page-num {
 				display: flex;
@@ -259,7 +298,6 @@ let currentYear = 0;
 				color: var(--accent);
 				font-weight: 700;
 			}
-
 			.page-nums {
 				display: flex;
 				align-items: center;
@@ -271,7 +309,6 @@ let currentYear = 0;
 				color: rgb(var(--gray));
 				font-size: 0.85em;
 			}
-
 			.page-total {
 				font-size: 0.82em;
 				color: rgb(var(--gray));
@@ -324,9 +361,19 @@ let currentYear = 0;
 			<div class="timeline-card">
 				{
 					allTags.length > 0 && (
-						<div class="tag-filter" id="tagFilter">
-							<button class="tag-filter-btn active" data-tag="">全部</button>
-							{allTags.map((tag) => <button class="tag-filter-btn" data-tag={tag}>{tag}</button>)}
+						<div>
+							<div class="control-bar">
+								<span class="sort-label">排序：</span>
+								<select class="sort-select" id="sortSelect">
+									<option value="newest">最新优先</option>
+									<option value="oldest">最旧优先</option>
+								</select>
+								<span class="sort-label">标签：</span>
+								<span class="tag-pills" id="tagPills">
+									<button class="tag-pill active" data-tag="">全部</button>
+									{allTags.map((tag) => <button class="tag-pill" data-tag={tag}>{tag}</button>)}
+								</span>
+							</div>
 						</div>
 					)
 				}
@@ -337,9 +384,10 @@ let currentYear = 0;
 							const isNewYear = year !== currentYear;
 							currentYear = year;
 							const monthDay = `${post.data.pubDate.getMonth() + 1}月${post.data.pubDate.getDate()}日`;
+							const dateStr = post.data.pubDate.toISOString().split('T')[0];
 
 							return (
-								<article class={`timeline-item${isNewYear ? ' year-break' : ''}`} data-tags={post.data.tags?.join(',') || ''}>
+								<article class={`timeline-item${isNewYear ? ' year-break' : ''}`} data-tags={post.data.tags?.join(',') || ''} data-date={dateStr}>
 									<div class="timeline-date">
 										{isNewYear && <span class="year">{year}年</span>}
 										<span>{monthDay}</span>
@@ -361,7 +409,7 @@ let currentYear = 0;
 									{
 										post.data.heroImage && (
 											<a class="timeline-cover" href={`${base}blog/${post.id}/`} tabindex="-1">
-												<Image width={320} height={180} src={post.data.heroImage} alt="" />
+												<Image width={320} height={180} src={post.data.heroImage} alt="" loading="lazy" />
 											</a>
 										)
 									}
@@ -386,21 +434,64 @@ let currentYear = 0;
 
 <script is:inline>
 	(function () {
+
+		// ===== State =====
 		var PAGE_SIZE = 15;
-		var filter = document.getElementById('tagFilter');
 		var items = Array.from(document.querySelectorAll('.timeline-item'));
+		var currentTag = '';
+		var currentPage = 1;
+		var sortOrder = 'newest'; // 'newest' | 'oldest'
 		var noResults = document.getElementById('noResults');
 		var pagination = document.getElementById('pagination');
 		var pagePrev = document.getElementById('pagePrev');
 		var pageNext = document.getElementById('pageNext');
 		var pageNumbers = document.getElementById('pageNumbers');
 		var pageTotal = document.getElementById('pageTotal');
-		var currentTag = '';
-		var currentPage = 1;
 
+		// ===== Sort =====
+		function sortItems(order) {
+			sortOrder = order;
+			// Sort the items array (which updateUI uses)
+			items.sort(function (a, b) {
+				var da = a.dataset.date || '';
+				var db = b.dataset.date || '';
+				return order === 'newest' ? db.localeCompare(da) : da.localeCompare(db);
+			});
+			// Also rearrange DOM to match
+			var tl = document.querySelector('.timeline');
+			if (tl) {
+				items.forEach(function (it) { tl.appendChild(it); });
+			}
+		}
+
+		var sortSelect = document.getElementById('sortSelect');
+		if (sortSelect) {
+			sortSelect.addEventListener('change', function () {
+				sortItems(sortSelect.value);
+				currentPage = 1;
+				updateUI();
+			});
+		}
+
+		// ===== Tag pills =====
+		var tagPills = document.getElementById('tagPills');
+		if (tagPills) {
+			tagPills.addEventListener('click', function (e) {
+				var pill = e.target.closest('.tag-pill');
+				if (!pill) return;
+				currentTag = pill.dataset.tag;
+				currentPage = 1;
+				tagPills.querySelectorAll('.tag-pill').forEach(function (p) {
+					p.classList.toggle('active', p.dataset.tag === currentTag);
+				});
+				updateUI();
+			});
+		}
+
+		// ===== Filtering & Pagination =====
 		function getVisibleItems() {
 			return items.filter(function (item) {
-				var tags = item.dataset.tags ? item.dataset.tags.split(',') : [];
+				var tags = (item.dataset.tags || '').split(',').filter(Boolean);
 				return !currentTag || tags.indexOf(currentTag) > -1;
 			});
 		}
@@ -441,42 +532,39 @@ let currentYear = 0;
 				setArrowDisabled(pagePrev, currentPage <= 1);
 				setArrowDisabled(pageNext, currentPage >= totalPages);
 
-				// Build page numbers
 				var html = '';
 				var maxShow = 5;
-
 				if (totalPages <= maxShow + 2) {
-					for (var p = 1; p <= totalPages; p++) {
-						html += pageNumBtn(p);
-					}
+					for (var p = 1; p <= totalPages; p++) html += pageNumBtn(p);
 				} else {
 					var startPage = Math.max(2, currentPage - Math.floor(maxShow / 2) + 1);
 					var endPage = Math.min(totalPages - 1, currentPage + Math.floor(maxShow / 2));
-
-					// Adjust to keep visible count
 					while (endPage - startPage < maxShow - 3 && endPage < totalPages - 1) endPage++;
 					while (endPage - startPage < maxShow - 3 && startPage > 2) startPage--;
-
 					html += pageNumBtn(1);
 					if (startPage > 2) html += '<span class="page-ellipsis">…</span>';
-					for (var p = startPage; p <= endPage; p++) {
-						html += pageNumBtn(p);
-					}
+					for (var p = startPage; p <= endPage; p++) html += pageNumBtn(p);
 					if (endPage < totalPages - 1) html += '<span class="page-ellipsis">…</span>';
 					html += pageNumBtn(totalPages);
 				}
-
 				pageNumbers.innerHTML = html;
 				pageTotal.textContent = totalPages + ' 页';
 
-				// Bind page number clicks
 				pageNumbers.querySelectorAll('.page-num').forEach(function (btn) {
 					btn.addEventListener('click', function () {
 						currentPage = parseInt(this.dataset.page, 10);
-						// keep scroll position
 						updateUI();
 						updateURL();
 					});
+				});
+			}
+
+			// Highlight active tag in cloud
+			if (cloud) {
+				cloud.querySelectorAll('a').forEach(function (a) {
+					var tagText = a.textContent.replace(/\d+$/, '').trim();
+					a.style.color = tagText === currentTag ? 'var(--accent)' : '';
+					a.style.background = tagText === currentTag ? 'rgba(var(--accent-rgb), 0.1)' : '';
 				});
 			}
 
@@ -503,45 +591,31 @@ let currentYear = 0;
 			window.history.replaceState({}, '', url);
 		}
 
-		// Tag filter clicks
-		if (filter) {
-			filter.querySelectorAll('.tag-filter-btn').forEach(function (btn) {
-				btn.addEventListener('click', function () {
-					currentTag = btn.dataset.tag;
-					currentPage = 1;
-					filter.querySelectorAll('.tag-filter-btn').forEach(function (b) {
-						b.classList.toggle('active', b.dataset.tag === currentTag);
-					});
-					updateUI();
-				});
-			});
-		}
-
-		// Prev / Next
+		// ===== Pagination arrows =====
 		pagePrev.addEventListener('click', function () {
 			if (currentPage <= 1) return;
 			currentPage--;
-			// keep scroll position
 			updateUI();
 		});
 		pageNext.addEventListener('click', function () {
 			var totalPages = Math.ceil(getVisibleItems().length / PAGE_SIZE) || 1;
 			if (currentPage >= totalPages) return;
 			currentPage++;
-			// keep scroll position
 			updateUI();
 		});
 
-		// Init from URL
+		// ===== Init from URL =====
 		var params = new URLSearchParams(window.location.search);
 		currentTag = params.get('tag') || '';
 		currentPage = parseInt(params.get('page'), 10) || 1;
 
-		if (currentTag && filter) {
-			filter.querySelectorAll('.tag-filter-btn').forEach(function (btn) {
-				btn.classList.toggle('active', btn.dataset.tag === currentTag);
+		// Highlight active tag pill on load
+		if (currentTag && tagPills) {
+			tagPills.querySelectorAll('.tag-pill').forEach(function (p) {
+				p.classList.toggle('active', p.dataset.tag === currentTag);
 			});
 		}
+
 		updateUI();
 	})();
 </script>

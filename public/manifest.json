@@ -1,0 +1,16 @@
+{
+	"name": "KaitoHub",
+	"short_name": "KaitoHub",
+	"description": "Kaito的个人博客 - 分享技术与生活",
+	"start_url": "/",
+	"display": "standalone",
+	"background_color": "#eae6f0",
+	"theme_color": "#2337ff",
+	"icons": [
+		{
+			"src": "/favicon.ico",
+			"sizes": "48x48",
+			"type": "image/x-icon"
+		}
+	]
+}

@@ -40,9 +40,27 @@ function extractHeadings(body: string): { text: string; level: number; id: strin
 	return headings;
 }
 
-const headings = extractHeadings(post.body || '');
+	// Estimate reading time (Chinese ~300 chars/min)
+	const bodyText = (post.body || '').replace(/```[\s\S]*?```/g, '').replace(/[#*>\-|`~\[\]()!]/g, '');
+	const charCount = bodyText.replace(/\s/g, '').length;
+	const readMinutes = Math.max(1, Math.round(charCount / 300));
+
+
+	// Related posts by tag overlap
+	const currentTags = post.data.tags || [];
+	const relatedPosts = allPosts
+		.filter(p => p.id !== post.id)
+		.map(p => ({
+			post: p,
+			overlap: (p.data.tags || []).filter(t => currentTags.includes(t)).length,
+		}))
+		.filter(p => p.overlap > 0)
+		.sort((a, b) => b.overlap - a.overlap)
+		.slice(0, 3);
+
+	const headings = extractHeadings(post.body || '');
 ---
 
-<BlogPost {...post.data} prevPost={prevPost} nextPost={nextPost} headings={headings}>
+<BlogPost {...post.data} prevPost={prevPost} nextPost={nextPost} headings={headings} readMinutes={readMinutes} relatedPosts={relatedPosts}>
 	<Content />
 </BlogPost>

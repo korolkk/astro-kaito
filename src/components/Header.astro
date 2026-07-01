@@ -516,10 +516,23 @@ const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
 			}
 
 			const posts = await loadIndex();
+			// Fuzzy match: characters of query must appear in order (not necessarily contiguous)
+			function fuzzyMatch(text, q) {
+				if (!q || !text) return false;
+				var ti = 0, qi = 0;
+				var tl = text.length, ql = q.length;
+				while (ti < tl && qi < ql) {
+					if (text[ti] === q[qi]) qi++;
+					ti++;
+				}
+				return qi === ql;
+			}
 			const filtered = posts.filter((post) => {
-				const t = post.title.toLowerCase();
-				const d = post.description.toLowerCase();
-				return t.includes(query) || d.includes(query) || (post.tags || []).join(' ').toLowerCase().includes(query);
+				var t = post.title.toLowerCase();
+				var d = post.description.toLowerCase();
+				var b = (post.body || '').toLowerCase();
+				var tagsStr = (post.tags || []).join(' ').toLowerCase();
+				return fuzzyMatch(t, query) || fuzzyMatch(d, query) || fuzzyMatch(b, query) || fuzzyMatch(tagsStr, query);
 			});
 
 			if (filtered.length === 0) {

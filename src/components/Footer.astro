@@ -100,3 +100,17 @@ const today = new Date();
 		toggle();
 	})();
 </script>
+
+<script is:inline>
+	(function() {
+		var page = window.location.pathname;
+		try {
+			fetch('/api/pageview', {
+				method: 'POST',
+				headers: {'Content-Type': 'application/json'},
+				body: JSON.stringify({page: page, referrer: document.referrer || ''}),
+			});
+		} catch(e) {}
+	})();
+</script>
+

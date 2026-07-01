@@ -25,6 +25,8 @@ const { title, description, image = FallbackImage } = Astro.props;
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <link rel="icon" href={faviconIco} />
+	<link rel="manifest" href="/manifest.json" />
+	<meta name="theme-color" content="#2337ff" />
 <link rel="sitemap" href={sitemapUrl} />
 <link
 	rel="alternate"
@@ -44,6 +46,10 @@ const { title, description, image = FallbackImage } = Astro.props;
 		const theme = saved === 'dark' || saved === 'light' ? saved : (preferDark ? 'dark' : 'light');
 		document.documentElement.setAttribute('data-theme', theme);
 		document.documentElement.setAttribute('data-theme-choice', saved || 'system');
+		// Register service worker
+		if ('serviceWorker' in navigator) {
+			navigator.serviceWorker.register('/sw.js');
+		}
 	})();
 </script>
 
