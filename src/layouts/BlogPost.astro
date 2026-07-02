@@ -852,36 +852,6 @@ const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nex
 			}
 		
 	/* Code copy button */
-	.code-block-wrapper {
-		position: relative;
-	}
-	.copy-btn {
-		position: absolute;
-		top: 0.5em;
-		right: 0.6em;
-		padding: 0.3em 0.65em;
-		font-size: 0.75em;
-		font-family: inherit;
-		background: rgba(var(--gray-light), 0.8);
-		border: 1px solid rgb(var(--gray-light));
-		border-radius: 6px;
-		color: rgb(var(--gray));
-		cursor: pointer;
-		opacity: 0;
-		transition: opacity 0.2s ease, color 0.15s ease;
-		backdrop-filter: blur(4px);
-	}
-	.code-block-wrapper:hover .copy-btn {
-		opacity: 1;
-	}
-	.copy-btn:hover {
-		color: var(--accent);
-		border-color: var(--accent);
-	}
-	.copy-btn.copied {
-		color: #22c55e;
-		border-color: #22c55e;
-	}
 
 
 	/* Image lightbox */
@@ -1118,7 +1088,36 @@ const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nex
 		</main>
 		<Footer />
 			<AiChat />
-	</body>
+	
+<script is:inline>
+document.addEventListener('DOMContentLoaded', function() {
+	var pres = document.querySelectorAll('pre');
+	for (var i = 0; i < pres.length; i++) (function(pre) {
+		// Only add to code blocks, skip if already wrapped
+		if (!pre.querySelector('code')) return;
+		if (pre.parentNode.className === 'ccw') return;
+		var wrap = document.createElement('div');
+		wrap.className = 'ccw';
+		wrap.style.position = 'relative';
+		pre.parentNode.insertBefore(wrap, pre);
+		wrap.appendChild(pre);
+		var btn = document.createElement('span');
+		btn.textContent = '复制';
+		btn.setAttribute('style', 'position:absolute;top:6px;right:10px;font-size:12px;color:#888;cursor:pointer;padding:2px 8px;border-radius:4px;border:1px solid #ddd;background:rgba(255,255,255,0.75);z-index:5;user-select:none;');
+		btn.addEventListener('mouseenter', function(){btn.style.color='#333';btn.style.borderColor='#999';});
+		btn.addEventListener('mouseleave', function(){btn.style.color='#888';btn.style.borderColor='#ddd';});
+		btn.addEventListener('click', function(){
+			navigator.clipboard.writeText(pre.textContent||'').then(function(){
+				btn.textContent='已复制!';btn.style.color='#22c55e';btn.style.borderColor='#22c55e';
+				setTimeout(function(){btn.textContent='复制';btn.style.color='#888';btn.style.borderColor='#ddd';},2000);
+			}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1500);});
+		});
+		wrap.appendChild(btn);
+	})(pres[i]);
+});
+</script>
+
+</body>
 </html>
 
 
@@ -2010,40 +2009,7 @@ const { title, description, pubDate, updatedDate, heroImage, tags, prevPost, nex
 		})();
 	
 
-<script is:inline>
-	(function () {
-		// Add copy buttons to all code blocks in blog posts
-		var pres = document.querySelectorAll('pre.astro-code');
-		if (!pres.length) return;
-		pres.forEach(function (pre) {
-			// Wrap in container
-			var wrapper = document.createElement('div');
-			wrapper.className = 'code-block-wrapper';
-			pre.parentNode.insertBefore(wrapper, pre);
-			wrapper.appendChild(pre);
-			// Add copy button
-			var btn = document.createElement('button');
-			btn.className = 'copy-btn';
-			btn.textContent = '复制';
-			btn.setAttribute('aria-label', '复制代码');
-			btn.addEventListener('click', function () {
-				var code = pre.textContent || '';
-				navigator.clipboard.writeText(code).then(function () {
-					btn.textContent = '已复制!';
-					btn.classList.add('copied');
-					setTimeout(function () {
-						btn.textContent = '复制';
-						btn.classList.remove('copied');
-					}, 2000);
-				}).catch(function () {
-					btn.textContent = '失败';
-					setTimeout(function () { btn.textContent = '复制'; }, 1500);
-				});
-			});
-			wrapper.appendChild(btn);
-		});
-	})();
-</script>
+
 
 
 
