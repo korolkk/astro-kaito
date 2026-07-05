@@ -44,6 +44,24 @@ const stats = {
 		? Math.ceil((now.valueOf() - lastPost.data.pubDate.valueOf()) / (1000 * 60 * 60 * 24))
 		: 0,
 };
+
+// Step 1: Top 8 tags
+const tagCounts: Record<string, number> = {};
+allPosts.forEach(p => (p.data.tags || []).forEach(t => { tagCounts[t] = (tagCounts[t] || 0) + 1; }));
+const topTags = Object.entries(tagCounts)
+	.sort((a, b) => b[1] - a[1])
+	.slice(0, 8);
+
+// Step 2: Featured posts
+const featuredIds = ['build-blog-with-ai', 'deploy-to-aliyun'];
+const featuredPosts = allPosts.filter(p => featuredIds.includes(p.id));
+
+
+// Step 4: Year/month stats
+const thisYear = now.getFullYear();
+const thisMonth = now.getMonth();
+const thisYearPosts = allPosts.filter(p => p.data.pubDate.getFullYear() === thisYear).length;
+const thisMonthPosts = allPosts.filter(p => p.data.pubDate.getFullYear() === thisYear && p.data.pubDate.getMonth() === thisMonth).length;
 ---
 
 <!doctype html>
@@ -51,7 +69,6 @@ const stats = {
 	<head>
 		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
 		<style>
-			/* GitHub heatmap color variables */
 			:root {
 				--gh-level-0: transparent;
 				--gh-level-1: #9be9a8;
@@ -60,7 +77,6 @@ const stats = {
 				--gh-level-4: #216e39;
 				--gh-square-border: rgba(var(--gray), 0.08);
 			}
-
 			[data-theme='dark'] {
 				--gh-level-1: #0e4429;
 				--gh-level-2: #006d32;
@@ -83,95 +99,14 @@ const stats = {
 				margin: 2em auto;
 				padding: 0;
 			}
+			.profile      { grid-column: 1; grid-row: 1; }
+			.stats-card   { grid-column: 1; grid-row: 2; }
+			.tags-card    { grid-column: 1; grid-row: 3; }
+			.github-card  { grid-column: 1; grid-row: 4; }
+			.friends-card { grid-column: 1; grid-row: 5; }
+			.post-feed    { grid-column: 2; grid-row: 1 / 6; }
 
-/* Desktop: explicit grid placement */
-		.profile      { grid-column: 1; grid-row: 1; }
-		.stats-card   { grid-column: 1; grid-row: 2; }
-		.github-card  { grid-column: 1; grid-row: 3; }
-		.friends-card { grid-column: 1; grid-row: 4; }
-		.post-feed    { grid-column: 2; grid-row: 1 / 5; }
-			.profile {
-				text-align: center;
-				background: var(--card-bg);
-				border-radius: 20px;
-				padding: 2em;
-				box-shadow: 0 2px 12px rgba(var(--black), 0.04);
-			}
-			.avatar {
-				width: 120px;
-				height: 120px;
-				border-radius: 50%;
-				object-fit: cover;
-				border: 4px solid var(--card-bg);
-				box-shadow: 0 4px 24px rgba(0,0,0,0.10);
-			}
-			.profile-name {
-				font-size: 1.6em;
-				font-weight: 700;
-				margin: 0.5em 0 0.15em;
-				color: rgb(var(--black));
-			}
-			.profile-bio {
-				color: rgb(var(--gray));
-				font-size: 0.93em;
-				line-height: 1.7;
-				margin: 0.8em 0 0.4em;
-			}
-			.profile-quote {
-				color: var(--accent);
-				font-size: 0.85em;
-				font-style: italic;
-				margin: 0;
-				opacity: 0.8;
-				display: inline;
-			}
-			.profile-quote-wrapper {
-				display: block;
-				margin: 0.6em 0 1.2em;
-				min-height: 1.4em;
-			}
-			.quote-cursor {
-				display: inline;
-				color: var(--accent);
-				font-weight: 700;
-				font-size: 0.9em;
-				opacity: 0;
-				margin-left: 1px;
-			}
-			.quote-cursor.visible {
-				opacity: 1;
-			}
-			.quote-cursor.blink {
-				animation: cursor-blink 1s step-end infinite;
-			}
-			@keyframes cursor-blink {
-				0%, 100% { opacity: 1; }
-				50% { opacity: 0; }
-			}
-			.profile-links {
-				display: flex;
-				justify-content: center;
-				gap: 0.6em;
-				flex-wrap: wrap;
-			}
-			.profile-links a {
-				display: inline-flex;
-				align-items: center;
-				gap: 0.35em;
-				padding: 0.4em 0.9em;
-				border-radius: 8px;
-				background: rgb(var(--gray-light));
-				color: rgb(var(--gray-dark));
-				text-decoration: none;
-				font-size: 0.86em;
-				transition: all 0.2s ease;
-			}
-			.profile-links a:hover {
-				background: var(--accent);
-				color: var(--card-bg);
-			}
-
-			/* Shared card style for left column */
+			/* Shared card */
 			.card {
 				background: var(--card-bg);
 				border-radius: 20px;
@@ -187,223 +122,229 @@ const stats = {
 				border-bottom: 2px solid rgb(var(--gray-light));
 			}
 
-			/* Stats table */
-			.stats-table {
-				width: 100%;
-				border-collapse: collapse;
-			}
-			.stats-table td {
-				padding: 0.65em 0;
-				font-size: 0.9em;
-				vertical-align: middle;
-			}
-			.stats-table tr:not(:last-child) td {
-				border-bottom: 1px solid rgba(var(--gray), 0.12);
-			}
-			.stats-table .stat-icon {
-				width: 2em;
-				color: var(--accent);
-				font-size: 0.75em;
-			}
-			.stats-table .stat-label {
-				color: rgb(var(--gray));
-			}
-			.stats-table .stat-value {
-				text-align: right;
-				font-weight: 700;
-				color: rgb(var(--black));
-				font-variant-numeric: tabular-nums;
-			}
-			.stats-table .stat-unit {
-				font-weight: 400;
-				font-size: 0.85em;
-				color: rgb(var(--gray));
-				font-variant-numeric: normal;
-			}
-			.stats-table .stat-num {
-				font-weight: 700;
-				color: rgb(var(--black));
-				font-variant-numeric: tabular-nums;
-			}
-
-			/* GitHub heatmap */
-			.github-card .gh-heatmap {
-				min-height: 80px;
-				display: flex;
-				align-items: center;
-				justify-content: center;
-			}
-			.gh-loading {
-				color: rgb(var(--gray));
-				font-size: 0.85em;
-			}
-			.gh-loading span {
-				display: inline-block;
-				animation: gh-pulse 1.2s ease-in-out infinite;
-			}
-			@keyframes gh-pulse {
-				0%, 100% { opacity: 0.4; }
-				50% { opacity: 1; }
-			}
-			.gh-grid {
-				display: flex;
-				justify-content: center;
-				width: 100%;
-				overflow: hidden;
-			}
-			.gh-grid canvas {
-				border-radius: 4px;
-				max-width: 100%;
-				height: auto;
-			}
-			.gh-error {
-				color: rgb(var(--gray));
-				font-size: 0.85em;
-				display: flex;
-				align-items: center;
-				gap: 0.4em;
-			}
-			.gh-total {
+			/* Profile */
+			.profile {
 				text-align: center;
-				font-size: 0.82em;
-				color: rgb(var(--gray));
-				margin-top: 0.8em;
-			}
-			.gh-total strong {
-				color: var(--accent);
-				font-weight: 700;
-			}
-			.gh-summary {
-				color: rgb(var(--gray-dark));
-				font-weight: 600;
-			}
-
-			/* Friends */
-			.friend-list {
-				display: flex;
-				flex-direction: column;
-				gap: 0.5em;
-			}
-			.friend-link {
-				display: flex;
-				align-items: center;
-				gap: 0.5em;
-				padding: 0.55em 0.75em;
-				background: rgb(var(--gray-light));
-				border-radius: 10px;
-				text-decoration: none;
-				transition: all 0.2s ease;
-			}
-			.friend-link:hover {
-				background: var(--card-bg);
-				box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-				transform: translateY(-1px);
-			}
-			.friend-avatar {
-				width: 28px;
-				height: 28px;
-				border-radius: 50%;
-				background: linear-gradient(135deg, var(--accent), var(--accent-dark));
-				display: flex;
-				align-items: center;
-				justify-content: center;
-				font-size: 0.7em;
-				font-weight: 700;
-				color: #fff;
-				flex-shrink: 0;
-			}
-			.friend-info {
-				display: flex;
-				flex-direction: column;
-				min-width: 0;
-			}
-			.friend-name {
-				font-size: 0.85em;
-				font-weight: 600;
-				color: rgb(var(--black));
-			}
-			.friend-desc {
-				font-size: 0.75em;
-				color: rgb(var(--gray));
-				overflow: hidden;
-				text-overflow: ellipsis;
-				white-space: nowrap;
-			}
-
-			/* Right column: post feed */
-			.post-feed {
 				background: var(--card-bg);
 				border-radius: 20px;
 				padding: 2em;
 				box-shadow: 0 2px 12px rgba(var(--black), 0.04);
 			}
-			.post-feed .section-title {
-				font-size: 1.2em;
-				margin-bottom: 1.2em;
-				padding-bottom: 0.6em;
+			.avatar {
+				width: 120px; height: 120px; border-radius: 50%;
+				object-fit: cover; border: 4px solid var(--card-bg);
+				box-shadow: 0 4px 24px rgba(0,0,0,0.10);
 			}
+			.profile-name {
+				font-size: 1.6em; font-weight: 700; margin: 0.5em 0 0.15em;
+				color: rgb(var(--black));
+			}
+			.profile-bio {
+				color: rgb(var(--gray)); font-size: 0.93em;
+				line-height: 1.7; margin: 0.8em 0 0.4em;
+			}
+			.profile-quote {
+				color: var(--accent); font-size: 0.85em;
+				font-style: italic; margin: 0; opacity: 0.8; display: inline;
+			}
+			.profile-quote-wrapper { display: block; margin: 0.6em 0 0.8em; min-height: 1.4em; }
+			.quote-cursor {
+				display: inline; color: var(--accent); font-weight: 700;
+				font-size: 0.9em; opacity: 0; margin-left: 1px;
+			}
+			.quote-cursor.visible { opacity: 1; }
+			.quote-cursor.blink { animation: cursor-blink 1s step-end infinite; }
+			@keyframes cursor-blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+			.profile-links {
+				display: flex; justify-content: center; gap: 0.6em; flex-wrap: wrap;
+			}
+			.profile-links a {
+				display: inline-flex; align-items: center; gap: 0.35em;
+				padding: 0.4em 0.9em; border-radius: 8px;
+				background: rgb(var(--gray-light)); color: rgb(var(--gray-dark));
+				text-decoration: none; font-size: 0.86em; transition: all 0.2s ease;
+			}
+			.profile-links a:hover { background: var(--accent); color: var(--card-bg); }
+
+
+			/* Stats */
+			.stats-table { width: 100%; border-collapse: collapse; }
+			.stats-table td {
+				padding: 0.6em 0; font-size: 0.9em; vertical-align: middle;
+			}
+			.stats-table tr:not(:last-child) td {
+				border-bottom: 1px solid rgba(var(--gray), 0.12);
+			}
+			.stats-table .stat-icon { width: 2em; color: var(--accent); font-size: 0.75em; }
+			.stats-table .stat-label { color: rgb(var(--gray)); }
+			.stats-table .stat-value {
+				text-align: right; font-weight: 700;
+				color: rgb(var(--black)); font-variant-numeric: tabular-nums;
+			}
+			.stats-table .stat-unit {
+				font-weight: 400; font-size: 0.85em;
+				color: rgb(var(--gray)); font-variant-numeric: normal;
+			}
+			.stats-table .stat-num {
+				font-weight: 700; color: rgb(var(--black));
+				font-variant-numeric: tabular-nums;
+			}
+
+			/* Step 1: Top tags card */
+			.tags-grid {
+				display: flex; flex-wrap: wrap; gap: 0.5em;
+			}
+			.tag-entry {
+				display: flex; align-items: center; justify-content: space-between;
+				gap: 0.4em; padding: 0.5em 0.75em;
+				background: rgb(var(--gray-light)); border-radius: 10px;
+				text-decoration: none; transition: all 0.2s ease;
+				flex: 1 1 calc(50% - 0.5em); min-width: 100px;
+			}
+			.tag-entry:hover {
+				background: var(--accent); color: #fff;
+				transform: translateY(-1px); box-shadow: 0 2px 8px rgba(var(--accent-rgb), 0.25);
+			}
+			.tag-entry:hover .tag-entry-name,
+			.tag-entry:hover .tag-entry-count { color: #fff; }
+			.tag-entry-name {
+				font-size: 0.85em; font-weight: 600; color: rgb(var(--black));
+			}
+			.tag-entry-count {
+				font-size: 0.75em; color: rgb(var(--gray));
+				background: rgba(var(--black), 0.06); padding: 0.1em 0.5em;
+				border-radius: 999px;
+			}
+
+			/* GitHub heatmap */
+			.github-card .gh-heatmap {
+				min-height: 80px; display: flex;
+				align-items: center; justify-content: center;
+			}
+			.gh-loading { color: rgb(var(--gray)); font-size: 0.85em; }
+			.gh-loading span { display: inline-block; animation: gh-pulse 1.2s ease-in-out infinite; }
+			@keyframes gh-pulse { 0%,100%{opacity:0.4} 50%{opacity:1} }
+			.gh-grid { display: flex; justify-content: center; width: 100%; overflow: hidden; }
+			.gh-grid canvas { border-radius: 4px; max-width: 100%; height: auto; }
+			.gh-error {
+				color: rgb(var(--gray)); font-size: 0.85em;
+				display: flex; align-items: center; gap: 0.4em;
+			}
+			.gh-total {
+				text-align: center; font-size: 0.82em;
+				color: rgb(var(--gray)); margin-top: 0.8em;
+			}
+			.gh-total strong { color: var(--accent); font-weight: 700; }
+			.gh-summary { color: rgb(var(--gray-dark)); font-weight: 600; }
+
+			/* Friends */
+			.friend-list { display: flex; flex-direction: column; gap: 0.5em; }
+			.friend-link {
+				display: flex; align-items: center; gap: 0.5em;
+				padding: 0.55em 0.75em; background: rgb(var(--gray-light));
+				border-radius: 10px; text-decoration: none; transition: all 0.2s ease;
+			}
+			.friend-link:hover {
+				background: var(--card-bg); box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+				transform: translateY(-1px);
+			}
+			.friend-avatar {
+				width: 28px; height: 28px; border-radius: 50%;
+				background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+				display: flex; align-items: center; justify-content: center;
+				font-size: 0.7em; font-weight: 700; color: #fff; flex-shrink: 0;
+			}
+			.friend-info { display: flex; flex-direction: column; min-width: 0; }
+			.friend-name { font-size: 0.85em; font-weight: 600; color: rgb(var(--black)); }
+			.friend-desc {
+				font-size: 0.75em; color: rgb(var(--gray));
+				overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+			}
+
+			/* Post feed */
+			.post-feed {
+				background: var(--card-bg); border-radius: 20px;
+				padding: 2em; box-shadow: 0 2px 12px rgba(var(--black), 0.04);
+			}
+			.post-feed .section-title { font-size: 1.2em; margin-bottom: 1.2em; padding-bottom: 0.6em; }
+
+			/* Step 2: Featured posts */
+			.featured-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1em; margin-bottom: 1.5em; }
+			.featured-card {
+				display: flex; gap: 0.8em; padding: 1em;
+				background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.06), rgba(var(--accent-rgb), 0.02));
+				border: 1px solid rgba(var(--accent-rgb), 0.15);
+				border-radius: 14px; text-decoration: none;
+				transition: all 0.25s ease;
+			}
+			.featured-card:hover {
+				border-color: var(--accent);
+				box-shadow: 0 4px 16px rgba(var(--accent-rgb), 0.12);
+				transform: translateY(-2px);
+			}
+			.featured-cover {
+				width: 80px; height: 50px; border-radius: 8px;
+				object-fit: cover; flex-shrink: 0;
+			}
+			.featured-info { min-width: 0; }
+			.featured-badge {
+				display: inline-block; font-size: 0.65em; font-weight: 700;
+				color: var(--accent); background: rgba(var(--accent-rgb), 0.1);
+				padding: 0.15em 0.5em; border-radius: 4px; margin-bottom: 0.3em;
+			}
+			.featured-title {
+				font-size: 0.9em; font-weight: 700; color: rgb(var(--black));
+				line-height: 1.35; display: -webkit-box;
+				-webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+			}
+			.featured-date { font-size: 0.72em; color: rgb(var(--gray)); margin-top: 0.25em; }
+
+			/* Post list */
 			.post-list {
-				list-style: none;
-				margin: 0;
-				padding: 0;
-				display: flex;
-				flex-direction: column;
-				gap: 0.8em;
+				list-style: none; margin: 0; padding: 0;
+				display: flex; flex-direction: column; gap: 0.8em;
 			}
 			.post-list li a {
-				display: block;
-				padding: 1em 1.2em;
-				background: rgb(var(--gray-light));
-				border-radius: 12px;
-				text-decoration: none;
-				transition: all 0.2s ease;
+				display: block; padding: 1em 1.2em;
+				background: rgb(var(--gray-light)); border-radius: 12px;
+				text-decoration: none; transition: all 0.2s ease;
 			}
 			.post-list li a:hover {
 				background: var(--card-bg);
-				box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-				transform: translateY(-1px);
+				box-shadow: 0 2px 12px rgba(0,0,0,0.06); transform: translateY(-1px);
 			}
 			.post-title {
-				font-size: 1.05em;
-				font-weight: 600;
-				color: rgb(var(--black));
-				margin: 0 0 0.2em;
-				line-height: 1.3;
+				font-size: 1.05em; font-weight: 600;
+				color: rgb(var(--black)); margin: 0 0 0.2em; line-height: 1.3;
 			}
-			.post-date {
-				font-size: 0.82em;
-				color: rgb(var(--gray));
-			}
+			.post-date { font-size: 0.82em; color: rgb(var(--gray)); }
 			.post-desc {
-				font-size: 0.88em;
-				color: rgb(var(--gray));
-				margin: 0.35em 0 0;
-				line-height: 1.5;
+				font-size: 0.88em; color: rgb(var(--gray));
+				margin: 0.35em 0 0; line-height: 1.5;
 			}
 			.view-all {
-				display: inline-block;
-				margin-top: 1.2em;
-				color: var(--accent);
-				text-decoration: none;
-				font-weight: 500;
-				font-size: 0.93em;
+				display: inline-block; margin-top: 1.2em;
+				color: var(--accent); text-decoration: none;
+				font-weight: 500; font-size: 0.93em;
 			}
-			.view-all:hover {
-				text-decoration: underline;
-			}
+			.view-all:hover { text-decoration: underline; }
 
 			@media (max-width: 768px) {
 				.hero {
 					grid-template-columns: 1fr;
-					gap: 1.5em;
-					margin: 1.5em auto;
+					gap: 1.5em; margin: 1.5em auto;
 				}
-			.profile, .post-feed, .stats-card, .github-card, .friends-card { grid-column: 1; grid-row: auto; }
+				.profile, .post-feed, .stats-card, .tags-card, .github-card, .friends-card {
+					grid-column: 1; grid-row: auto;
+				}
 				.profile      { order: 1; }
 				.post-feed    { order: 2; }
 				.stats-card   { order: 3; }
-				.github-card  { order: 4; }
-				.friends-card { order: 5; }
+				.tags-card    { order: 4; }
+				.github-card  { order: 5; }
+				.friends-card { order: 6; }
+				.featured-grid { grid-template-columns: 1fr; }
 			}
 		</style>
 	</head>
@@ -411,143 +352,152 @@ const stats = {
 		<Header />
 		<main id="main-content">
 			<div class="hero">
+				<!-- Profile -->
 				<aside class="profile">
-						<Image
-							class="avatar"
-							src={avatarPlaceholder}
-							alt="kaito's avatar"
-							width={120}
-							height={120}
-						/>
-						<h1 class="profile-name">Kaito</h1>
-						<p class="profile-bio">
-							嵌入式软件工程师。<br />
-							喜欢摄影、骑行和捣鼓各种小工具。
-						</p>
-						<div class="profile-quote-wrapper">
-							<p class="profile-quote" id="profileQuote">"饭里盐加多了，就会咸"</p>
-							<span class="quote-cursor" id="quoteCursor" aria-hidden="true">|</span>
-						</div>
-						<div class="profile-links">
-							<a href="https://github.com/korolkk" target="_blank">
-								<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-									<path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
-								</svg>
-								GitHub
+					<Image class="avatar" src={avatarPlaceholder} alt="kaito's avatar" width={120} height={120} loading="lazy" />
+					<h1 class="profile-name">Kaito</h1>
+					<p class="profile-bio">
+						嵌入式软件工程师。<br />
+						喜欢摄影、骑行和捣鼓各种小工具。
+					</p>
+					<div class="profile-quote-wrapper">
+						<p class="profile-quote" id="profileQuote">"饭里盐加多了，就会咸"</p>
+						<span class="quote-cursor" id="quoteCursor" aria-hidden="true">|</span>
+					</div>
+					<div class="profile-links">
+						<a href="https://github.com/korolkk" target="_blank">
+							<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+							GitHub
+						</a>
+						<a href="mailto:704788475@qq.com">
+							<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4Zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1H2Zm13 2.383-4.708 2.825L15 11.105V5.383Zm-.034 6.876-5.64-3.471L8 9.583l-1.326-.795-5.64 3.47A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.741ZM1 11.105l4.708-2.897L1 5.383v5.722Z"/></svg>
+							Email
+						</a>
+					</div>
+					</div>
+				</aside>
+
+				<!-- Stats -->
+				<section class="card stats-card">
+					<h2 class="section-title">站点统计</h2>
+					<table class="stats-table">
+						<tbody>
+							<tr>
+								<td class="stat-icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></td>
+								<td class="stat-label">文章</td>
+								<td class="stat-value" data-target={stats.articleCount}><span class="stat-num">0</span></td>
+							</tr>
+							<tr>
+								<td class="stat-icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></td>
+								<td class="stat-label">标签</td>
+								<td class="stat-value" data-target={stats.tagCount}><span class="stat-num">0</span></td>
+							</tr>
+							<tr>
+								<td class="stat-icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg></td>
+								<td class="stat-label">总字数</td>
+								<td class="stat-value" data-target={stats.wordCount}><span class="stat-num">0</span></td>
+							</tr>
+							<!-- Step 4: Year/month stats -->
+							<tr>
+								<td class="stat-icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="6" x2="12" y2="12"/><line x1="12" y1="12" x2="16" y2="14"/></svg></td>
+								<td class="stat-label">今年</td>
+								<td class="stat-value" data-target={thisYearPosts}><span class="stat-num">0</span> <span class="stat-unit">篇</span></td>
+							</tr>
+							<tr>
+								<td class="stat-icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></td>
+								<td class="stat-label">本月</td>
+								<td class="stat-value" data-target={thisMonthPosts}><span class="stat-num">0</span> <span class="stat-unit">篇</span></td>
+							</tr>
+							<tr>
+								<td class="stat-icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></td>
+								<td class="stat-label">运行</td>
+								<td class="stat-value" data-target={stats.runDays}><span class="stat-num">0</span> <span class="stat-unit">天</span></td>
+							</tr>
+							<tr>
+								<td class="stat-icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></td>
+								<td class="stat-label">活跃</td>
+								<td class="stat-value" data-target={stats.lastActiveDays}><span class="stat-num">0</span> <span class="stat-unit">天前</span></td>
+							</tr>
+						</tbody>
+					</table>
+				</section>
+
+				<!-- Step 1: Top Tags -->
+				<section class="card tags-card">
+					<h2 class="section-title">热门标签</h2>
+					<div class="tags-grid">
+						{topTags.map(([tag, count]) => (
+							<a class="tag-entry" href={`${base}blog?tag=${encodeURIComponent(tag)}`}>
+								<span class="tag-entry-name">{tag}</span>
+								<span class="tag-entry-count">{count}</span>
 							</a>
-							<a href="mailto:704788475@qq.com">
-								<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-									<path fill="currentColor" d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4Zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1H2Zm13 2.383-4.708 2.825L15 11.105V5.383Zm-.034 6.876-5.64-3.471L8 9.583l-1.326-.795-5.64 3.47A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.741ZM1 11.105l4.708-2.897L1 5.383v5.722Z"/>
-								</svg>
-								Email
-							</a>
-						</div>
-					</aside>
+						))}
+					</div>
+				</section>
 
-					<section class="card stats-card">
-						<h2 class="section-title">站点统计</h2>
-						<table class="stats-table">
-							<tbody>
-								<tr>
-									<td class="stat-icon">
-										<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-									</td>
-									<td class="stat-label">文章</td>
-									<td class="stat-value" data-target={stats.articleCount}><span class="stat-num">0</span></td>
-								</tr>
-								<tr>
-									<td class="stat-icon">
-										<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
-									</td>
-									<td class="stat-label">标签</td>
-									<td class="stat-value" data-target={stats.tagCount}><span class="stat-num">0</span></td>
-								</tr>
-								<tr>
-									<td class="stat-icon">
-										<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
-									</td>
-									<td class="stat-label">总字数</td>
-									<td class="stat-value" data-target={stats.wordCount}><span class="stat-num">0</span></td>
-								</tr>
-								<tr>
-									<td class="stat-icon">
-										<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-									</td>
-									<td class="stat-label">运行天数</td>
-									<td class="stat-value" data-target={stats.runDays}><span class="stat-num">0</span> <span class="stat-unit">天</span></td>
-								</tr>
-								<tr>
-									<td class="stat-icon">
-										<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-									</td>
-									<td class="stat-label">最后活动</td>
-									<td class="stat-value" data-target={stats.lastActiveDays}><span class="stat-num">0</span> <span class="stat-unit">天前</span></td>
-								</tr>
-							</tbody>
-						</table>
-					</section>
+				<!-- GitHub -->
+				<section class="card github-card">
+					<h2 class="section-title">GitHub 贡献</h2>
+					<div class="gh-heatmap" id="ghHeatmap">
+						<div class="gh-loading" id="ghLoading"><span>加载中...</span></div>
+						<div class="gh-grid" id="ghGrid" style="display:none;"></div>
+						<div class="gh-error" id="ghError" style="display:none;">
+							<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+							无法加载贡献数据
+						</div>
+					</div>
+					<div class="gh-total" id="ghTotal" style="display:none;">过去一年共 <strong id="ghTotalCount">0</strong> 次贡献</div>
+				</section>
 
-					<section class="card github-card">
-						<h2 class="section-title">GitHub 贡献</h2>
-						<div class="gh-heatmap" id="ghHeatmap">
-							<div class="gh-loading" id="ghLoading">
-								<span>加载中...</span>
-							</div>
-							<div class="gh-grid" id="ghGrid" style="display:none;">
-							</div>
-							<div class="gh-error" id="ghError" style="display:none;">
-								<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-								无法加载贡献数据
-							</div>
-						</div>
-						<div class="gh-total" id="ghTotal" style="display:none;">
-							过去一年共 <strong id="ghTotalCount">0</strong> 次贡献
-						</div>
-					</section>
+				<!-- Friends -->
+				<section class="card friends-card">
+					<h2 class="section-title">友情链接</h2>
+					<div class="friend-list">
+						<span class="friend-link" role="link" aria-disabled="true" tabindex="-1">
+							<span class="friend-avatar">D</span><span class="friend-info"><span class="friend-name">DevCafe</span><span class="friend-desc">专注前端工程化的技术博客</span></span>
+						</span>
+						<span class="friend-link" role="link" aria-disabled="true" tabindex="-1">
+							<span class="friend-avatar">S</span><span class="friend-info"><span class="friend-name">StarOcean</span><span class="friend-desc">全栈开发者的笔记与思考</span></span>
+						</span>
+						<span class="friend-link" role="link" aria-disabled="true" tabindex="-1">
+							<span class="friend-avatar">P</span><span class="friend-info"><span class="friend-name">PixelLab</span><span class="friend-desc">设计与代码的交汇之地</span></span>
+						</span>
+						<span class="friend-link" role="link" aria-disabled="true" tabindex="-1">
+							<span class="friend-avatar">M</span><span class="friend-info"><span class="friend-name">MoonLight</span><span class="friend-desc">独立开发者的产品日志</span></span>
+						</span>
+					</div>
+				</section>
 
-					<section class="card friends-card">
-						<h2 class="section-title">友情链接</h2>
-						<div class="friend-list">
-							<span class="friend-link" role="link" aria-disabled="true" tabindex="-1">
-								<span class="friend-avatar">D</span>
-								<span class="friend-info">
-									<span class="friend-name">DevCafe</span>
-									<span class="friend-desc">专注前端工程化的技术博客</span>
-								</span>
-							</span>
-							<span class="friend-link" role="link" aria-disabled="true" tabindex="-1">
-								<span class="friend-avatar">S</span>
-								<span class="friend-info">
-									<span class="friend-name">StarOcean</span>
-									<span class="friend-desc">全栈开发者的笔记与思考</span>
-								</span>
-							</span>
-							<span class="friend-link" role="link" aria-disabled="true" tabindex="-1">
-								<span class="friend-avatar">P</span>
-								<span class="friend-info">
-									<span class="friend-name">PixelLab</span>
-									<span class="friend-desc">设计与代码的交汇之地</span>
-								</span>
-							</span>
-							<span class="friend-link" role="link" aria-disabled="true" tabindex="-1">
-								<span class="friend-avatar">M</span>
-								<span class="friend-info">
-									<span class="friend-name">MoonLight</span>
-									<span class="friend-desc">独立开发者的产品日志</span>
-								</span>
-							</span>
-						</div>
-					</section>
+				<!-- Post feed -->
 				<section class="post-feed">
 					<h2 class="section-title">最新文章</h2>
+
+					<!-- Step 2: Featured posts -->
+					{
+						featuredPosts.length > 0 && (
+							<div class="featured-grid">
+								{featuredPosts.map(fp => (
+									<a class="featured-card" href={`${base}blog/${fp.id}/`}>
+										{fp.data.heroImage && (
+											<Image class="featured-cover" src={fp.data.heroImage} alt="" width={160} height={100} loading="lazy" />
+										)}
+										<div class="featured-info">
+											<span class="featured-badge">精选</span>
+											<div class="featured-title">{fp.data.title}</div>
+											<div class="featured-date"><FormattedDate date={fp.data.pubDate} /></div>
+										</div>
+									</a>
+								))}
+							</div>
+						)
+					}
+
 					<ul class="post-list">
 						{posts.map((post) => (
 							<li>
 								<a href={`${base}blog/${post.id}/`}>
 									<div class="post-title">{post.data.title}</div>
-									<div class="post-date">
-										<FormattedDate date={post.data.pubDate} />
-									</div>
+									<div class="post-date"><FormattedDate date={post.data.pubDate} /></div>
 									<div class="post-desc">{post.data.description}</div>
 								</a>
 							</li>
@@ -562,19 +512,17 @@ const stats = {
 
 		<script is:inline>
 			(function () {
-				// ========== Feature 1: GitHub contribution heatmap ==========
+				// GitHub contribution heatmap
 				var heatmapEl = document.getElementById('ghHeatmap');
 				var loadingEl = document.getElementById('ghLoading');
 				var gridEl = document.getElementById('ghGrid');
 				var errorEl = document.getElementById('ghError');
 				var totalEl = document.getElementById('ghTotal');
 				var totalCountEl = document.getElementById('ghTotalCount');
-
 				if (!heatmapEl) return;
 
 				var storedData = null;
 				var levelColors = [];
-
 				function ghLevel(count) {
 					if (count === 0) return 0;
 					if (count <= 3) return 1;
@@ -582,7 +530,6 @@ const stats = {
 					if (count <= 13) return 3;
 					return 4;
 				}
-
 				function loadColors() {
 					var style = getComputedStyle(document.documentElement);
 					levelColors = [
@@ -593,55 +540,31 @@ const stats = {
 						style.getPropertyValue('--gh-level-4').trim(),
 					];
 				}
-
 				function drawCanvas(data) {
-					loadColors();
-					gridEl.innerHTML = '';
-
-					var rows = 7;
-					var sq = 8;
-					var gap = 2;
-					var padding = 2;
+					loadColors(); gridEl.innerHTML = '';
+					var rows = 7, sq = 8, gap = 2, padding = 2;
 					var maxWidth = gridEl.clientWidth || 300;
-
-					// Hold square size fixed, reduce columns to fit
 					var cols = Math.floor((maxWidth - padding * 2 + gap) / (sq + gap));
-					cols = Math.min(53, cols);
-					cols = Math.max(10, cols);
-
+					cols = Math.min(53, Math.max(10, cols));
 					var needed = cols * rows;
-					// Trim data to latest `needed` days
 					var contributions = data.length > needed ? data.slice(-needed) : data;
-
 					var dpr = window.devicePixelRatio || 1;
 					var w = cols * (sq + gap) - gap + padding * 2;
 					var h = rows * (sq + gap) - gap + padding * 2;
-
 					var canvas = document.createElement('canvas');
-					canvas.width = w * dpr;
-					canvas.height = h * dpr;
-					canvas.style.width = w + 'px';
-					canvas.style.height = h + 'px';
-					var ctx = canvas.getContext('2d');
-					ctx.scale(dpr, dpr);
-
-					// Total from full year data, not just drawn subset
+					canvas.width = w * dpr; canvas.height = h * dpr;
+					canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
+					var ctx = canvas.getContext('2d'); ctx.scale(dpr, dpr);
 					var fullTotal = 0;
-					for (var t = 0; t < data.length; t++) {
-						fullTotal += data[t];
-					}
-
+					for (var t = 0; t < data.length; t++) fullTotal += data[t];
 					for (var i = 0; i < contributions.length; i++) {
-						var col = Math.floor(i / rows);
-						var row = i % rows;
+						var col = Math.floor(i / rows), row = i % rows;
 						var level = ghLevel(contributions[i]);
-						var x = padding + col * (sq + gap);
-						var y = padding + row * (sq + gap);
+						var x = padding + col * (sq + gap), y = padding + row * (sq + gap);
 						ctx.fillStyle = levelColors[level];
 						var r = Math.max(1, Math.floor(sq * 0.2));
 						ctx.beginPath();
-						ctx.moveTo(x + r, y);
-						ctx.lineTo(x + sq - r, y);
+						ctx.moveTo(x + r, y); ctx.lineTo(x + sq - r, y);
 						ctx.quadraticCurveTo(x + sq, y, x + sq, y + r);
 						ctx.lineTo(x + sq, y + sq - r);
 						ctx.quadraticCurveTo(x + sq, y + sq, x + sq - r, y + sq);
@@ -649,46 +572,25 @@ const stats = {
 						ctx.quadraticCurveTo(x, y + sq, x, y + sq - r);
 						ctx.lineTo(x, y + r);
 						ctx.quadraticCurveTo(x, y, x + r, y);
-						ctx.closePath();
-						ctx.fill();
+						ctx.closePath(); ctx.fill();
 					}
-
 					gridEl.appendChild(canvas);
-
 					totalCountEl.textContent = fullTotal.toLocaleString('zh-CN');
 					totalEl.style.display = 'block';
 				}
-
-				function showError() {
-					loadingEl.style.display = 'none';
-					errorEl.style.display = 'flex';
-				}
-
-				// Watch theme changes to redraw heatmap
-				var themeObserver = new MutationObserver(function () {
-					if (storedData) {
-						drawCanvas(storedData);
-					}
-				});
+				function showError() { loadingEl.style.display = 'none'; errorEl.style.display = 'flex'; }
+				var themeObserver = new MutationObserver(function () { if (storedData) drawCanvas(storedData); });
 				themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-
 				fetch('https://github-contributions-api.deno.dev/korolkk.json')
-					.then(function (resp) {
-						if (!resp.ok) throw new Error('HTTP ' + resp.status);
-						return resp.json();
-					})
+					.then(function (resp) { if (!resp.ok) throw new Error('HTTP ' + resp.status); return resp.json(); })
 					.then(function (data) {
-						// data.contributions is an array of weeks, each week is an array of day objects
-						// Flatten and extract contributionCount from each day
 						var weeks = data.contributions || [];
 						var contributions = [];
-						for (var w = 0; w < weeks.length; w++) {
-							for (var d = 0; d < weeks[w].length; d++) {
+						for (var w = 0; w < weeks.length; w++)
+							for (var d = 0; d < weeks[w].length; d++)
 								contributions.push(weeks[w][d].contributionCount || 0);
-							}
-						}
 						if (contributions.length === 0) throw new Error('Empty data');
-						var needed = 53 * 7; // 371
+						var needed = 53 * 7;
 						if (contributions.length < needed) {
 							var pad = new Array(needed - contributions.length).fill(0);
 							contributions = pad.concat(contributions);
@@ -696,55 +598,34 @@ const stats = {
 							contributions = contributions.slice(-needed);
 						}
 						storedData = contributions;
-						loadingEl.style.display = 'none';
-						gridEl.style.display = 'flex';
-						// Defer drawing until layout is computed
-						requestAnimationFrame(function () {
-							drawCanvas(contributions);
-						});
+						loadingEl.style.display = 'none'; gridEl.style.display = 'flex';
+						requestAnimationFrame(function () { drawCanvas(contributions); });
 					})
-					.catch(function () {
-						showError();
-					});
+					.catch(function () { showError(); });
 			})();
 
-			// ========== Feature 2: Number counting animation ==========
+			// Number counting animation
 			(function () {
 				var statValues = document.querySelectorAll('.stat-value[data-target]');
 				if (statValues.length === 0) return;
-
 				var animated = false;
-
-				function fmtNum(n) {
-					return n.toLocaleString('zh-CN');
-				}
-
-				function easeOutExpo(t) {
-					return t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
-				}
-
+				function fmtNum(n) { return n.toLocaleString('zh-CN'); }
+				function easeOutExpo(t) { return t === 1 ? 1 : 1 - Math.pow(2, -10 * t); }
 				function animate(el, targetVal, duration) {
 					var start = performance.now();
 					var numSpan = el.querySelector('.stat-num');
 					if (!numSpan) return;
-
 					function step(now) {
 						var elapsed = now - start;
 						var progress = Math.min(elapsed / duration, 1);
 						var eased = easeOutExpo(progress);
 						var current = Math.round(eased * targetVal);
 						numSpan.textContent = fmtNum(current);
-
-						if (progress < 1) {
-							requestAnimationFrame(step);
-						} else {
-							numSpan.textContent = fmtNum(targetVal);
-						}
+						if (progress < 1) requestAnimationFrame(step);
+						else numSpan.textContent = fmtNum(targetVal);
 					}
-
 					requestAnimationFrame(step);
 				}
-
 				var observer = new IntersectionObserver(function (entries) {
 					entries.forEach(function (entry) {
 						if (entry.isIntersecting && !animated) {
@@ -758,13 +639,8 @@ const stats = {
 						}
 					});
 				}, { threshold: 0.3 });
-
 				var statsCard = document.querySelector('.stats-card');
-				if (statsCard) {
-					observer.observe(statsCard);
-				}
-
-				// Fallback: if observer never fires (e.g. stats already visible), animate after 1s
+				if (statsCard) observer.observe(statsCard);
 				setTimeout(function () {
 					if (!animated) {
 						animated = true;
@@ -777,48 +653,29 @@ const stats = {
 				}, 800);
 			})();
 
-			// ========== Feature 3: Typewriter effect ==========
+			// Typewriter effect
 			(function () {
 				var quoteEl = document.getElementById('profileQuote');
 				var cursorEl = document.getElementById('quoteCursor');
 				if (!quoteEl || !cursorEl) return;
-
 				var fullText = quoteEl.textContent.trim();
 				if (!fullText) return;
-
-				quoteEl.textContent = '';
-				cursorEl.classList.add('visible');
-
+				quoteEl.textContent = ''; cursorEl.classList.add('visible');
 				var i = 0;
-
 				function typeDelay(ch) {
 					var code = ch.charCodeAt(0);
-					// CJK characters
-					if ((code >= 0x4E00 && code <= 0x9FFF) ||
-						(code >= 0x3400 && code <= 0x4DBF) ||
-						(code >= 0x3000 && code <= 0x303F) ||
-						(code >= 0xFF00 && code <= 0xFFEF)) {
-						return 80;
-					}
-					// Punctuation
-					if (/[,.!?;:，。！？；：、""''「」『』【】（）]/.test(ch)) {
-						return 150;
-					}
+					if ((code >= 0x4E00 && code <= 0x9FFF) || (code >= 0x3400 && code <= 0x4DBF) || (code >= 0x3000 && code <= 0x303F) || (code >= 0xFF00 && code <= 0xFFEF)) return 80;
+					if (/[,.!?;:，。！？；：、""''「」『』【】（）]/.test(ch)) return 150;
 					return 100;
 				}
-
 				function typeNext() {
 					if (i < fullText.length) {
-						quoteEl.textContent += fullText.charAt(i);
-						i++;
+						quoteEl.textContent += fullText.charAt(i); i++;
 						var delay = typeDelay(fullText.charAt(i - 1));
 						delay += Math.floor(Math.random() * 30);
 						setTimeout(typeNext, delay);
-					} else {
-						cursorEl.classList.add('blink');
-					}
+					} else { cursorEl.classList.add('blink'); }
 				}
-
 				setTimeout(typeNext, 300);
 			})();
 		</script>
