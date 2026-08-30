@@ -147,20 +147,54 @@ if [ "$DEPLOY_MODE" = "docker" ]; then
     ok "Docker 容器已重建（应用最新 cookie 配置）"
   fi
 else
-  if [ ! -d "$RSSHUB_DIR/.git" ]; then
-    git clone --depth 1 https://github.com/DIYgod/RSSHub.git "$RSSHUB_DIR"
-    cd "$RSSHUB_DIR"
-    # --legacy-peer-deps：RSSHub 上游 eslint 10 与 eslint-nibble peer 依赖冲突，
-    # 官方部署亦使用该参数跳过（见 RSSHub 文档）
-    # --no-audit --no-fund：跳过安全审计/赞助提示，减少输出与耗时
-    echo ">> npm install（首次安装需 5-15 分钟，请耐心等待）..."
-    npm install --omit=dev --legacy-peer-deps --no-audit --no-fund
-  else
-    cd "$RSSHUB_DIR"
-    git pull
-    echo ">> npm install（如依赖有更新需几分钟，请耐心等待）..."
-    npm install --omit=dev --legacy-peer-deps --no-audit --no-fund
+  # GitHub 直连在国内服务器常超时，准备镜像列表自动回退（可用环境变量 RSSHUB_GIT_MIRROR 覆盖）
+  RSSHUB_REPO="https://github.com/DIYgod/RSSHub.git"
+  RSSHUB_MIRRORS=(
+    "https://gh-proxy.com/https://github.com/DIYgod/RSSHub.git"
+    "https://ghfast.top/https://github.com/DIYgod/RSSHub.git"
+    "https://github.moeyy.xyz/https://github.com/DIYgod/RSSHub.git"
+  )
+  if [ -n "${RSSHUB_GIT_MIRROR:-}" ]; then
+    RSSHUB_MIRRORS=("$RSSHUB_GIT_MIRROR")
   fi
+
+  clone_or_update() {
+    if [ ! -d "$RSSHUB_DIR/.git" ]; then
+      local src="$RSSHUB_REPO"
+      local ok=0
+      for i in 1 2 3; do
+        echo ">> git clone $src（第 ${i} 次尝试）..."
+        if git clone --depth 1 "$src" "$RSSHUB_DIR" 2>&1; then ok=1; break; fi
+        # 直连失败则依次尝试镜像
+        for m in "${RSSHUB_MIRRORS[@]}"; do
+          [ "$m" = "$src" ] && continue
+          echo ">> 直连失败，尝试镜像：$m"
+          if git clone --depth 1 "$m" "$RSSHUB_DIR" 2>&1; then ok=1; break 2; fi
+        done
+        [ "$ok" = 1 ] && break
+        warn "clone 失败，5 秒后重试（$i/3）..."
+        sleep 5
+      done
+      if [ "$ok" != 1 ]; then
+        fail "无法 clone RSSHub（直连与镜像均失败），请检查服务器网络"
+      fi
+    else
+      echo ">> git pull 更新代码（失败时尝试镜像）..."
+      (cd "$RSSHUB_DIR" && git pull) || {
+        warn "git pull 失败，尝试通过镜像重新拉取..."
+        cd /opt
+        mv "$RSSHUB_DIR" "${RSSHUB_DIR}.bak"
+        clone_or_update
+      }
+    fi
+  }
+  clone_or_update
+  cd "$RSSHUB_DIR"
+  # --legacy-peer-deps：RSSHub 上游 eslint 10 与 eslint-nibble peer 依赖冲突，
+  # 官方部署亦使用该参数跳过（见 RSSHub 文档）
+  # --no-audit --no-fund：跳过安全审计/赞助提示，减少输出与耗时
+  echo ">> npm install（首次安装需 5-15 分钟，请耐心等待）..."
+  npm install --omit=dev --legacy-peer-deps --no-audit --no-fund
 
   # RSSHub 新版为 TS 源码，start 执行 node dist/index.mjs，必须先构建生成 dist/。
   # build 脚本（build:routes + tsdown）依赖 devDependencies 中的构建工具，
