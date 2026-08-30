@@ -115,11 +115,13 @@ else
   if [ ! -d "$RSSHUB_DIR/.git" ]; then
     git clone --depth 1 https://github.com/DIYgod/RSSHub.git "$RSSHUB_DIR"
     cd "$RSSHUB_DIR"
-    npm install --omit=dev
+    # --legacy-peer-deps：RSSHub 上游 eslint 10 与 eslint-nibble peer 依赖冲突，
+    # 官方部署亦使用该参数跳过（见 RSSHub 文档）
+    npm install --omit=dev --legacy-peer-deps
   else
     cd "$RSSHUB_DIR"
     git pull
-    npm install --omit=dev
+    npm install --omit=dev --legacy-peer-deps
   fi
 
   # systemd 服务（cookie 通过 EnvironmentFile 注入）
