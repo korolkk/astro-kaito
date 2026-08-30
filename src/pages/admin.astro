@@ -420,6 +420,7 @@ import Header from '../components/Header.astro';
 			<div id="adminPanel" class="admin-panel">
 				<nav class="admin-tabs" id="adminTabs">
 					<button class="admin-tab active" data-tab="stats">统计</button>
+					<button class="admin-tab" data-tab="xhs">小红书</button>
 					<button class="admin-tab" data-tab="comments">评论</button>
 					<button class="admin-tab" data-tab="articles">文章</button>
 					<button class="admin-tab" data-tab="chatlogs">对话记录</button>
@@ -436,6 +437,21 @@ import Header from '../components/Header.astro';
 							<tbody></tbody>
 						</table>
 					</div>
+				</div>
+
+				<!-- Xiaohongshu Tab -->
+				<div id="tabXhs" class="admin-tab-content" style="display:none;">
+					<div class="admin-section-title">小红书账号数据</div>
+					<div class="admin-stats-grid" id="xhsStatsGrid"></div>
+					<div id="xhsNotice" class="admin-empty" style="display:none;"></div>
+					<div class="admin-section-title">最近笔记</div>
+					<div class="admin-table-wrap">
+						<table class="admin-table" id="xhsNotesTbl">
+							<thead><tr><th>笔记</th><th>发布时间</th><th>点赞</th><th>评论</th><th>收藏</th><th>链接</th></tr></thead>
+							<tbody></tbody>
+						</table>
+					</div>
+					<div class="admin-empty" id="xhsLoading" style="display:none;">加载中...</div>
 				</div>
 
 				<!-- Comments Tab -->
@@ -671,6 +687,7 @@ A.apiFetch = function (url, opts) {
 		var btn = document.querySelector('#adminTabs [data-tab="' + name + '"]');
 		if (btn) btn.classList.add('active');
 		if (name === 'stats') A.loadStats();
+		if (name === 'xhs') A.loadXhs();
 		if (name === 'comments') A.loadComments();
 		if (name === 'articles') A.loadArticles();
 		if (name === 'chatlogs') A.loadChatLogs();
@@ -719,6 +736,83 @@ A.apiFetch = function (url, opts) {
 				tbody.appendChild(tr);
 			}
 		}).catch(function () { A.toast('加载统计数据失败', 'error'); });
+	};
+})();
+</script>
+
+<script is:inline>
+// ===== Xiaohongshu Tab =====
+(function () {
+	A.loadXhs = function () {
+		var grid = document.getElementById('xhsStatsGrid');
+		var notice = document.getElementById('xhsNotice');
+		var tbody = document.querySelector('#xhsNotesTbl tbody');
+		var loading = document.getElementById('xhsLoading');
+		grid.innerHTML = '';
+		tbody.innerHTML = '';
+		notice.style.display = 'none';
+		loading.style.display = 'block';
+
+		A.apiFetch(A.api('/api/admin/xhs/stats')).then(function (r) { return r.json(); }).then(function (d) {
+			loading.style.display = 'none';
+			if (!d.configured) {
+				notice.style.display = 'block';
+				notice.textContent = '未配置小红书数据源：请在服务器上设置 XHS_RSSHUB_URL 和 XHS_USER_ID 环境变量（自建 RSSHub 方案），并部署 RSSHub 后重启 api-bridge。';
+				return;
+			}
+			var cards = [
+				{ v: d.noteCount, l: '笔记数' },
+				{ v: d.totalLikes, l: '总点赞' },
+				{ v: d.totalComments, l: '总评论' },
+				{ v: d.totalCollects, l: '总收藏' },
+			];
+			cards.forEach(function (c) {
+				var card = A.cid(document.createElement('div'));
+				card.className = 'admin-stat-card';
+				card.innerHTML = '<div class="admin-stat-value">' + (c.v || 0).toLocaleString('zh-CN') + '</div><div class="admin-stat-label">' + c.l + '</div>';
+				grid.appendChild(card);
+			});
+
+			var meta = A.cid(document.createElement('div'));
+			meta.className = 'admin-empty';
+			meta.style.display = 'block';
+			meta.style.padding = '0.4em 0 0';
+			meta.textContent = (d.cached ? '缓存数据 · ' : '实时数据 · ') + '抓取时间 ' + (d.fetchedAt ? d.fetchedAt.replace('T', ' ').substring(0, 19) : '-');
+			grid.parentNode.insertBefore(meta, grid.nextSibling);
+
+			if (!d.recentPosts || !d.recentPosts.length) {
+				var tr = A.cid(document.createElement('tr'));
+				tr.innerHTML = '<td colspan="6" class="admin-empty">暂无笔记数据</td>';
+				tbody.appendChild(tr);
+				return;
+			}
+			d.recentPosts.forEach(function (p) {
+				var tr = A.cid(document.createElement('tr'));
+				var titleCell = p.cover
+					? '<div style="display:flex;align-items:center;gap:0.6em;"><img src="' + A.esc(p.cover) + '" alt="" style="width:40px;height:40px;border-radius:6px;object-fit:cover;flex-shrink:0;" loading="lazy" referrerpolicy="no-referrer" /><span class="content-preview">' + A.esc(p.title) + '</span></div>'
+					: '<span class="content-preview">' + A.esc(p.title) + '</span>';
+				var link = p.link ? '<a href="' + A.esc(p.link) + '" target="_blank" rel="noopener noreferrer" style="color:var(--accent);">打开</a>' : '-';
+				var pubDate = '';
+				if (p.pubDate) {
+					try {
+						var dt = new Date(p.pubDate);
+						if (!isNaN(dt.getTime())) pubDate = dt.getFullYear() + '-' + String(dt.getMonth()+1).padStart(2,'0') + '-' + String(dt.getDate()).padStart(2,'0');
+						else pubDate = p.pubDate;
+					} catch(e) { pubDate = p.pubDate; }
+				}
+				tr.innerHTML =
+					'<td class="col-content">' + titleCell + '</td>' +
+					'<td class="col-narrow">' + A.esc(pubDate) + '</td>' +
+					'<td class="col-narrow">' + (p.likes || 0) + '</td>' +
+					'<td class="col-narrow">' + (p.comments || 0) + '</td>' +
+					'<td class="col-narrow">' + (p.collects || 0) + '</td>' +
+					'<td class="col-narrow">' + link + '</td>';
+				tbody.appendChild(tr);
+			});
+		}).catch(function () {
+			loading.style.display = 'none';
+			A.toast('加载小红书数据失败', 'error');
+		});
 	};
 })();
 </script>

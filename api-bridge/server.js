@@ -42,6 +42,11 @@ const DEPLOY_SECRET = process.env.DEPLOY_SECRET || '';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
 const SESSION_DURATION_MS = 24 * 60 * 60 * 1000;
 
+// 小红书数据源（自建 RSSHub）
+const XHS_RSSHUB_URL = (process.env.XHS_RSSHUB_URL || '').replace(/\/+$/, '');
+const XHS_USER_ID = process.env.XHS_USER_ID || '';
+const XHS_CACHE_TTL_MS = (parseInt(process.env.XHS_CACHE_TTL, 10) || 10) * 60 * 1000;
+
 // 文章目录（管理员编辑文章时读写）
 const BLOG_CONTENT_DIR = process.env.BLOG_CONTENT_DIR || '/var/www/kaitohub/src/content/blog';
 
@@ -420,6 +425,100 @@ function notifyWeChat(msg) {
 // ======================
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// ======================
+// 小红书数据模块（通过自建 RSSHub 抓取用户笔记）
+// 环境变量：XHS_RSSHUB_URL（RSSHub 实例地址）、XHS_USER_ID（小红书用户 ID）
+// 公开接口：GET /api/xhs/posts — 首页精选
+// 后台接口：GET /api/admin/xhs/stats — 互动数据统计
+// ======================
+let xhsCache = { at: 0, data: null };
+
+function xhsConfigured() {
+  return !!(XHS_RSSHUB_URL && XHS_USER_ID);
+}
+
+/** 从 RSS item 块中提取单字段（去 CDATA） */
+function rssField(block, tag) {
+  const re = new RegExp(`<${tag}(?:[^>]*)>([\\s\\S]*?)<\\/${tag}>`, 'i');
+  const m = re.exec(block);
+  if (!m) return '';
+  return m[1].replace(/<!\[CDATA\[|\]\]>/g, '').trim();
+}
+
+/** 从 description 中提取第一张图片 URL */
+function firstImage(html) {
+  const m = /<img[^>]+src=["']([^"']+)["']/i.exec(html);
+  return m ? m[1] : '';
+}
+
+/** 从 item 块中提取数字字段（兼容多种命名） */
+function rssNumber(block, names) {
+  for (const name of names) {
+    const re = new RegExp(`<${name}(?:[^>]*)>([^<]+)</${name}>`, 'i');
+    const m = re.exec(block);
+    if (m) {
+      const n = parseInt(m[1].trim(), 10);
+      if (!isNaN(n)) return n;
+    }
+  }
+  return 0;
+}
+
+/** 解析 RSS 2.0 XML → 笔记数组 */
+function parseXhsRss(xml) {
+  const items = [];
+  const itemRe = /<item>([\s\S]*?)<\/item>/gi;
+  let m;
+  while ((m = itemRe.exec(xml)) !== null) {
+    const block = m[1];
+    const description = rssField(block, 'description');
+    items.push({
+      title: rssField(block, 'title'),
+      link: rssField(block, 'link'),
+      pubDate: rssField(block, 'pubDate'),
+      cover: firstImage(description),
+      description: description.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().substring(0, 200),
+      likes: rssNumber(block, ['upvotes', 'likedCount', 'likeCount', 'likes']),
+      comments: rssNumber(block, ['commentCount', 'comments']),
+      collects: rssNumber(block, ['collectedCount', 'collects']),
+    });
+  }
+  return items;
+}
+
+/** 从 RSSHub 拉取用户笔记（带 TTL 缓存） */
+async function fetchXhsPosts() {
+  if (!xhsConfigured()) return { configured: false, posts: [] };
+  const now = Date.now();
+  if (xhsCache.data && now - xhsCache.at < XHS_CACHE_TTL_MS) {
+    return { configured: true, cached: true, ...xhsCache.data };
+  }
+  const url = `${XHS_RSSHUB_URL}/xiaohongshu/user/${XHS_USER_ID}/notes`;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 20_000);
+  try {
+    const resp = await fetch(url, { signal: controller.signal, headers: { 'User-Agent': 'KaitoHub/1.0' } });
+    if (!resp.ok) throw new Error(`RSSHub HTTP ${resp.status}`);
+    const xml = await resp.text();
+    const posts = parseXhsRss(xml);
+    xhsCache = { at: now, data: { fetchedAt: new Date().toISOString(), posts } };
+    return { configured: true, cached: false, ...xhsCache.data };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// 首页：最新小红书精选（无需登录）
+app.get('/api/xhs/posts', async (_req, res) => {
+  try {
+    const data = await fetchXhsPosts();
+    res.json(data);
+  } catch (err) {
+    console.error('[xhs] 拉取失败:', err.message);
+    res.json({ configured: xhsConfigured(), error: '小红书数据暂不可用', posts: [] });
+  }
 });
 
 // ======================
@@ -884,6 +983,37 @@ app.get('/api/admin/stats', requireAuth, (req, res) => {
   } catch (err) {
     console.error('[admin/stats] error:', err.message);
     res.status(500).json({ error: '获取统计数据失败' });
+  }
+});
+
+// GET /api/admin/xhs/stats — 小红书账号数据统计（需登录）
+app.get('/api/admin/xhs/stats', requireAuth, async (_req, res) => {
+  try {
+    if (!xhsConfigured()) {
+      return res.json({
+        configured: false,
+        message: '未配置 XHS_RSSHUB_URL / XHS_USER_ID 环境变量',
+        posts: [],
+      });
+    }
+    const data = await fetchXhsPosts();
+    const posts = data.posts || [];
+    const totalLikes = posts.reduce((s, p) => s + (p.likes || 0), 0);
+    const totalComments = posts.reduce((s, p) => s + (p.comments || 0), 0);
+    const totalCollects = posts.reduce((s, p) => s + (p.collects || 0), 0);
+    res.json({
+      configured: true,
+      fetchedAt: data.fetchedAt || null,
+      cached: !!data.cached,
+      noteCount: posts.length,
+      totalLikes,
+      totalComments,
+      totalCollects,
+      recentPosts: posts.slice(0, 20),
+    });
+  } catch (err) {
+    console.error('[admin/xhs] error:', err.message);
+    res.status(500).json({ configured: xhsConfigured(), error: '获取小红书数据失败: ' + err.message });
   }
 });
 
