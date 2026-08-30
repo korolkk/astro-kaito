@@ -18,8 +18,26 @@ warn() { echo -e "${YELLOW}⚠${NC} $1"; }
 fail() { echo -e "${RED}✗ $1${NC}"; exit 1; }
 
 RSSHUB_PORT="${RSSHUB_PORT:-1200}"
-RSSHUB_DIR="/opt/rsshub"
+RSSHUB_DIR="/opt/rsshub/app"
 DATA_DIR="/opt/rsshub/data"
+
+# 兼容旧版本：曾把代码直接 clone 到 /opt/rsshub，如已存在则迁移到 app/ 子目录
+if [ -d "/opt/rsshub/.git" ] && [ ! -d "$RSSHUB_DIR" ]; then
+  warn "检测到旧版目录结构，正在迁移 /opt/rsshub → $RSSHUB_DIR ..."
+  mkdir -p "$(dirname "$RSSHUB_DIR")"
+  mv /opt/rsshub "$RSSHUB_DIR" 2>/dev/null || true
+  # 若迁移失败（data 目录占用），把代码目录移开即可
+  if [ ! -d "$RSSHUB_DIR/.git" ] && [ -d /opt/rsshub ]; then
+    mkdir -p "$RSSHUB_DIR"
+    shopt -s dotglob
+    for f in /opt/rsshub/*; do
+      [ "$f" = "/opt/rsshub/data" ] && continue
+      mv "$f" "$RSSHUB_DIR/" 2>/dev/null || true
+    done
+    shopt -u dotglob
+  fi
+  ok "迁移完成"
+fi
 
 # --------------- 1. 检查环境 ---------------
 step "1/4 检查运行环境"
