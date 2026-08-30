@@ -9,6 +9,7 @@ export default defineConfig({
 	site: 'https://kaitolab.net',
 	base: process.env.BASE_URL || '/',
 	integrations: [mdx(), sitemap({ filter: (page) => !page.includes('/admin/') })],
+	compressHTML: true,
 	markdown: {
 		shikiConfig: {
 			themes: {
