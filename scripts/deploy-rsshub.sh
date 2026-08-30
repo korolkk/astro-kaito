@@ -51,6 +51,41 @@ else
   fail "未检测到 Docker 或 Node.js 18+，请先安装其一"
 fi
 
+# --------------- 1.5 内存检查：内存不足且无 swap 时自动创建 ---------------
+step "1.5/4 检查内存与 Swap"
+TOTAL_MEM_MB=$(awk '/MemTotal/ {printf "%d", $2/1024}' /proc/meminfo 2>/dev/null || echo 0)
+SWAP_MB=$(awk '/SwapTotal/ {printf "%d", $2/1024}' /proc/meminfo 2>/dev/null || echo 0)
+ok "物理内存 ${TOTAL_MEM_MB}MB，Swap ${SWAP_MB}MB"
+
+# 只有 Node 模式需要本地编译依赖；Docker 镜像预构建，无需 swap
+if [ "$DEPLOY_MODE" = "node" ]; then
+  if [ "$TOTAL_MEM_MB" -gt 0 ] && [ "$TOTAL_MEM_MB" -lt 2048 ] && [ "$SWAP_MB" -eq 0 ]; then
+    warn "内存不足 2GB 且无 Swap，npm 安装原生模块（sharp 等）极易被 OOM 杀掉"
+    if [ "$(id -u)" -eq 0 ]; then
+      if [ -f /swapfile ] && swapon --show | grep -q /swapfile; then
+        ok "已存在 /swapfile 且已启用，跳过创建"
+      else
+        echo ">> 创建 2GB swap（/swapfile）..."
+        fallocate -l 2G /swapfile 2>/dev/null || dd if=/dev/zero of=/swapfile bs=1M count=2048 status=none
+        chmod 600 /swapfile
+        mkswap /swapfile >/dev/null
+        swapon /swapfile
+        if ! grep -q '^/swapfile ' /etc/fstab; then
+          echo '/swapfile none swap sw 0 0' >> /etc/fstab
+        fi
+        ok "Swap 已创建并启用（2GB），已写入 /etc/fstab 开机自启"
+      fi
+    else
+      warn "当前非 root，无法自动创建 swap。请手动执行："
+      echo "  sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile"
+      echo "  sudo mkswap /swapfile && sudo swapon /swapfile"
+      echo "  echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab"
+    fi
+  elif [ "$SWAP_MB" -gt 0 ]; then
+    ok "已有 Swap ${SWAP_MB}MB，可支撑 npm 编译"
+  fi
+fi
+
 # --------------- 2. 配置小红书 Cookie（强烈建议） ---------------
 step "2/4 配置小红书 Cookie"
 echo ""
