@@ -117,11 +117,14 @@ else
     cd "$RSSHUB_DIR"
     # --legacy-peer-deps：RSSHub 上游 eslint 10 与 eslint-nibble peer 依赖冲突，
     # 官方部署亦使用该参数跳过（见 RSSHub 文档）
-    npm install --omit=dev --legacy-peer-deps
+    # --no-audit --no-fund：跳过安全审计/赞助提示，减少输出与耗时
+    echo ">> npm install（首次安装需 5-15 分钟，请耐心等待）..."
+    npm install --omit=dev --legacy-peer-deps --no-audit --no-fund
   else
     cd "$RSSHUB_DIR"
     git pull
-    npm install --omit=dev --legacy-peer-deps
+    echo ">> npm install（如依赖有更新需几分钟，请耐心等待）..."
+    npm install --omit=dev --legacy-peer-deps --no-audit --no-fund
   fi
 
   # systemd 服务（cookie 通过 EnvironmentFile 注入）
