@@ -456,8 +456,12 @@ function readXhsCookie() {
 async function fetchXhsWithBrowser() {
   let pw = null;
   try {
-    // playwright-core 可能在 /app/node_modules（RSSHub 容器内）或 api-bridge 本地
-    const candidates = ['playwright-core', join('/app/node_modules', 'playwright-core')];
+    // playwright-core 查找：api-bridge 本地 / RSSHub 容器 / 宿主机 pw-tmp 独立目录
+    const candidates = [
+      'playwright-core',
+      join('/app/node_modules', 'playwright-core'),
+      join('/opt/pw-tmp/node_modules', 'playwright-core'),
+    ];
     for (const c of candidates) {
       try { pw = require(c); break; } catch {}
     }
