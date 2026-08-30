@@ -126,11 +126,20 @@ if [ "$DEPLOY_MODE" = "docker" ]; then
     DOCKER_ENV+=(-e "XIAOHONGSHU_COOKIE=$XHS_COOKIE")
     ok "已注入 XIAOHONGSHU_COOKIE（${#XHS_COOKIE} 字符）"
   fi
+  # 网络模式：默认 host（podman 的 CNI 端口映射常有转发问题，host 直接监听最可靠；
+  # 需要 bridge 时设置 RSSHUB_NETWORK=bridge）
+  RSSHUB_NETWORK="${RSSHUB_NETWORK:-host}"
+  if [ "$RSSHUB_NETWORK" = "host" ]; then
+    DOCKER_NET=("--network=host")
+    warn "使用 host 网络模式（RSSHub 直接监听 127.0.0.1:${RSSHUB_PORT}）"
+  else
+    DOCKER_NET=("-p" "${RSSHUB_PORT}:1200")
+  fi
   if ! docker inspect rsshub >/dev/null 2>&1; then
     docker run -d \
       --name rsshub \
       --restart unless-stopped \
-      -p "${RSSHUB_PORT}:1200" \
+      "${DOCKER_NET[@]}" \
       "${DOCKER_ENV[@]}" \
       -v "$DATA_DIR":/app/data \
       diygod/rsshub:latest
@@ -140,7 +149,7 @@ if [ "$DEPLOY_MODE" = "docker" ]; then
     docker run -d \
       --name rsshub \
       --restart unless-stopped \
-      -p "${RSSHUB_PORT}:1200" \
+      "${DOCKER_NET[@]}" \
       "${DOCKER_ENV[@]}" \
       -v "$DATA_DIR":/app/data \
       diygod/rsshub:latest
