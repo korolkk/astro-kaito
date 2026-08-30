@@ -663,7 +663,7 @@ app.get('/api/xhs/posts', async (_req, res) => {
 // 前端 <img src="/api/xhs/cover?url=..."> 即可正常显示
 app.get('/api/xhs/cover', async (req, res) => {
   const { url } = req.query;
-  if (!url || !/^https:\/\/sns-[a-z]+\.xhscdn\.com\//.test(url)) {
+  if (!url || !/^https:\/\/sns[\w.-]*\.xhscdn\.com\//.test(url)) {
     return res.status(400).json({ error: '无效的图片地址' });
   }
   try {
