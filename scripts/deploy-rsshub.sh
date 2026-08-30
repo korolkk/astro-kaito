@@ -116,6 +116,15 @@ fi
 step "3/4 部署 RSSHub"
 
 if [ "$DEPLOY_MODE" = "docker" ]; then
+  # 小红书 user 路由 requirePuppeteer:true，容器需要 Chromium。
+  # 优先使用已定制的 rsshub-with-browser 镜像（含 Chromium + 系统依赖）；
+  # 不存在时用官方镜像启动并自动装好浏览器，commit 成定制镜像备用。
+  RSSHUB_IMAGE="rsshub-with-browser"
+  if ! docker image inspect "$RSSHUB_IMAGE" >/dev/null 2>&1; then
+    warn "未找到定制镜像 $RSSHUB_IMAGE，使用官方镜像并准备浏览器环境..."
+    RSSHUB_IMAGE="diygod/rsshub:latest"
+  fi
+
   # 构建 docker 参数：cookie 存在时注入环境变量
   DOCKER_ENV=(
     -e NODE_ENV=production
@@ -142,8 +151,8 @@ if [ "$DEPLOY_MODE" = "docker" ]; then
       "${DOCKER_NET[@]}" \
       "${DOCKER_ENV[@]}" \
       -v "$DATA_DIR":/app/data \
-      diygod/rsshub:latest
-    ok "Docker 容器已启动"
+      "$RSSHUB_IMAGE"
+    ok "Docker 容器已启动（$RSSHUB_IMAGE）"
   else
     docker rm -f rsshub >/dev/null 2>&1 || true
     docker run -d \
@@ -152,8 +161,32 @@ if [ "$DEPLOY_MODE" = "docker" ]; then
       "${DOCKER_NET[@]}" \
       "${DOCKER_ENV[@]}" \
       -v "$DATA_DIR":/app/data \
-      diygod/rsshub:latest
-    ok "Docker 容器已重建（应用最新 cookie 配置）"
+      "$RSSHUB_IMAGE"
+    ok "Docker 容器已重建（$RSSHUB_IMAGE，应用最新 cookie 配置）"
+  fi
+
+  # 若用的是官方镜像（无浏览器），自动安装 Chromium 并 commit 成定制镜像
+  if [ "$RSSHUB_IMAGE" = "diygod/rsshub:latest" ]; then
+    warn "正在为容器安装 Chromium（首次需几分钟）..."
+    # 宿主机空目录安装 playwright-core（避免 RSSHub 依赖树导致 OOM）
+    mkdir -p /opt/pw-tmp
+    cd /opt/pw-tmp
+    npm init -y >/dev/null 2>&1
+    export NODE_OPTIONS="--max-old-space-size=1024"
+    npm install playwright-core@1.62.1 --no-audit --no-fund >/dev/null 2>&1 || true
+    # 通过 npmmirror 镜像下载 Chromium（国内直连 cdn.playwright.dev 超时）
+    export PLAYWRIGHT_BROWSERS_PATH=/opt/pw-tmp/browsers
+    export PLAYWRIGHT_DOWNLOAD_HOST=https://cdn.npmmirror.com/binaries/playwright
+    npx playwright-core install chromium >/dev/null 2>&1 || true
+    # 复制浏览器进容器
+    docker exec rsshub mkdir -p /root/.cache/ms-playwright
+    docker cp /opt/pw-tmp/browsers/. rsshub:/root/.cache/ms-playwright/
+    docker cp /opt/pw-tmp/node_modules/playwright-core rsshub:/app/node_modules/playwright-core
+    # 容器内装 Chromium 系统依赖（清华源 + 跳过 SSL 验证，容器重启后丢失故需 commit）
+    docker exec rsshub sh -c 'apt-get -o Acquire::https::Verify-Peer=false -o Acquire::https::Verify-Host=false install -y --no-install-recommends libglib2.0-0 libnss3 libnspr4 libdbus-1-3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 libatspi2.0-0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libgbm1 libpango-1.0-0 libcairo2 libasound2 libx11-6 libxcb1 libxext6 >/dev/null 2>&1 || true' || true
+    # commit 定制镜像，避免重启丢失
+    docker commit rsshub rsshub-with-browser >/dev/null 2>&1 || true
+    ok "Chromium 已安装，已提交定制镜像 rsshub-with-browser"
   fi
 else
   # GitHub 直连在国内服务器常超时，准备镜像列表自动回退（可用环境变量 RSSHUB_GIT_MIRROR 覆盖）
