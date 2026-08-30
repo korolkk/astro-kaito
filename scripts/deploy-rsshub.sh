@@ -162,6 +162,20 @@ else
     npm install --omit=dev --legacy-peer-deps --no-audit --no-fund
   fi
 
+  # RSSHub 新版为 TS 源码，start 执行 node dist/index.mjs，必须先构建生成 dist/。
+  # build 脚本（build:routes + tsdown）依赖 devDependencies 中的构建工具，
+  # 用 --omit=dev 安装后需补装：tsx（build:routes）、tsdown、typescript
+  echo ">> 补装构建工具（tsx / tsdown / typescript）..."
+  npm install --no-save --legacy-peer-deps --no-audit --no-fund tsx tsdown typescript
+
+  echo ">> npm run build（生成 dist/ 产物，需几分钟）..."
+  if [ ! -d "$RSSHUB_DIR/dist" ]; then
+    npm run build
+    ok "构建完成，dist/ 已生成"
+  else
+    ok "dist/ 已存在，跳过构建"
+  fi
+
   # systemd 服务（cookie 通过 EnvironmentFile 注入）
   cat > /etc/systemd/system/rsshub.service << EOF
 [Unit]
