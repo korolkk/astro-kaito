@@ -465,7 +465,10 @@ async function fetchXhsWithBrowser() {
     const cookie = readXhsCookie();
     if (!cookie) throw new Error('未找到小红书 cookie 文件: ' + XHS_COOKIE_FILE);
 
-    const browser = await pw.chromium.launch({ headless: true, args: ['--no-sandbox'] });
+    const browser = await pw.chromium.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--single-process'],
+    });
     try {
       const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
       // 注入 cookie
@@ -516,16 +519,16 @@ async function fetchXhsWithBrowser() {
       });
 
       let allPosts = [];
-      // 滚动加载更多（滚动后重新提取，合并去重）
-      for (let i = 0; i < 8; i++) {
+      // 滚动加载更多（轻量策略：内存紧张的服务器上减少轮次与等待）
+      for (let i = 0; i < 4; i++) {
         await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-        await page.waitForTimeout(2000);
+        await page.waitForTimeout(1200);
         const batch = await extractNotes();
         const seenIds = new Set(allPosts.map(p => p.link));
         for (const p of batch) {
           if (!seenIds.has(p.link)) allPosts.push(p);
         }
-        if (allPosts.length >= 12) break;
+        if (allPosts.length >= 6) break;
       }
       // 最后再提取一次兜底
       if (allPosts.length === 0) {
