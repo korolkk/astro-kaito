@@ -8,6 +8,12 @@ import AiChat from '../components/AiChat.astro';
 import FormattedDate from '../components/FormattedDate.astro';
 import { SITE_TITLE, SITE_DESCRIPTION, SITE_START_DATE } from '../consts';
 import avatarPlaceholder from '../assets/kaito_1.jpg';
+import photo1 from '../assets/photos/photo-1.jpg';
+import photo2 from '../assets/photos/photo-2.jpg';
+import photo3 from '../assets/photos/photo-3.jpg';
+import photo4 from '../assets/photos/photo-4.jpg';
+import photo5 from '../assets/photos/photo-5.jpg';
+import photo6 from '../assets/photos/photo-6.jpg';
 const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
 
 const allPosts = (await getCollection('blog')).sort(
@@ -46,7 +52,7 @@ const stats = {
 };
 
 // Step 1: Top 8 tags
-const tagCounts: Record<string, number> = {};
+const tagCounts = {};
 allPosts.forEach(p => (p.data.tags || []).forEach(t => { tagCounts[t] = (tagCounts[t] || 0) + 1; }));
 const topTags = Object.entries(tagCounts)
 	.sort((a, b) => b[1] - a[1])
@@ -55,6 +61,15 @@ const topTags = Object.entries(tagCounts)
 // Step 2: Featured posts
 const featuredIds = ['build-blog-with-ai', 'deploy-to-aliyun'];
 const featuredPosts = allPosts.filter(p => featuredIds.includes(p.id));
+
+const photos = [
+	{ src: photo1, alt: '摄影作品 1' },
+	{ src: photo2, alt: '摄影作品 2' },
+	{ src: photo3, alt: '摄影作品 3' },
+	{ src: photo4, alt: '摄影作品 4' },
+	{ src: photo5, alt: '摄影作品 5' },
+	{ src: photo6, alt: '摄影作品 6' },
+];
 
 
 // Step 4: Year/month stats
@@ -267,7 +282,46 @@ const thisMonthPosts = allPosts.filter(p => p.data.pubDate.getFullYear() === thi
 				background: var(--card-bg); border-radius: 20px;
 				padding: 2em; box-shadow: 0 2px 12px rgba(var(--black), 0.04);
 			}
-			.post-feed .section-title { font-size: 1.2em; margin-bottom: 1.2em; padding-bottom: 0.6em; }
+					/* Photo gallery */
+		.photo-gallery {
+			margin-top: 1.8em;
+			padding-top: 1.5em;
+			border-top: 1px solid rgb(var(--gray-light));
+		}
+		.photo-gallery-title {
+			font-size: 0.95em;
+			font-weight: 700;
+			color: rgb(var(--black));
+			margin: 0 0 0.8em;
+		}
+		.photo-grid {
+			display: grid;
+			grid-template-columns: repeat(3, 1fr);
+			gap: 0.6em;
+		}
+		.photo-item {
+			border-radius: 10px;
+			overflow: hidden;
+			cursor: pointer;
+			transition: transform 0.25s ease, box-shadow 0.25s ease;
+		}
+		.photo-item:hover {
+			transform: scale(1.03);
+			box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+		}
+		.photo-item img {
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+			display: block;
+		}
+		@media (max-width: 500px) {
+			.photo-grid {
+				grid-template-columns: repeat(2, 1fr);
+			}
+		}
+
+		.post-feed .section-title { font-size: 1.2em; margin-bottom: 1.2em; padding-bottom: 0.6em; }
 
 			/* Step 2: Featured posts */
 			.featured-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1em; margin-bottom: 1.5em; }
@@ -330,21 +384,15 @@ const thisMonthPosts = allPosts.filter(p => p.data.pubDate.getFullYear() === thi
 			}
 			.view-all:hover { text-decoration: underline; }
 
-			@media (max-width: 768px) {
-				.hero {
-					grid-template-columns: 1fr;
-					gap: 1.5em; margin: 1.5em auto;
-				}
-				.profile, .post-feed, .stats-card, .tags-card, .github-card, .friends-card {
-					grid-column: 1; grid-row: auto;
-				}
-				.profile      { order: 1; }
-				.post-feed    { order: 2; }
-				.stats-card   { order: 3; }
-				.tags-card    { order: 4; }
-				.github-card  { order: 5; }
-				.friends-card { order: 6; }
-				.featured-grid { grid-template-columns: 1fr; }
+		@media (max-width: 768px) {
+			.hero {
+				grid-template-columns: 1fr;
+				gap: 1.5em; margin: 1.5em auto;
+			}
+			.profile, .post-feed, .stats-card, .tags-card, .github-card, .friends-card {
+				grid-column: 1; grid-row: auto;
+			}
+			.featured-grid { grid-template-columns: 1fr; }
 			}
 		</style>
 	</head>
@@ -373,11 +421,61 @@ const thisMonthPosts = allPosts.filter(p => p.data.pubDate.getFullYear() === thi
 							<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4Zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1H2Zm13 2.383-4.708 2.825L15 11.105V5.383Zm-.034 6.876-5.64-3.471L8 9.583l-1.326-.795-5.64 3.47A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.741ZM1 11.105l4.708-2.897L1 5.383v5.722Z"/></svg>
 							Email
 						</a>
-					</div>
-					</div>
-				</aside>
+				</div>
+			</aside>
 
-				<!-- Stats -->
+				<!-- Post feed -->
+			<section class="post-feed">
+					<h2 class="section-title">最新文章</h2>
+
+					<!-- Step 2: Featured posts -->
+					{
+						featuredPosts.length > 0 && (
+							<div class="featured-grid">
+								{featuredPosts.map(fp => (
+									<a class="featured-card" href={`${base}blog/${fp.id}/`}>
+										{fp.data.heroImage && (
+											<Image class="featured-cover" src={fp.data.heroImage} alt="" width={160} height={100} loading="lazy" />
+										)}
+										<div class="featured-info">
+											<span class="featured-badge">精选</span>
+											<div class="featured-title">{fp.data.title}</div>
+											<div class="featured-date"><FormattedDate date={fp.data.pubDate} /></div>
+										</div>
+									</a>
+								))}
+							</div>
+						)
+					}
+
+					<ul class="post-list">
+						{posts.map((post) => (
+							<li>
+								<a href={`${base}blog/${post.id}/`}>
+									<div class="post-title">{post.data.title}</div>
+									<div class="post-date"><FormattedDate date={post.data.pubDate} /></div>
+									<div class="post-desc">{post.data.description}</div>
+								</a>
+							</li>
+						))}
+					</ul>
+					<a class="view-all" href={`${base}blog`}>查看全部文章 →</a>
+
+				<!-- Photo Gallery -->
+				<div class="photo-gallery">
+					<h3 class="photo-gallery-title">随手拍</h3>
+					<div class="photo-grid">
+						{photos.map((p) => (
+							<div class="photo-item">
+								<Image src={p.src} alt={p.alt} width={400} height={300} loading="lazy" />
+							</div>
+						))}
+					</div>
+				</div>
+
+			</section>
+
+			<!-- Stats -->
 				<section class="card stats-card">
 					<h2 class="section-title">站点统计</h2>
 					<table class="stats-table">
@@ -466,46 +564,9 @@ const thisMonthPosts = allPosts.filter(p => p.data.pubDate.getFullYear() === thi
 							<span class="friend-avatar">M</span><span class="friend-info"><span class="friend-name">MoonLight</span><span class="friend-desc">独立开发者的产品日志</span></span>
 						</span>
 					</div>
-				</section>
+			</section>
 
-				<!-- Post feed -->
-				<section class="post-feed">
-					<h2 class="section-title">最新文章</h2>
-
-					<!-- Step 2: Featured posts -->
-					{
-						featuredPosts.length > 0 && (
-							<div class="featured-grid">
-								{featuredPosts.map(fp => (
-									<a class="featured-card" href={`${base}blog/${fp.id}/`}>
-										{fp.data.heroImage && (
-											<Image class="featured-cover" src={fp.data.heroImage} alt="" width={160} height={100} loading="lazy" />
-										)}
-										<div class="featured-info">
-											<span class="featured-badge">精选</span>
-											<div class="featured-title">{fp.data.title}</div>
-											<div class="featured-date"><FormattedDate date={fp.data.pubDate} /></div>
-										</div>
-									</a>
-								))}
-							</div>
-						)
-					}
-
-					<ul class="post-list">
-						{posts.map((post) => (
-							<li>
-								<a href={`${base}blog/${post.id}/`}>
-									<div class="post-title">{post.data.title}</div>
-									<div class="post-date"><FormattedDate date={post.data.pubDate} /></div>
-									<div class="post-desc">{post.data.description}</div>
-								</a>
-							</li>
-						))}
-					</ul>
-					<a class="view-all" href={`${base}blog`}>查看全部文章 →</a>
-				</section>
-			</div>
+		</div>
 		</main>
 		<Footer />
 		<AiChat />
