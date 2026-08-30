@@ -642,14 +642,11 @@ const thisMonthPosts = allPosts.filter(p => p.data.pubDate.getFullYear() === thi
 				function showError() { loadingEl.style.display = 'none'; errorEl.style.display = 'flex'; }
 				var themeObserver = new MutationObserver(function () { if (storedData) drawCanvas(storedData); });
 				themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-				fetch('https://github-contributions-api.deno.dev/korolkk.json')
+				fetch('https://ghca.duyet.net/v1/korolkk?y=last')
 					.then(function (resp) { if (!resp.ok) throw new Error('HTTP ' + resp.status); return resp.json(); })
 					.then(function (data) {
-						var weeks = data.contributions || [];
-						var contributions = [];
-						for (var w = 0; w < weeks.length; w++)
-							for (var d = 0; d < weeks[w].length; d++)
-								contributions.push(weeks[w][d].contributionCount || 0);
+						var days = data.contributions || [];
+						var contributions = days.map(function (d) { return d.count || 0; });
 						if (contributions.length === 0) throw new Error('Empty data');
 						var needed = 53 * 7;
 						if (contributions.length < needed) {
