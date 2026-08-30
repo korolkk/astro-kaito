@@ -278,10 +278,11 @@ const thisMonthPosts = allPosts.filter(p => p.data.pubDate.getFullYear() === thi
 			}
 			.xhs-meta {
 				font-size: 0.72em; color: rgb(var(--gray));
-				display: flex; align-items: center; gap: 0.6em;
+				display: flex; align-items: center; gap: 0.4em;
 			}
-			.xhs-meta .xhs-stats { display: flex; align-items: center; gap: 0.5em; }
-			.xhs-meta svg { width: 11px; height: 11px; vertical-align: -1px; }
+			.xhs-meta .xhs-stats { display: inline-flex; align-items: center; gap: 0.5em; }
+			.xhs-meta .xhs-sep { opacity: 0.6; }
+			.xhs-meta svg { width: 11px; height: 11px; vertical-align: -1px; flex-shrink: 0; }
 			.xhs-loading { color: rgb(var(--gray)); font-size: 0.85em; padding: 1em 0; text-align: center; }
 			.xhs-loading span { display: inline-block; animation: gh-pulse 1.2s ease-in-out infinite; }
 			.xhs-hidden { display: none !important; }
@@ -733,8 +734,15 @@ const thisMonthPosts = allPosts.filter(p => p.data.pubDate.getFullYear() === thi
 							cardEl.style.display = 'none';
 							return;
 						}
-						// 精选最新 2 篇
-						var top = data.posts.slice(0, 2);
+						// 精选最新 2 篇（按链接去重，防止重复渲染）
+						var seenLinks = {};
+						var top = [];
+						(data.posts || []).forEach(function (p) {
+							if (top.length >= 2) return;
+							if (!p.link || seenLinks[p.link]) return;
+							seenLinks[p.link] = true;
+							top.push(p);
+						});
 						loadingEl.style.display = 'none';
 						listEl.style.display = 'flex';
 						top.forEach(function (p) {
@@ -762,12 +770,12 @@ const thisMonthPosts = allPosts.filter(p => p.data.pubDate.getFullYear() === thi
 									}
 								} catch (e) {}
 							}
-							a.innerHTML =
-								cover +
-								'<div class="xhs-info">' +
-									'<span class="xhs-title">' + esc(p.title) + '</span>' +
-									'<span class="xhs-meta">' + stats + date + '</span>' +
-								'</div>';
+						a.innerHTML =
+							cover +
+							'<div class="xhs-info">' +
+								'<span class="xhs-title">' + esc(p.title) + '</span>' +
+								'<span class="xhs-meta">' + (stats ? stats + '<span class="xhs-sep">·</span>' : '') + date + '</span>' +
+							'</div>';
 							listEl.appendChild(a);
 						});
 					})
