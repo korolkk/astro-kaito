@@ -479,44 +479,60 @@ async function fetchXhsWithBrowser() {
       });
       await page.waitForTimeout(4000);
 
-      // 滚动几次加载更多笔记（每次滚动后等待渲染）
-      for (let i = 0; i < 5; i++) {
-        await page.evaluate(() => window.scrollBy(0, 2000));
-        await page.waitForTimeout(1500);
-      }
-
-      const data = await page.evaluate(() => {
-        const s = window.__INITIAL_STATE__;
-        const notes = s?.user?.notes?._value;
-        if (!notes || !notes.length) return { posts: [], noteCount: 0 };
+      // 提取当前页面中的笔记（从 __INITIAL_STATE__ 或页面 DOM）
+      const extractNotes = () => page.evaluate(() => {
         const posts = [];
         const seen = new Set();
-        for (const row of notes) {
-          for (const item of row) {
-            const nc = item?.noteCard;
-            if (!nc || !nc.noteId || seen.has(nc.noteId)) continue;
-            seen.add(nc.noteId);
-            let cover = '';
-            if (nc.cover?.url) cover = nc.cover.url;
-            else if (nc.cover?.infoList?.length) cover = nc.cover.infoList[nc.cover.infoList.length - 1].url;
-            // 封面 http → https
-            if (cover && cover.startsWith('http://')) cover = 'https://' + cover.slice(7);
-            // 去掉 URL 参数（!nc_webp 之类），取干净图片地址
-            const bang = cover.indexOf('!');
-            if (bang > 0) cover = cover.slice(0, bang);
-            posts.push({
-              title: nc.displayTitle || '无标题笔记',
-              link: `https://www.xiaohongshu.com/explore/${nc.noteId}`,
-              cover,
-              pubDate: nc.time ? new Date(nc.time).toISOString() : '',
-              likes: parseInt(nc.interactInfo?.likedCount, 10) || 0,
-              comments: 0,
-              collects: 0,
-            });
+        // 方式1：__INITIAL_STATE__
+        try {
+          const s = window.__INITIAL_STATE__;
+          const notes = s?.user?.notes?._value;
+          if (notes) {
+            for (const row of notes) {
+              for (const item of row) {
+                const nc = item?.noteCard;
+                if (!nc || !nc.noteId || seen.has(nc.noteId)) continue;
+                seen.add(nc.noteId);
+                let cover = '';
+                if (nc.cover?.url) cover = nc.cover.url;
+                else if (nc.cover?.infoList?.length) cover = nc.cover.infoList[nc.cover.infoList.length - 1].url;
+                if (cover.startsWith('http://')) cover = 'https://' + cover.slice(7);
+                const bang = cover.indexOf('!');
+                if (bang > 0) cover = cover.slice(0, bang);
+                posts.push({
+                  title: nc.displayTitle || '无标题笔记',
+                  link: `https://www.xiaohongshu.com/explore/${nc.noteId}`,
+                  cover,
+                  pubDate: nc.time ? new Date(nc.time).toISOString() : '',
+                  likes: parseInt(nc.interactInfo?.likedCount, 10) || 0,
+                  comments: 0,
+                  collects: 0,
+                });
+              }
+            }
           }
-        }
-        return { posts, noteCount: posts.length };
+        } catch {}
+        return posts;
       });
+
+      let allPosts = [];
+      // 滚动加载更多（滚动后重新提取，合并去重）
+      for (let i = 0; i < 8; i++) {
+        await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+        await page.waitForTimeout(2000);
+        const batch = await extractNotes();
+        const seenIds = new Set(allPosts.map(p => p.link));
+        for (const p of batch) {
+          if (!seenIds.has(p.link)) allPosts.push(p);
+        }
+        if (allPosts.length >= 12) break;
+      }
+      // 最后再提取一次兜底
+      if (allPosts.length === 0) {
+        const batch = await extractNotes();
+        allPosts = batch;
+      }
+      return { posts: allPosts, noteCount: allPosts.length };
       return data;
     } finally {
       await browser.close().catch(() => {});
