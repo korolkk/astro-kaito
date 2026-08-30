@@ -33,38 +33,65 @@ else
   fail "未检测到 Docker 或 Node.js 18+，请先安装其一"
 fi
 
-# --------------- 2. 配置小红书 Cookie ---------------
-step "2/4 配置小红书 Cookie（可选但强烈建议）"
+# --------------- 2. 配置小红书 Cookie（强烈建议） ---------------
+step "2/4 配置小红书 Cookie"
 echo ""
-echo "从浏览器获取 cookie 的方法："
+echo "从浏览器获取 cookie 的方法（详见下方说明）："
 echo "  1. 用 Chrome 打开 https://www.xiaohongshu.com 并登录"
 echo "  2. 按 F12 打开开发者工具 → Network → 刷新页面"
-echo "  3. 点击任意请求，复制 Request Headers 中的完整 Cookie 值"
+echo "  3. 点击任意请求，在 Request Headers 中找到 Cookie 字段，复制完整值"
 echo ""
-echo "不配置 cookie 时 RSSHub 会走无 cookie 回退路径，数据可能不完整。"
-if [ -f "$DATA_DIR/cookie.txt" ] && [ -s "$DATA_DIR/cookie.txt" ]; then
-  ok "已存在 cookie 文件（$DATA_DIR/cookie.txt），如需更新请重新填写"
-fi
+echo "cookie 将写入 $DATA_DIR/cookie.txt 并注入 RSSHub（环境变量 XIAOHONGSHU_COOKIE）"
 mkdir -p "$DATA_DIR"
+if [ -f "$DATA_DIR/cookie.txt" ] && [ -s "$DATA_DIR/cookie.txt" ]; then
+  ok "已存在 cookie 文件，将使用现有配置（如需更新请编辑 $DATA_DIR/cookie.txt）"
+else
+  warn "未找到 cookie 文件：$DATA_DIR/cookie.txt"
+  warn "RSSHub 将走无 cookie 回退路径，笔记链接可能不完整"
+  echo "  之后准备好 cookie 后，执行："
+  echo "    vim $DATA_DIR/cookie.txt   # 粘贴完整 cookie 值（单行）"
+  echo "    bash scripts/deploy-rsshub.sh   # 重新运行本脚本即可生效"
+fi
+
+# 读取 cookie（供后续注入；文件不存在则为空字符串）
+XHS_COOKIE=""
+if [ -f "$DATA_DIR/cookie.txt" ]; then
+  XHS_COOKIE="$(tr -d '\r\n' < "$DATA_DIR/cookie.txt")"
+fi
 
 # --------------- 3. 部署 RSSHub ---------------
 step "3/4 部署 RSSHub"
 
 if [ "$DEPLOY_MODE" = "docker" ]; then
+  # 构建 docker 参数：cookie 存在时注入环境变量
+  DOCKER_ENV=(
+    -e NODE_ENV=production
+    -e CACHE_TYPE=memory
+    -e LISTEN_INADDR_ANY=0
+  )
+  if [ -n "$XHS_COOKIE" ]; then
+    DOCKER_ENV+=(-e "XIAOHONGSHU_COOKIE=$XHS_COOKIE")
+    ok "已注入 XIAOHONGSHU_COOKIE（${#XHS_COOKIE} 字符）"
+  fi
   if ! docker inspect rsshub >/dev/null 2>&1; then
     docker run -d \
       --name rsshub \
       --restart unless-stopped \
       -p "${RSSHUB_PORT}:1200" \
-      -e NODE_ENV=production \
-      -e CACHE_TYPE=memory \
-      -e LISTEN_INADDR_ANY=0 \
+      "${DOCKER_ENV[@]}" \
       -v "$DATA_DIR":/app/data \
       diygod/rsshub:latest
     ok "Docker 容器已启动"
   else
-    docker restart rsshub >/dev/null
-    ok "Docker 容器已重启"
+    docker rm -f rsshub >/dev/null 2>&1 || true
+    docker run -d \
+      --name rsshub \
+      --restart unless-stopped \
+      -p "${RSSHUB_PORT}:1200" \
+      "${DOCKER_ENV[@]}" \
+      -v "$DATA_DIR":/app/data \
+      diygod/rsshub:latest
+    ok "Docker 容器已重建（应用最新 cookie 配置）"
   fi
 else
   if [ ! -d "$RSSHUB_DIR/.git" ]; then
@@ -77,7 +104,7 @@ else
     npm install --omit=dev
   fi
 
-  # systemd 服务
+  # systemd 服务（cookie 通过 EnvironmentFile 注入）
   cat > /etc/systemd/system/rsshub.service << EOF
 [Unit]
 Description=RSSHub
@@ -86,6 +113,7 @@ After=network.target
 [Service]
 Type=simple
 WorkingDirectory=$RSSHUB_DIR
+EnvironmentFile=-$DATA_DIR/rsshub.env
 ExecStart=/usr/bin/env NODE_ENV=production CACHE_TYPE=memory npm start
 Restart=always
 RestartSec=5
@@ -94,6 +122,15 @@ Environment=LISTEN_INADDR_ANY=0
 [Install]
 WantedBy=multi-user.target
 EOF
+  # 生成环境变量文件（cookie 非空才写入）
+  if [ -n "$XHS_COOKIE" ]; then
+    printf 'XIAOHONGSHU_COOKIE=%s\n' "$XHS_COOKIE" > "$DATA_DIR/rsshub.env"
+    chmod 600 "$DATA_DIR/rsshub.env"
+    ok "已写入 XIAOHONGSHU_COOKIE 到 $DATA_DIR/rsshub.env"
+  else
+    rm -f "$DATA_DIR/rsshub.env"
+    warn "未配置 cookie，跳过环境变量文件"
+  fi
   systemctl daemon-reload
   systemctl enable rsshub
   systemctl restart rsshub
@@ -114,8 +151,9 @@ echo -e "${GREEN}═════════════════════
 echo -e "${GREEN}  部署完成！下一步配置：${NC}"
 echo -e "${GREEN}════════════════════════════════════════════${NC}"
 echo ""
-echo "1. 将小红书 Cookie 写入（可选）："
-echo "   vim $DATA_DIR/cookie.txt"
+echo "1. 小红书 Cookie（本次已自动注入 RSSHub）："
+echo "   - 修改：vim $DATA_DIR/cookie.txt"
+echo "   - 生效：重新运行本脚本即可"
 echo ""
 echo "2. 在 /opt/api-bridge/.env 中追加："
 echo "   XHS_RSSHUB_URL=http://127.0.0.1:${RSSHUB_PORT}"
