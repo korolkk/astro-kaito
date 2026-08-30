@@ -118,9 +118,8 @@ const thisMonthPosts = allPosts.filter(p => p.data.pubDate.getFullYear() === thi
 			.stats-card   { grid-column: 1; grid-row: 2; }
 			.tags-card    { grid-column: 1; grid-row: 3; }
 			.github-card  { grid-column: 1; grid-row: 4; }
-			.xhs-card     { grid-column: 1; grid-row: 5; }
-			.friends-card { grid-column: 1; grid-row: 6; }
-			.post-feed    { grid-column: 2; grid-row: 1 / 7; }
+			.friends-card { grid-column: 1; grid-row: 5; }
+			.post-feed    { grid-column: 2; grid-row: 1 / 6; }
 
 			/* Shared card */
 			.card {
@@ -464,6 +463,14 @@ const thisMonthPosts = allPosts.filter(p => p.data.pubDate.getFullYear() === thi
 					</ul>
 					<a class="view-all" href={`${base}blog`}>查看全部文章 →</a>
 
+				<!-- Xiaohongshu featured -->
+				<div class="xhs-card" id="xhsCard">
+					<h3 class="xhs-card-title">最新小红书</h3>
+					<div class="xhs-loading" id="xhsLoading"><span>加载中...</span></div>
+					<div class="xhs-list" id="xhsList" style="display:none;"></div>
+					<div class="xhs-error xhs-hidden" id="xhsError">小红书数据暂不可用</div>
+				</div>
+
 				<!-- Photo Gallery -->
 				<div class="photo-gallery">
 					<h3 class="photo-gallery-title">随手拍</h3>
@@ -548,14 +555,6 @@ const thisMonthPosts = allPosts.filter(p => p.data.pubDate.getFullYear() === thi
 						</div>
 					</div>
 					<div class="gh-total" id="ghTotal" style="display:none;">过去一年共 <strong id="ghTotalCount">0</strong> 次贡献</div>
-				</section>
-
-				<!-- Xiaohongshu featured -->
-				<section class="card xhs-card" id="xhsCard">
-					<h2 class="section-title">最新小红书</h2>
-					<div class="xhs-loading" id="xhsLoading"><span>加载中...</span></div>
-					<div class="xhs-list" id="xhsList" style="display:none;"></div>
-					<div class="xhs-error xhs-hidden" id="xhsError">小红书数据暂不可用</div>
 				</section>
 
 				<!-- Friends -->

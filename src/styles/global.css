@@ -254,8 +254,18 @@ select:focus-visible {
 	transition: none !important;
 }
 
-/* ===== 小红书精选卡片（动态渲染元素，必须用全局样式） ===== */
-.xhs-card { min-height: 120px; }
+/* ===== 小红书精选卡片（动态渲染元素，必须用全局样式；嵌于 post-feed 内） ===== */
+.xhs-card {
+	margin-top: 1.8em;
+	padding-top: 1.5em;
+	border-top: 1px solid rgb(var(--gray-light));
+}
+.xhs-card-title {
+	font-size: 0.95em;
+	font-weight: 700;
+	color: rgb(var(--black));
+	margin: 0 0 0.8em;
+}
 .xhs-list { display: flex; flex-direction: column; gap: 0.7em; }
 .xhs-note {
 	display: flex; gap: 0.7em; padding: 0.55em 0.6em;
