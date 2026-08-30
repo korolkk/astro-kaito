@@ -1,4 +1,4 @@
-const CACHE = 'kaitohub-v2';
+const CACHE = 'kaitohub-v3';
 const PRECACHE_ASSETS = [
 	'/',
 	'/blog/',
@@ -35,6 +35,11 @@ self.addEventListener('fetch', function(e) {
 
 	var url = new URL(req.url);
 	if (url.origin !== location.origin) return;
+
+	// API 请求（/api/*）：动态数据不缓存，直接走网络。
+	// 封面代理等响应的缓存由服务端 Cache-Control 控制，避免 SW
+	// 缓存旧数据（旧封面 CDN 签名链接过期导致 403 显示失败）。
+	if (url.pathname.startsWith('/api/')) return;
 
 	// 页面导航：网络优先，保证部署后能拿到最新页面；离线时才回退缓存
 	if (req.mode === 'navigate') {
