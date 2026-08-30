@@ -504,12 +504,14 @@ async function fetchXhsWithBrowser() {
                 if (nc.cover?.url) cover = nc.cover.url;
                 else if (nc.cover?.infoList?.length) cover = nc.cover.infoList[nc.cover.infoList.length - 1].url;
                 if (cover.startsWith('http://')) cover = 'https://' + cover.slice(7);
-                const bang = cover.indexOf('!');
-                if (bang > 0) cover = cover.slice(0, bang);
+                // 保留 URL 参数（!nc_n_webp_mw_1 等）：小红书 CDN 防盗链，
+                // 去掉参数后返回 403，必须原样保留才能加载。
+                // 同时走本站代理 /api/xhs/cover，规避浏览器端 referrer 防盗链。
+                const proxied = '/api/xhs/cover?url=' + encodeURIComponent(cover);
                 posts.push({
                   title: nc.displayTitle || '无标题笔记',
                   link: `https://www.xiaohongshu.com/explore/${nc.noteId}`,
-                  cover,
+                  cover: proxied,
                   pubDate: nc.time ? new Date(nc.time).toISOString() : '',
                   likes: parseInt(nc.interactInfo?.likedCount, 10) || 0,
                   comments: 0,
@@ -654,6 +656,36 @@ app.get('/api/xhs/posts', async (_req, res) => {
   } catch (err) {
     console.error('[xhs] 拉取失败:', err.message);
     res.json({ configured: xhsConfigured(), error: '小红书数据暂不可用', posts: [] });
+  }
+});
+
+// 封面图代理：小红书 CDN 有防盗链（需特定 referrer/参数），服务器端抓取转发，
+// 前端 <img src="/api/xhs/cover?url=..."> 即可正常显示
+app.get('/api/xhs/cover', async (req, res) => {
+  const { url } = req.query;
+  if (!url || !/^https:\/\/sns-[a-z]+\.xhscdn\.com\//.test(url)) {
+    return res.status(400).json({ error: '无效的图片地址' });
+  }
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 15_000);
+    const resp = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        'Referer': 'https://www.xiaohongshu.com/',
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/126.0.0.0 Safari/537.36',
+      },
+    });
+    clearTimeout(timer);
+    if (!resp.ok) throw new Error(`upstream HTTP ${resp.status}`);
+    const buf = Buffer.from(await resp.arrayBuffer());
+    res.setHeader('Content-Type', resp.headers.get('content-type') || 'image/jpeg');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.send(buf);
+  } catch (err) {
+    console.error('[xhs/cover] 抓取失败:', err.message);
+    res.status(502).json({ error: '封面图加载失败' });
   }
 });
 

@@ -743,9 +743,9 @@ const thisMonthPosts = allPosts.filter(p => p.data.pubDate.getFullYear() === thi
 							a.href = p.link || '#';
 							a.target = '_blank';
 							a.rel = 'noopener noreferrer';
-							var cover = p.cover
-								? '<img class="xhs-cover" src="' + esc(p.cover) + '" alt="" loading="lazy" referrerpolicy="no-referrer" />'
-								: '<div class="xhs-cover"></div>';
+						var cover = p.cover
+							? '<img class="xhs-cover" src="' + esc(p.cover) + '" alt="" loading="lazy" onerror="this.style.display=\'none\'" />'
+							: '<div class="xhs-cover"></div>';
 							var stats = '';
 							if (p.likes || p.comments) {
 								stats = '<span class="xhs-stats">' +

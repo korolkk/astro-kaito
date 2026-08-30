@@ -789,7 +789,7 @@ A.apiFetch = function (url, opts) {
 			d.recentPosts.forEach(function (p) {
 				var tr = A.cid(document.createElement('tr'));
 				var titleCell = p.cover
-					? '<div style="display:flex;align-items:center;gap:0.6em;"><img src="' + A.esc(p.cover) + '" alt="" style="width:40px;height:40px;border-radius:6px;object-fit:cover;flex-shrink:0;" loading="lazy" referrerpolicy="no-referrer" /><span class="content-preview">' + A.esc(p.title) + '</span></div>'
+					? '<div style="display:flex;align-items:center;gap:0.6em;"><img src="' + A.esc(p.cover) + '" alt="" style="width:40px;height:40px;border-radius:6px;object-fit:cover;flex-shrink:0;" loading="lazy" onerror="this.style.display=\'none\'" /><span class="content-preview">' + A.esc(p.title) + '</span></div>'
 					: '<span class="content-preview">' + A.esc(p.title) + '</span>';
 				var link = p.link ? '<a href="' + A.esc(p.link) + '" target="_blank" rel="noopener noreferrer" style="color:var(--accent);">打开</a>' : '-';
 				var pubDate = '';
