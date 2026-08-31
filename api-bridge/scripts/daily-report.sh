@@ -1,5 +1,5 @@
 #!/bin/bash
-# KaitoHub 每日数据报告（昨天网站 + 小红书 + GitHub + 最新评论）
+# KaitoHub 每日数据报告（昨天网站 + 小红书 + GitHub + 昨日评论 + AI资讯 + 黄金）
 # 用法: bash /tmp/daily-report.sh
 echo "========== KaitoHub 每日数据报告 =========="
 echo "生成时间: $(TZ='Asia/Shanghai' date '+%Y-%m-%d %H:%M %A')"
@@ -54,7 +54,6 @@ try:
     lines = open('/tmp/dr-access.log', errors='ignore').read().splitlines()
 except:
     lines = []
-# 过滤明显扫描器/爬虫 UA
 SKIP_UA = re.compile(r'cf-reverse-scanner|python-requests|curl/|wget|bot|crawler|spider|scanner|zgrab|masscan|nmap|headless', re.I)
 total = 0
 visitors = set()
@@ -110,7 +109,7 @@ else
 fi
 echo
 
-# ---------- 4. 最新评论（按昨天过滤） ----------
+# ---------- 4. 昨日评论 ----------
 echo "【昨日评论】"
 YDAY_STR=$(TZ='Asia/Shanghai' date -d 'yesterday' '+%Y-%m-%d')
 STATS=$(curl -s -m 10 -b /tmp/dr-cj.txt http://127.0.0.1:3001/api/admin/stats 2>/dev/null)
@@ -134,5 +133,103 @@ except Exception as e:
     print('  评论数据解析失败:', e)
 "
 echo
+
+# ---------- 5. AI 资讯（Hacker News 并行抓取，失败回退 36kr） ----------
+echo "【AI 资讯 TOP5】"
+# 尝试拉取 HN top stories（重试 2 次）
+curl -s -m 15 "https://hacker-news.firebaseio.com/v0/topstories.json" -o /tmp/hn-ids.json 2>/dev/null
+if [ ! -s /tmp/hn-ids.json ]; then
+  sleep 3
+  curl -s -m 15 "https://hacker-news.firebaseio.com/v0/topstories.json" -o /tmp/hn-ids.json 2>/dev/null
+fi
+python3 << 'PYEOF'
+import json, urllib.request, re
+from concurrent.futures import ThreadPoolExecutor
+KW = re.compile(r'AI|artificial intelligence|LLM|GPT|OpenAI|Anthropic|Claude|Gemini|DeepMind|model|language model|diffusion|transformer|agent|machine learning|neural|NVIDIA|Nvidia|GPU|CUDA|robot|AGI|Sora|Mistral|Llama|Midjourney|Stable Diffusion|RAG|fine.tun|inference', re.I)
+shown = 0
+try:
+    ids = json.load(open('/tmp/hn-ids.json'))
+    if not ids: raise ValueError('empty ids')
+    def fetch(i):
+        try:
+            req = urllib.request.Request(f'https://hacker-news.firebaseio.com/v0/item/{i}.json',
+                                         headers={'User-Agent': 'Mozilla/5.0'})
+            return json.load(urllib.request.urlopen(req, timeout=6))
+        except Exception:
+            return None
+    with ThreadPoolExecutor(max_workers=8) as ex:
+        results = list(ex.map(fetch, ids[:30]))
+    hits = []
+    for d in results:
+        if not d or d.get('type') != 'story' or not d.get('title'):
+            continue
+        title = d.get('title', '')
+        url = d.get('url', '') or ''
+        text = (d.get('text') or '')[:200]
+        if KW.search(title) or KW.search(url) or KW.search(text):
+            hits.append((d.get('score', 0), title))
+    hits.sort(reverse=True)
+    for score, title in hits[:5]:
+        shown += 1
+        print(f'  {shown}. [{score}分] {title[:60]}')
+except Exception as e:
+    shown = -1
+if shown == 0:
+    print('  (Hacker News 暂无 AI 相关热门话题)')
+PYEOF
+# HN 失败时回退：36kr 快讯过滤 AI 关键词
+if grep -q "Hacker News 暂无" /dev/null; then :; fi
+if [ "$(python3 -c "import json; ids=json.load(open('/tmp/hn-ids.json')) if __import__('os').path.exists('/tmp/hn-ids.json') else []; print(len(ids))" 2>/dev/null)" = "0" ]; then
+  echo "  (Hacker News 不可用，尝试 36kr 快讯...)"
+  curl -s -m 20 "http://127.0.0.1:1200/36kr/newsflashes" -o /tmp/36kr.xml 2>/dev/null
+  python3 << 'PYEOF'
+import re
+KW = re.compile(r'AI|人工智能|大模型|智能|模型|芯片|算力|机器人|英伟达|OpenAI|GPT|LLM', re.I)
+try:
+    xml = open('/tmp/36kr.xml', errors='ignore').read()
+    items = re.findall(r'<item>([\s\S]*?)</item>', xml)
+    shown = 0
+    for it in items:
+        t = re.search(r'<title[^>]*>([^<]*)</title>', it)
+        d = re.search(r'<description[^>]*>([\s\S]*?)</description>', it)
+        title = t.group(1) if t else ''
+        desc = re.sub(r'<[^>]+>', '', d.group(1))[:100] if d else ''
+        if KW.search(title) or KW.search(desc):
+            shown += 1
+            print(f'  {shown}. {title[:60]}')
+            if shown >= 5: break
+    if shown == 0:
+        print('  (今日暂无 AI 相关资讯)')
+except Exception as e:
+    print('  (AI 资讯获取失败)')
+PYEOF
+fi
+echo
+
+# ---------- 6. 今日黄金 ----------
+echo "【今日黄金】"
+GOLD=$(curl -s -m 10 -H "Referer: https://finance.sina.com.cn" "https://hq.sinajs.cn/list=gds_AUTD" 2>/dev/null)
+echo "$GOLD" | python3 -c "
+import sys, re
+try:
+    raw = sys.stdin.read()
+    m = re.search(r'\"(.*?)\"', raw)
+    if not m:
+        print('  金价数据获取失败')
+        sys.exit(0)
+    f = m.group(1).split(',')
+    # gds_AUTD 沪金延期: 0现价 3最高 4最低 7结算 8昨结 6时间
+    price = float(f[0])
+    prev = float(f[8]) if f[8] else float(f[2])
+    high, low = float(f[3]), float(f[4])
+    chg = (price - prev) / prev * 100 if prev else 0
+    arrow = '▲' if chg >= 0 else '▼'
+    print(f'  沪金(延期): {price:.2f} 元/克')
+    print(f'  今日涨跌: {arrow} {abs(chg):.2f}%  (昨结 {prev:.2f})')
+    print(f'  区间: 高 {high:.2f} / 低 {low:.2f}')
+except Exception as e:
+    print('  金价解析失败:', e)
+"
+echo
 echo "========== 报告结束 =========="
-rm -f /tmp/dr-cj.txt /tmp/dr-access.log
+rm -f /tmp/dr-cj.txt /tmp/dr-access.log /tmp/hn-ids.json
