@@ -81,11 +81,38 @@ for p, c in paths.most_common(5):
 PYEOF
 echo
 
-# ---------- 3. GitHub 数据 ----------
+# ---------- 3. GitHub 数据（当日缓存，避免 504/限流） ----------
 echo "【GitHub 数据】"
-GH=$(curl -s -m 12 --retry 4 --retry-delay 3 --retry-connrefused https://api.github.com/users/korolkk 2>/dev/null)
-GHREPOS=$(curl -s -m 12 --retry 4 --retry-delay 3 --retry-connrefused "https://api.github.com/users/korolkk/repos?per_page=100&sort=updated" 2>/dev/null)
+GHCACHE=/opt/api-bridge/cache
+mkdir -p "$GHCACHE" 2>/dev/null
+GHDAY=$(TZ='Asia/Shanghai' date '+%Y%m%d')
+GH_USE_CACHE=""
+# fetch_gh: 命中当日缓存直接返回；否则请求 API（带重试），仅合法 JSON 才写缓存
+fetch_gh() {
+  if [ -f "$2" ]; then cat "$2"; return 0; fi
+  local data
+  data=$(curl -s -m 12 --retry 4 --retry-delay 3 --retry-connrefused "$1" 2>/dev/null)
+  if echo "$data" | python3 -c "import json,sys; json.load(sys.stdin)" 2>/dev/null; then
+    echo "$data" > "$2"
+    echo "$data"
+  fi
+}
+GH=$(fetch_gh "https://api.github.com/users/korolkk" "$GHCACHE/github-users-$GHDAY.json")
+GHREPOS=$(fetch_gh "https://api.github.com/users/korolkk/repos?per_page=100&sort=updated" "$GHCACHE/github-repos-$GHDAY.json")
+# 当日请求失败：回退昨日缓存并标注
+if [ -z "$GH" ]; then
+  GHYDAY=$(TZ='Asia/Shanghai' date -d 'yesterday' '+%Y%m%d')
+  if [ -f "$GHCACHE/github-users-$GHYDAY.json" ]; then
+    GH=$(cat "$GHCACHE/github-users-$GHYDAY.json")
+    GH_USE_CACHE="  (缓存数据: 今日接口不可用，展示昨日快照)"
+  fi
+fi
+if [ -z "$GHREPOS" ]; then
+  GHYDAY=$(TZ='Asia/Shanghai' date -d 'yesterday' '+%Y%m%d')
+  [ -f "$GHCACHE/github-repos-$GHYDAY.json" ] && GHREPOS=$(cat "$GHCACHE/github-repos-$GHYDAY.json")
+fi
 if [ -n "$GH" ]; then
+  [ -n "$GH_USE_CACHE" ] && echo "$GH_USE_CACHE"
   echo "$GH" | python3 -c "
 import json, sys
 try:
