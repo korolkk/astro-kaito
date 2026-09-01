@@ -1,0 +1,552 @@
+---
+import BaseHead from '../../components/BaseHead.astro';
+import Footer from '../../components/Footer.astro';
+import Header from '../../components/Header.astro';
+import { SITE_TITLE } from '../../consts';
+---
+
+<!doctype html>
+<html lang="zh-CN">
+	<head>
+		<BaseHead title={`IP Logo 生成器 - ${SITE_TITLE}`} description="基于 ip-as-logo 开源 Skill 的 AI 吉祥物 Logo 生成工具，输入产品信息，生成 6 个候选设计" />
+		<style>
+			main {
+				width: 1140px;
+				max-width: calc(100% - 2em);
+				padding-left: 2em;
+				padding-right: 2em;
+			}
+			.page-title {
+				font-size: 1.6em;
+				font-weight: 700;
+				color: rgb(var(--black));
+				margin-bottom: 0.3em;
+				text-align: center;
+			}
+			.page-desc {
+				text-align: center;
+				color: rgb(var(--gray));
+				font-size: 0.9em;
+				margin-bottom: 2em;
+			}
+
+			/* Steps banner */
+			.steps {
+				display: flex;
+				gap: 0.8em;
+				margin-bottom: 1.5em;
+				flex-wrap: wrap;
+			}
+			.step {
+				flex: 1;
+				min-width: 200px;
+				background: var(--card-bg);
+				border-radius: 14px;
+				padding: 0.9em 1em;
+				border: 1px solid rgb(var(--gray-light));
+			}
+			.step-num {
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				width: 22px;
+				height: 22px;
+				border-radius: 50%;
+				background: var(--accent);
+				color: #fff;
+				font-size: 0.75em;
+				font-weight: 700;
+				margin-right: 0.4em;
+			}
+			.step-text {
+				font-size: 0.85em;
+				color: rgb(var(--gray-dark));
+				line-height: 1.5;
+			}
+
+			/* Tool layout */
+			.tool-layout {
+				display: grid;
+				grid-template-columns: 400px 1fr;
+				gap: 1.5em;
+				align-items: start;
+			}
+			@media (max-width: 900px) {
+				.tool-layout {
+					grid-template-columns: 1fr;
+				}
+			}
+
+			.panel {
+				background: var(--card-bg);
+				border-radius: 20px;
+				padding: 1.5em;
+				box-shadow: 0 2px 12px rgba(var(--black), 0.04);
+			}
+			.panel-title {
+				font-size: 0.9em;
+				font-weight: 700;
+				color: rgb(var(--gray));
+				letter-spacing: 0.05em;
+				margin: 0 0 1em;
+				padding-bottom: 0.6em;
+				border-bottom: 2px solid rgb(var(--gray-light));
+			}
+
+			.control-group {
+				margin-bottom: 1.1em;
+			}
+			.control-label {
+				display: block;
+				font-size: 0.85em;
+				font-weight: 600;
+				color: rgb(var(--black));
+				margin-bottom: 0.4em;
+			}
+			.control-label .opt {
+				font-weight: 400;
+				color: rgb(var(--gray));
+				font-size: 0.85em;
+			}
+			.text-input, .text-area {
+				width: 100%;
+				padding: 0.55em 0.7em;
+				border: 1.5px solid rgb(var(--gray-light));
+				border-radius: 8px;
+				background: var(--card-bg);
+				color: rgb(var(--black));
+				font-family: inherit;
+				font-size: 0.88em;
+				outline: none;
+				transition: border-color 0.2s ease;
+				box-sizing: border-box;
+			}
+			.text-input:focus, .text-area:focus {
+				border-color: var(--accent);
+			}
+			.text-area {
+				min-height: 84px;
+				resize: vertical;
+			}
+
+			/* Palette chips */
+			.palette-row {
+				display: flex;
+				gap: 0.5em;
+				flex-wrap: wrap;
+			}
+			.palette-chip {
+				padding: 0.4em 0.9em;
+				border: 1.5px solid rgb(var(--gray-light));
+				border-radius: 999px;
+				background: var(--card-bg);
+				color: rgb(var(--gray-dark));
+				font-family: inherit;
+				font-size: 0.8em;
+				cursor: pointer;
+				transition: all 0.2s ease;
+			}
+			.palette-chip:hover {
+				border-color: var(--accent);
+				color: var(--accent);
+			}
+			.palette-chip.active {
+				background: rgba(var(--accent-rgb), 0.08);
+				border-color: var(--accent);
+				color: var(--accent);
+			}
+
+			/* Generate button */
+			.gen-btn {
+				width: 100%;
+				padding: 0.7em;
+				border: none;
+				border-radius: 10px;
+				background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+				color: #fff;
+				font-family: inherit;
+				font-size: 0.95em;
+				font-weight: 700;
+				cursor: pointer;
+				transition: all 0.2s ease;
+			}
+			.gen-btn:hover {
+				opacity: 0.9;
+				transform: translateY(-1px);
+				box-shadow: 0 4px 16px rgba(var(--accent-rgb), 0.3);
+			}
+
+			/* Request output */
+			.request-box {
+				margin-top: 1em;
+				background: rgb(var(--gray-light));
+				border-radius: 10px;
+				padding: 0.8em;
+				position: relative;
+			}
+			.request-text {
+				font-size: 0.78em;
+				color: rgb(var(--gray-dark));
+				line-height: 1.6;
+				margin: 0 0 0.6em;
+				white-space: pre-wrap;
+				word-break: break-word;
+				max-height: 180px;
+				overflow-y: auto;
+				font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+			}
+			.copy-btn {
+				display: inline-flex;
+				align-items: center;
+				gap: 0.35em;
+				padding: 0.4em 0.9em;
+				border: 1.5px solid var(--accent);
+				border-radius: 8px;
+				background: var(--card-bg);
+				color: var(--accent);
+				font-family: inherit;
+				font-size: 0.8em;
+				font-weight: 600;
+				cursor: pointer;
+				transition: all 0.2s ease;
+			}
+			.copy-btn:hover {
+				background: rgba(var(--accent-rgb), 0.08);
+			}
+			.copy-btn.copied {
+				background: var(--accent);
+				color: #fff;
+			}
+
+			/* Candidates grid */
+			.candidate-grid {
+				display: grid;
+				grid-template-columns: repeat(3, 1fr);
+				gap: 0.8em;
+			}
+			@media (max-width: 700px) {
+				.candidate-grid {
+					grid-template-columns: repeat(2, 1fr);
+				}
+			}
+			.candidate {
+				border-radius: 12px;
+				overflow: hidden;
+				border: 1px solid rgb(var(--gray-light));
+				background: rgb(var(--gray-light));
+			}
+			.candidate-head {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				padding: 0.4em 0.7em;
+				background: var(--card-bg);
+				border-bottom: 1px solid rgb(var(--gray-light));
+			}
+			.candidate-label {
+				font-size: 0.75em;
+				font-weight: 700;
+				color: var(--accent);
+			}
+			.candidate-corner {
+				font-size: 0.7em;
+				color: rgb(var(--gray));
+			}
+			.candidate-body {
+				aspect-ratio: 1;
+				background: #f5f5f7;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				position: relative;
+			}
+			.candidate-body img {
+				width: 100%;
+				height: 100%;
+				object-fit: contain;
+				display: none;
+			}
+			.candidate-body.has-img img {
+				display: block;
+			}
+			.candidate-body .placeholder {
+				font-size: 0.75em;
+				color: rgb(var(--gray));
+				text-align: center;
+				padding: 0 0.8em;
+				line-height: 1.5;
+			}
+			.candidate-foot {
+				display: flex;
+				gap: 0.3em;
+				padding: 0.4em 0.6em;
+				background: var(--card-bg);
+				border-top: 1px solid rgb(var(--gray-light));
+			}
+			.candidate-input {
+				flex: 1;
+				min-width: 0;
+				padding: 0.3em 0.5em;
+				border: 1px solid rgb(var(--gray-light));
+				border-radius: 6px;
+				background: var(--card-bg);
+				color: rgb(var(--black));
+				font-family: inherit;
+				font-size: 0.72em;
+				outline: none;
+				box-sizing: border-box;
+			}
+			.candidate-btn {
+				padding: 0.3em 0.6em;
+				border: 1px solid var(--accent);
+				border-radius: 6px;
+				background: var(--card-bg);
+				color: var(--accent);
+				font-family: inherit;
+				font-size: 0.72em;
+				cursor: pointer;
+				transition: all 0.2s ease;
+				flex-shrink: 0;
+			}
+			.candidate-btn:hover {
+				background: rgba(var(--accent-rgb), 0.08);
+			}
+
+			/* Example output */
+			.example-row {
+				display: flex;
+				align-items: center;
+				gap: 1em;
+				padding: 0.8em;
+				background: rgb(var(--gray-light));
+				border-radius: 10px;
+				margin-top: 1em;
+			}
+			.example-row img {
+				width: 64px;
+				height: 64px;
+				border-radius: 10px;
+				object-fit: cover;
+				flex-shrink: 0;
+			}
+			.example-text {
+				font-size: 0.78em;
+				color: rgb(var(--gray-dark));
+				line-height: 1.5;
+				margin: 0;
+			}
+		</style>
+	</head>
+	<body>
+		<Header />
+		<main id="main-content">
+			<h1 class="page-title">IP Logo 生成器</h1>
+			<p class="page-desc">基于开源 <strong>ip-as-logo</strong> Skill · 极简可爱 IP 吉祥物 Logo · 3 方向 × 2 变体 = 6 候选</p>
+
+			<div class="steps">
+				<div class="step">
+					<span class="step-num">1</span>
+					<span class="step-text">填写右侧产品信息，点击「生成创作请求」</span>
+				</div>
+				<div class="step">
+					<span class="step-num">2</span>
+					<span class="step-text">一键复制请求文本，粘贴给 WorkBuddy（说"用 ip-as-logo 生成"）</span>
+				</div>
+				<div class="step">
+					<span class="step-num">3</span>
+					<span class="step-text">拿到 6 张候选图后，把图片链接粘贴回下方网格对比选择</span>
+				</div>
+			</div>
+
+			<div class="tool-layout">
+				<!-- 左侧：表单 -->
+				<section class="panel">
+					<h2 class="panel-title">产品信息</h2>
+
+					<div class="control-group">
+						<label class="control-label" for="prodName">产品 / 品牌名称</label>
+						<input class="text-input" id="prodName" type="text" placeholder="例如：KaitoHub" value="KaitoHub" />
+					</div>
+
+					<div class="control-group">
+						<label class="control-label" for="prodDesc">产品一句话描述 <span class="opt">(可选)</span></label>
+						<textarea class="text-area" id="prodDesc" placeholder="例如：一个极简的个人技术博客，分享嵌入式开发与 AI 实战">一个极简的个人技术博客，分享嵌入式开发与 AI 实战</textarea>
+					</div>
+
+					<div class="control-group">
+						<label class="control-label" for="prodAud">目标人群 / 调性 <span class="opt">(可选)</span></label>
+						<input class="text-input" id="prodAud" type="text" placeholder="例如：工程师、极客，希望可爱但专业" />
+					</div>
+
+					<div class="control-group">
+						<label class="control-label">背景色偏好 <span class="opt">(可选，默认深色底)</span></label>
+						<div class="palette-row" id="paletteRow">
+							<button type="button" class="palette-chip" data-color="深蓝色">深蓝</button>
+							<button type="button" class="palette-chip" data-color="深紫色">深紫</button>
+							<button type="button" class="palette-chip" data-color="米白色">米白</button>
+							<button type="button" class="palette-chip" data-color="浅绿色">浅绿</button>
+							<button type="button" class="palette-chip" data-color="暖橙色">暖橙</button>
+						</div>
+					</div>
+
+					<div class="control-group">
+						<label class="control-label" for="extraReq">额外要求 <span class="opt">(可选)</span></label>
+						<input class="text-input" id="extraReq" type="text" placeholder="例如：IP 是一只小狐狸 / 希望主体是机器人" />
+					</div>
+
+					<button class="gen-btn" id="genBtn" type="button">生成创作请求</button>
+
+					<div class="request-box" id="requestBox" style="display:none;">
+						<p class="request-text" id="requestText"></p>
+						<button class="copy-btn" id="copyBtn" type="button">📋 复制请求文本</button>
+					</div>
+
+					<div class="example-row">
+						<img src="/api/xhs/cover?url=" alt="" id="exampleImg" style="display:none;" />
+						<p class="example-text" id="exampleText">填写信息后点击「生成创作请求」，把复制的文本发给 WorkBuddy，即可按 ip-as-logo 规则生成 6 张候选 Logo。</p>
+					</div>
+				</section>
+
+				<!-- 右侧：候选展示 -->
+				<section class="panel">
+					<h2 class="panel-title">候选展示 · 6 格对比</h2>
+					<div class="candidate-grid" id="candidateGrid">
+						<!-- JS 动态生成 6 格 -->
+					</div>
+					<p style="font-size:0.78em;color:rgb(var(--gray));margin-top:0.8em;line-height:1.6;">
+						💡 生成图片后：每个格子下方输入框粘贴图片链接（或本地上传），点击「加载」即可预览对比。A/B/C 对应 3 个设计方向，1/2 分别测试左下、右下构图。
+					</p>
+				</section>
+			</div>
+		</main>
+		<Footer />
+
+		<script>
+			(function () {
+				// ---------- 色板选择 ----------
+				var palette = '';
+				var paletteBtns = document.querySelectorAll('.palette-chip');
+				paletteBtns.forEach(function (btn) {
+					btn.addEventListener('click', function () {
+						paletteBtns.forEach(function (b) { b.classList.remove('active'); });
+						btn.classList.add('active');
+						palette = btn.getAttribute('data-color');
+					});
+				});
+
+				// ---------- 候选网格 ----------
+				var candidates = [
+					{ label: 'A1', corner: '左下', direction: '方向A' },
+					{ label: 'A2', corner: '右下', direction: '方向A' },
+					{ label: 'B1', corner: '左下', direction: '方向B' },
+					{ label: 'B2', corner: '右下', direction: '方向B' },
+					{ label: 'C1', corner: '左下', direction: '方向C' },
+					{ label: 'C2', corner: '右下', direction: '方向C' },
+				];
+				var grid = document.getElementById('candidateGrid');
+				candidates.forEach(function (c) {
+					var cell = document.createElement('div');
+					cell.className = 'candidate';
+					cell.innerHTML =
+						'<div class="candidate-head">' +
+							'<span class="candidate-label">' + c.label + ' · ' + c.direction + '</span>' +
+							'<span class="candidate-corner">' + c.corner + '</span>' +
+						'</div>' +
+						'<div class="candidate-body" id="body-' + c.label + '">' +
+							'<span class="placeholder">' + c.label + ' 候选位<br/>加载生成结果</span>' +
+							'<img alt="' + c.label + '" />' +
+						'</div>' +
+						'<div class="candidate-foot">' +
+							'<input class="candidate-input" type="text" placeholder="粘贴图片链接…" />' +
+							'<button class="candidate-btn" type="button">加载</button>' +
+							'<button class="candidate-btn" type="button" title="上传本地图片">📁</button>' +
+						'</div>';
+					var body = cell.querySelector('.candidate-body');
+					var img = cell.querySelector('img');
+					var input = cell.querySelector('.candidate-input');
+					var loadBtn = cell.querySelectorAll('.candidate-btn')[0];
+					var upBtn = cell.querySelectorAll('.candidate-btn')[1];
+
+					function showImg(url) {
+						img.onload = function () { body.classList.add('has-img'); };
+						img.onerror = function () { alert(c.label + ': 图片加载失败，请检查链接'); };
+						img.src = url;
+					}
+					loadBtn.addEventListener('click', function () {
+						if (input.value.trim()) showImg(input.value.trim());
+					});
+					input.addEventListener('keydown', function (e) {
+						if (e.key === 'Enter') { e.preventDefault(); loadBtn.click(); }
+					});
+					upBtn.addEventListener('click', function () {
+						var fileInput = document.createElement('input');
+						fileInput.type = 'file';
+						fileInput.accept = 'image/*';
+						fileInput.onchange = function () {
+							var file = fileInput.files[0];
+							if (!file) return;
+							var reader = new FileReader();
+							reader.onload = function (ev) { showImg(ev.target.result); };
+							reader.readAsDataURL(file);
+						};
+						fileInput.click();
+					});
+					grid.appendChild(cell);
+				});
+
+				// ---------- 生成创作请求 ----------
+				function buildRequest() {
+					var name = (document.getElementById('prodName').value || '').trim();
+					var desc = (document.getElementById('prodDesc').value || '').trim();
+					var aud = (document.getElementById('prodAud').value || '').trim();
+					var extra = (document.getElementById('extraReq').value || '').trim();
+
+					var lines = [];
+					lines.push('请使用 ip-as-logo skill，为以下产品设计 IP 吉祥物 Logo：');
+					lines.push('');
+					lines.push('【产品/品牌】' + (name || '未填写'));
+					if (desc) lines.push('【描述】' + desc);
+					if (aud) lines.push('【人群/调性】' + aud);
+					if (palette) lines.push('【背景色偏好】' + palette);
+					if (extra) lines.push('【IP 主题】' + extra);
+					lines.push('');
+					lines.push('请先给出 3 个设计方向（每个方向说明设计思路），确认后一次性生成 6 张候选（A1/A2/B1/B2/C1/C2，1 在左下 2 在右下）。');
+					return lines.join('\n');
+				}
+
+				var requestBox = document.getElementById('requestBox');
+				var requestText = document.getElementById('requestText');
+				var copyBtn = document.getElementById('copyBtn');
+				var genBtn = document.getElementById('genBtn');
+
+				genBtn.addEventListener('click', function () {
+					requestText.textContent = buildRequest();
+					requestBox.style.display = 'block';
+					copyBtn.textContent = '📋 复制请求文本';
+					copyBtn.classList.remove('copied');
+				});
+
+				copyBtn.addEventListener('click', function () {
+					var text = requestText.textContent;
+					if (navigator.clipboard && navigator.clipboard.writeText) {
+						navigator.clipboard.writeText(text).then(function () {
+							copyBtn.textContent = '✅ 已复制';
+							copyBtn.classList.add('copied');
+							setTimeout(function () { copyBtn.textContent = '📋 复制请求文本'; copyBtn.classList.remove('copied'); }, 2000);
+						});
+					} else {
+						var ta = document.createElement('textarea');
+						ta.value = text;
+						document.body.appendChild(ta);
+						ta.select();
+						document.execCommand('copy');
+						document.body.removeChild(ta);
+						copyBtn.textContent = '✅ 已复制';
+						copyBtn.classList.add('copied');
+						setTimeout(function () { copyBtn.textContent = '📋 复制请求文本'; copyBtn.classList.remove('copied'); }, 2000);
+					}
+				});
+			})();
+		</script>
+	</body>
+</html>
