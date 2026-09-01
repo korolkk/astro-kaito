@@ -261,3 +261,6 @@ except Exception as e:
 echo
 echo "========== 报告结束 =========="
 rm -f /tmp/dr-cj.txt /tmp/dr-access.log /tmp/hn-ids.json
+# 清理 3 天前的 GitHub 缓存（保留今日+昨日回退，控制目录体积）
+[ -n "${GHCACHE:-}" ] && find "$GHCACHE" -name 'github-*.json' -mtime +3 -delete 2>/dev/null
+exit 0
