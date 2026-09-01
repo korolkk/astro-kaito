@@ -83,8 +83,8 @@ echo
 
 # ---------- 3. GitHub 数据 ----------
 echo "【GitHub 数据】"
-GH=$(curl -s -m 10 https://api.github.com/users/korolkk 2>/dev/null)
-GHREPOS=$(curl -s -m 10 "https://api.github.com/users/korolkk/repos?per_page=100&sort=updated" 2>/dev/null)
+GH=$(curl -s -m 12 --retry 4 --retry-delay 3 --retry-connrefused https://api.github.com/users/korolkk 2>/dev/null)
+GHREPOS=$(curl -s -m 12 --retry 4 --retry-delay 3 --retry-connrefused "https://api.github.com/users/korolkk/repos?per_page=100&sort=updated" 2>/dev/null)
 if [ -n "$GH" ]; then
   echo "$GH" | python3 -c "
 import json, sys
@@ -212,7 +212,8 @@ GOLD=$(curl -s -m 10 -H "Referer: https://finance.sina.com.cn" "https://hq.sinaj
 echo "$GOLD" | python3 -c "
 import sys, re
 try:
-    raw = sys.stdin.read()
+    # 新浪 hq.sinajs.cn 返回 GBK 编码，需按字节读取并解码
+    raw = sys.stdin.buffer.read().decode('gbk', errors='replace')
     m = re.search(r'\"(.*?)\"', raw)
     if not m:
         print('  金价数据获取失败')
