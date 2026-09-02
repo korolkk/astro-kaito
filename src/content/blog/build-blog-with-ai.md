@@ -2,7 +2,7 @@
 title: "如何借助 AI 快速搭建个人技术博客"
 description: "从零开始，借助 Claude Code 在两天内完成博客搭建、主题定制、内容迁移和部署上线的完整记录。"
 pubDate: "Jun 1 2026"
-heroImage: "../../assets/covers/cover-ai-blog.jpg"
+heroImage: "../../assets/covers/cover-build-blog-with-ai.png"
 tags: ["AI工具", "Astro", "博客搭建"]
 ---
 

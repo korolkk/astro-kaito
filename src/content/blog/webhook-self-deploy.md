@@ -2,7 +2,7 @@
 title: "从 SSH 到 Webhook：让服务器自己部署自己"
 description: "经历了 SSH 端口暴露、5000 条 GitHub IP 白名单、密钥格式踩坑后，最终用 Webhook 方案让服务器自主拉取和部署，顺便踩了三个新坑。"
 pubDate: "Jun 9 2026"
-heroImage: "../../assets/covers/cover-webhook.jpg"
+heroImage: "../../assets/covers/cover-webhook-self-deploy.png"
 tags: ["部署", "CI/CD", "GitHub Actions", "DevOps"]
 ---
 
