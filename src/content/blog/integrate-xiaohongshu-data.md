@@ -2,7 +2,7 @@
 title: "给博客接入小红书数据：从 RSSHub 到自研 Chromium 直抓的折腾之旅"
 description: "想在首页展示小红书最新笔记、后台统计互动数据？记录从自建 RSSHub、解决 OOM 与依赖冲突，到最终用无头浏览器直抓页面数据的完整踩坑过程与解决方案。"
 pubDate: "Aug 31 2026"
-heroImage: "../../assets/covers/cover-xiaohongshu.png"
+heroImage: "../../assets/covers/cover-xiaohongshu-handdrawn.png"
 tags: ["小红书", "爬虫", "RSSHub", "Docker", "部署", "踩坑记录"]
 ---
 
