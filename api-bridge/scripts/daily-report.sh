@@ -246,14 +246,14 @@ try:
         print('  金价数据获取失败')
         sys.exit(0)
     f = m.group(1).split(',')
-    # gds_AUTD 沪金延期: 0现价 3最高 4最低 7结算 8昨结 6时间
+    # gds_AUTD 沪金延期(实测 2026-09-02): 0现价 4最高 5最低 6时间 7昨收盘(官方核对一致)
     price = float(f[0])
-    prev = float(f[8]) if f[8] else float(f[2])
-    high, low = float(f[3]), float(f[4])
+    prev = float(f[7]) if f[7] else 0
+    high, low = float(f[4]), float(f[5])
     chg = (price - prev) / prev * 100 if prev else 0
     arrow = '▲' if chg >= 0 else '▼'
     print(f'  沪金(延期): {price:.2f} 元/克')
-    print(f'  今日涨跌: {arrow} {abs(chg):.2f}%  (昨结 {prev:.2f})')
+    print(f'  今日涨跌: {arrow} {abs(chg):.2f}%  (昨收 {prev:.2f})')
     print(f'  区间: 高 {high:.2f} / 低 {low:.2f}')
 except Exception as e:
     print('  金价解析失败:', e)
