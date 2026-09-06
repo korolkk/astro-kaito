@@ -448,166 +448,95 @@ function readXhsCookie() {
   try { return readFileSync(XHS_COOKIE_FILE, 'utf8').trim(); } catch { return ''; }
 }
 
-/**
- * 内置 Chromium 直抓（首选）：用 playwright-core 打开用户主页，
- * 解析 window.__INITIAL_STATE__.user.notes._value[0][].noteCard
- * 提取笔记（标题/封面/点赞/时间/链接），滚动加载更多。
- */
-async function fetchXhsWithBrowser() {
-  let pw = null;
-  try {
-    // playwright-core 查找：api-bridge 本地 / RSSHub 容器 / 宿主机 pw-tmp 独立目录
-    const candidates = [
-      'playwright-core',
-      join('/app/node_modules', 'playwright-core'),
-      join('/opt/pw-tmp/node_modules', 'playwright-core'),
-    ];
-    for (const c of candidates) {
-      try { pw = require(c); break; } catch {}
-    }
-    if (!pw) throw new Error('未找到 playwright-core，请安装到 api-bridge 或 RSSHub 容器');
-    const cookie = readXhsCookie();
-    if (!cookie) throw new Error('未找到小红书 cookie 文件: ' + XHS_COOKIE_FILE);
 
-    const browser = await pw.chromium.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--single-process'],
+
+/** 从 SSR HTML 提取并解析 window.__INITIAL_STATE__(选择含笔记卡片的最长段) */
+function extractXhsInitialState(html) {
+  const re = /window\.__INITIAL_STATE__=([\s\S]*?)<\/script>/g;
+  let m, seg = null;
+  while ((m = re.exec(html)) !== null) {
+    if (m[1].indexOf('noteCard') >= 0 && (!seg || m[1].length > seg.length)) seg = m[1];
+  }
+  if (!seg) return null;
+  // SSR 内嵌的是 JS 对象字面量,值可能为 undefined(非严格 JSON),清洗后再解析
+  const cleaned = seg.replace(/([:,\[]\s*)undefined(\s*[,}\]])/g, '$1null$2');
+  try { return JSON.parse(cleaned); } catch { return null; }
+}
+
+/** 从 __INITIAL_STATE__ 收集笔记卡片(兼容 user.notes 二维数组与新老结构) */
+function collectXhsNoteCards(state) {
+  const out = [];
+  const seen = new Set();
+  let notes = state && state.user && state.user.notes;
+  if (!notes) return out;
+  const rows = Array.isArray(notes) ? notes : (Array.isArray(notes._value) ? notes._value : []);
+  for (const row of rows) {
+    if (!Array.isArray(row)) continue;
+    for (const item of row) {
+      const nc = item && item.noteCard;
+      if (!nc || !nc.noteId || seen.has(nc.noteId)) continue;
+      seen.add(nc.noteId);
+      out.push(nc);
+    }
+  }
+  return out;
+}
+
+/**
+ * SSR 纯 HTTP 直抓(首选通道):带 cookie 抓用户主页,解析 __INITIAL_STATE__ 内嵌的
+ * 笔记卡片。无需 chromium —— 服务器内存仅 ~1.9G,headless 反复 SIGTRAP 崩溃;
+ * 且主页 SSR 内嵌近 20 篇卡片,足够首页精选(2026-09 实测 7+ 篇)。
+ */
+async function fetchXhsViaHttp() {
+  const cookie = readXhsCookie();
+  if (!cookie) throw new Error('未找到小红书 cookie 文件: ' + XHS_COOKIE_FILE);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 25_000);
+  let html;
+  try {
+    const resp = await fetch(`https://www.xiaohongshu.com/user/profile/${XHS_USER_ID}`, {
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Accept-Language': 'zh-CN,zh;q=0.9',
+        'Cookie': cookie,
+        'Referer': 'https://www.xiaohongshu.com/',
+      },
     });
-    try {
-      const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
-      // 注入 cookie
-      const cookies = cookie.split('; ').map(kv => {
-        const i = kv.indexOf('=');
-        return { name: kv.slice(0, i), value: kv.slice(i + 1), domain: '.xiaohongshu.com', path: '/' };
-      });
-      await page.context().addCookies(cookies);
-      await page.goto(`https://www.xiaohongshu.com/user/profile/${XHS_USER_ID}`, {
-        waitUntil: 'domcontentloaded', timeout: 30_000,
-      });
-      await page.waitForTimeout(4000);
-
-      // 提取当前页面中的笔记（从 __INITIAL_STATE__ 或页面 DOM）
-      const extractNotes = () => page.evaluate(() => {
-        const posts = [];
-        const seen = new Set();
-        // 方式1：__INITIAL_STATE__
-        try {
-          const s = window.__INITIAL_STATE__;
-          const notes = s?.user?.notes?._value;
-          if (notes) {
-            for (const row of notes) {
-              for (const item of row) {
-                const nc = item?.noteCard;
-                if (!nc || !nc.noteId || seen.has(nc.noteId)) continue;
-                seen.add(nc.noteId);
-                let cover = '';
-                if (nc.cover?.url) cover = nc.cover.url;
-                else if (nc.cover?.infoList?.length) cover = nc.cover.infoList[nc.cover.infoList.length - 1].url;
-                if (cover.startsWith('http://')) cover = 'https://' + cover.slice(7);
-                // 保留 URL 参数（!nc_n_webp_mw_1 等）：小红书 CDN 防盗链，
-                // 去掉参数后返回 403，必须原样保留才能加载。
-                // 同时走本站代理 /api/xhs/cover，规避浏览器端 referrer 防盗链。
-                const proxied = '/api/xhs/cover?url=' + encodeURIComponent(cover);
-                posts.push({
-                  title: nc.displayTitle || '无标题笔记',
-                  link: `https://www.xiaohongshu.com/explore/${nc.noteId}`,
-                  cover: proxied,
-                  pubDate: nc.time ? new Date(nc.time).toISOString() : '',
-                  // 只记录真实抓到的字段：likes 来自主页卡片；comments/collects 待详情页补抓，
-                  // 未抓到就不设字段（不伪造 0），前端据此区分「未知」与「确为 0」
-                  likes: numOr(nc.interactInfo?.likedCount),
-                  // 详情页补抓评论/收藏数所需（主页卡片 interactInfo 仅含点赞）
-                  noteId: nc.noteId || '',
-                  xsecToken: nc.xsecToken || '',
-                });
-              }
-            }
-          }
-        } catch {}
-        return posts;
-      });
-
-      let allPosts = [];
-      // 滚动加载更多（轻量策略：内存紧张的服务器上减少轮次与等待）
-      for (let i = 0; i < 4; i++) {
-        await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-        await page.waitForTimeout(1200);
-        const batch = await extractNotes();
-        const seenIds = new Set(allPosts.map(p => p.link));
-        for (const p of batch) {
-          if (!seenIds.has(p.link)) allPosts.push(p);
-        }
-        if (allPosts.length >= 6) break;
-      }
-      // 最后再提取一次兜底
-      if (allPosts.length === 0) {
-        const batch = await extractNotes();
-        allPosts = batch;
-      }
-      // 补抓互动数据：主页卡片 interactInfo 仅含点赞数（2026-09 实测），
-      // 评论/收藏需逐篇进详情页（带 noteCard 自带 xsecToken，否则被风控 404）
-      try {
-        await enrichInteract(page, allPosts);
-      } catch (err) {
-        console.error('[xhs] 互动补抓失败，保留主页数据:', err.message);
-      }
-      return { posts: allPosts, noteCount: allPosts.length };
-    } finally {
-      await browser.close().catch(() => {});
-    }
+    if (!resp.ok) throw new Error(`主页 HTTP ${resp.status}`);
+    html = await resp.text();
   } finally {
-    // 显式退出（playwright-core 无需专门清理）
+    clearTimeout(timer);
   }
+  const state = extractXhsInitialState(html);
+  if (!state) throw new Error('页面未找到 __INITIAL_STATE__(可能触发验证页)');
+  const cards = collectXhsNoteCards(state);
+  if (!cards.length) throw new Error('SSR 未解析到笔记卡片');
+  const posts = cards.map((nc) => {
+    let cover = '';
+    if (nc.cover) {
+      if (nc.cover.url) cover = nc.cover.url;
+      else if (Array.isArray(nc.cover.infoList) && nc.cover.infoList.length) {
+        cover = nc.cover.infoList[nc.cover.infoList.length - 1].url;
+      }
+    }
+    if (cover.startsWith('http://')) cover = 'https://' + cover.slice(7);
+    // 保留 URL 参数(防盗链)并走本站代理转发,与前端 <img> 用法一致
+    const proxied = cover ? '/api/xhs/cover?url=' + encodeURIComponent(cover) : '';
+    return {
+      title: nc.displayTitle || '无标题笔记',
+      link: `https://www.xiaohongshu.com/explore/${nc.noteId}`,
+      cover: proxied,
+      pubDate: nc.time ? new Date(nc.time).toISOString() : '',
+      // 主页 SSR 卡片仅含点赞数;评论/收藏未抓到则不设字段(未知),不伪造 0
+      likes: numOr(nc.interactInfo && nc.interactInfo.likedCount),
+    };
+  });
+  return { posts, noteCount: posts.length, fetchedCount: cards.length };
 }
 
-/**
- * 逐篇打开笔记详情页，回填评论数/收藏数（likes 一并刷新为详情页权威值）。
- * 从 window.__INITIAL_STATE__.note.noteDetailMap[*].note.interactInfo 读取，
- * 单篇失败仅保留 0 兜底，不影响整体；最后清理内部字段 noteId/xsecToken。
- */
-async function enrichInteract(page, posts) {
-  try {
-    for (const p of posts) {
-      if (!p.noteId || !p.xsecToken) continue;
-      const url =
-        `https://www.xiaohongshu.com/explore/${p.noteId}` +
-        `?xsec_token=${encodeURIComponent(p.xsecToken)}&xsec_source=pc_user`;
-      try {
-        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 25_000 });
-        // 等待 SSR 详情数据注入 __INITIAL_STATE__.note.noteDetailMap
-        await page.waitForFunction(() => {
-          try {
-            const s = window.__INITIAL_STATE__;
-            const m = s && s.note && s.note.noteDetailMap;
-            return !!(m && Object.keys(m).length);
-          } catch { return false; }
-        }, { timeout: 10_000 }).catch(() => {});
-        const it = await page.evaluate((id) => {
-          try {
-            const s = window.__INITIAL_STATE__;
-            const m = s && s.note && s.note.noteDetailMap;
-            const k = (m && Object.keys(m)[0]) || id;
-            const note = m && m[k] && (m[k].note || m[k]);
-            return note && note.interactInfo ? note.interactInfo : null;
-          } catch { return null; }
-        }, p.noteId);
-        if (it) {
-          // 详情页权威值回填：取到 0 也如实写入（确为 0），字段缺失则保持未知（不伪造 0）
-          const setNum = (k, raw) => { const x = numOr(raw); if (x !== undefined) p[k] = x; };
-          setNum('likes', it.likedCount);
-          setNum('comments', it.commentCount);
-          setNum('collects', it.collectedCount);
-        }
-      } catch (err) {
-        console.error('[xhs] 详情页互动补抓失败:', p.noteId, err.message);
-      }
-      // 轻微间隔，降低触发风控的概率
-      await page.waitForTimeout(800).catch(() => {});
-    }
-  } finally {
-    for (const p of posts) { delete p.noteId; delete p.xsecToken; }
-  }
-}
+
 
 /** 从 RSS item 块中提取单字段（去 CDATA） */
 function rssField(block, tag) {
@@ -705,19 +634,19 @@ function loadXhsCacheFromDisk() {
   } catch { /* 首次运行尚无缓存文件 */ }
 }
 
-/** 真实网络抓取（浏览器直抓优先，失败回退 RSSHub），返回带 fetchedAt 的完整 payload */
+/** 真实网络抓取（SSR HTTP 直抓优先，失败回退 RSSHub），返回带 fetchedAt 的完整 payload */
 async function xhsFetchNetwork() {
   let result;
   try {
-    // 首选：内置 Chromium 直抓（RSSHub 与小红书页面结构不兼容期间的可靠通道）
-    const data = await fetchXhsWithBrowser();
+    // 首选：SSR 纯 HTTP 直抓（轻量稳定——服务器内存 ~1.9G，headless chromium 反复崩溃已弃用）
+    const data = await fetchXhsViaHttp();
     if (data.posts && data.posts.length) {
-      result = { source: 'browser', ...data };
+      result = { source: 'http', ...data };
     } else {
-      throw new Error('浏览器直抓未获取到笔记');
+      throw new Error('SSR 直抓未获取到笔记');
     }
-  } catch (browserErr) {
-    console.error('[xhs] 浏览器直抓失败:', browserErr.message);
+  } catch (httpErr) {
+    console.error('[xhs] SSR 直抓失败:', httpErr.message);
     result = { source: 'rsshub', ...(await fetchXhsFromRsshub()) };
   }
   return { fetchedAt: new Date().toISOString(), ...result };
