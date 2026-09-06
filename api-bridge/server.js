@@ -513,9 +513,9 @@ async function fetchXhsWithBrowser() {
                   link: `https://www.xiaohongshu.com/explore/${nc.noteId}`,
                   cover: proxied,
                   pubDate: nc.time ? new Date(nc.time).toISOString() : '',
-                  likes: parseInt(nc.interactInfo?.likedCount, 10) || 0,
-                  comments: 0,
-                  collects: 0,
+                  // 只记录真实抓到的字段：likes 来自主页卡片；comments/collects 待详情页补抓，
+                  // 未抓到就不设字段（不伪造 0），前端据此区分「未知」与「确为 0」
+                  likes: numOr(nc.interactInfo?.likedCount),
                   // 详情页补抓评论/收藏数所需（主页卡片 interactInfo 仅含点赞）
                   noteId: nc.noteId || '',
                   xsecToken: nc.xsecToken || '',
@@ -592,10 +592,11 @@ async function enrichInteract(page, posts) {
           } catch { return null; }
         }, p.noteId);
         if (it) {
-          const n = (v) => { const x = parseInt(v, 10); return isNaN(x) ? 0 : x; };
-          if (it.likedCount !== undefined) p.likes = n(it.likedCount);
-          if (it.commentCount !== undefined) p.comments = n(it.commentCount);
-          if (it.collectedCount !== undefined) p.collects = n(it.collectedCount);
+          // 详情页权威值回填：取到 0 也如实写入（确为 0），字段缺失则保持未知（不伪造 0）
+          const setNum = (k, raw) => { const x = numOr(raw); if (x !== undefined) p[k] = x; };
+          setNum('likes', it.likedCount);
+          setNum('comments', it.commentCount);
+          setNum('collects', it.collectedCount);
         }
       } catch (err) {
         console.error('[xhs] 详情页互动补抓失败:', p.noteId, err.message);
@@ -622,7 +623,7 @@ function firstImage(html) {
   return m ? m[1] : '';
 }
 
-/** 从 item 块中提取数字字段（兼容多种命名） */
+/** 从 item 块中提取数字字段（兼容多种命名；字段缺失返回 undefined，不伪造 0） */
 function rssNumber(block, names) {
   for (const name of names) {
     const re = new RegExp(`<${name}(?:[^>]*)>([^<]+)</${name}>`, 'i');
@@ -632,7 +633,7 @@ function rssNumber(block, names) {
       if (!isNaN(n)) return n;
     }
   }
-  return 0;
+  return undefined;
 }
 
 /** 解析 RSS 2.0 XML → 笔记数组 */
@@ -675,13 +676,37 @@ async function fetchXhsFromRsshub() {
   }
 }
 
-/** 抓取用户笔记（带 TTL 缓存；优先浏览器直抓，失败回退 RSSHub） */
-async function fetchXhsPosts() {
-  if (!xhsConfigured()) return { configured: false, posts: [] };
-  const now = Date.now();
-  if (xhsCache.data && now - xhsCache.at < XHS_CACHE_TTL_MS) {
-    return { configured: true, cached: true, ...xhsCache.data };
-  }
+// ===== 小红书抓取缓存：stale-while-revalidate =====
+// 首页接口先秒回（新鲜或历史数据兜底），网络刷新放后台，避免请求长期阻塞在“加载中”。
+const XHS_CACHE_FILE = join(DB_DIR, 'xhs-posts.json');
+const XHS_REFRESH_COOLDOWN_MS = (parseInt(process.env.XHS_REFRESH_COOLDOWN, 10) || 60) * 1000;
+let xhsRefreshing = null;   // 进行中的刷新 Promise（并发请求合并为同一次）
+let xhsNextRefreshAt = 0;   // 允许下一次网络抓取的时刻（失败后防请求风暴）
+
+/** 数值字段解析：失败返回 undefined（表示“未知”，而非伪造 0） */
+function numOr(v) {
+  const x = parseInt(v, 10);
+  return isNaN(x) ? undefined : x;
+}
+
+/** 磁盘缓存：服务重启后仍能秒回上次数据，避免冷启动长等待 */
+function saveXhsCacheToDisk() {
+  try { writeFileSync(XHS_CACHE_FILE, JSON.stringify(xhsCache)); }
+  catch (err) { console.error('[xhs] 缓存落盘失败:', err.message); }
+}
+
+function loadXhsCacheFromDisk() {
+  try {
+    const obj = JSON.parse(readFileSync(XHS_CACHE_FILE, 'utf8'));
+    if (obj && obj.data && Array.isArray(obj.data.posts) && obj.data.posts.length) {
+      xhsCache = { at: Number(obj.at) || 0, data: obj.data };
+      console.log(`[xhs] 已从磁盘恢复缓存：${obj.data.posts.length} 篇 @ ${new Date(xhsCache.at).toISOString()}`);
+    }
+  } catch { /* 首次运行尚无缓存文件 */ }
+}
+
+/** 真实网络抓取（浏览器直抓优先，失败回退 RSSHub），返回带 fetchedAt 的完整 payload */
+async function xhsFetchNetwork() {
   let result;
   try {
     // 首选：内置 Chromium 直抓（RSSHub 与小红书页面结构不兼容期间的可靠通道）
@@ -693,23 +718,63 @@ async function fetchXhsPosts() {
     }
   } catch (browserErr) {
     console.error('[xhs] 浏览器直抓失败:', browserErr.message);
-    try {
-      const rss = await fetchXhsFromRsshub();
-      result = rss;
-    } catch (rssErr) {
-      console.error('[xhs] RSSHub 回退失败:', rssErr.message);
-      throw new Error(`小红书数据获取失败: ${browserErr.message}`);
-    }
+    result = { source: 'rsshub', ...(await fetchXhsFromRsshub()) };
   }
-  xhsCache = { at: now, data: { fetchedAt: new Date().toISOString(), ...result } };
-  return { configured: true, cached: false, ...xhsCache.data };
+  return { fetchedAt: new Date().toISOString(), ...result };
 }
 
-// 首页：最新小红书精选（无需登录）
+/** 发起一次后台刷新（单飞 + 冷却），成功返回最新 payload，失败/冷却中返回 null（不抛错） */
+async function xhsRefresh() {
+  if (xhsRefreshing) return xhsRefreshing;
+  const now = Date.now();
+  if (now < xhsNextRefreshAt) return null;
+  xhsNextRefreshAt = now + XHS_REFRESH_COOLDOWN_MS;
+  xhsRefreshing = (async () => {
+    try {
+      const payload = await xhsFetchNetwork();
+      xhsCache = { at: Date.now(), data: payload };
+      saveXhsCacheToDisk();
+      return payload;
+    } catch (err) {
+      console.error('[xhs] 刷新失败:', err.message);
+      return null;
+    }
+  })();
+  try { return await xhsRefreshing; } finally { xhsRefreshing = null; }
+}
+
+/**
+ * 读取小红书精选数据。
+ * - 缓存新鲜：立即返回；
+ * - 有历史数据：立即返回旧数据并在后台刷新（不阻塞请求）；
+ * - 冷启动（无任何数据）：等待首次抓取，并发请求自动合并为同一次；
+ * - force=true：忽略旧缓存与冷却，强制等待最新（后台管理页/日报用）。
+ */
+async function fetchXhsPosts(opts = {}) {
+  if (!xhsConfigured()) return { configured: false, posts: [] };
+  if (!opts.force && xhsCache.data && Date.now() - xhsCache.at < XHS_CACHE_TTL_MS) {
+    return { configured: true, cached: true, ...xhsCache.data };
+  }
+  if (!opts.force && xhsCache.data) {
+    xhsRefresh().catch(() => {});
+    return { configured: true, cached: true, stale: true, ...xhsCache.data };
+  }
+  if (opts.force) xhsNextRefreshAt = 0; // 强制刷新：无视冷却
+  const payload = await xhsRefresh();
+  if (!payload) {
+    if (xhsCache.data) {
+      return { configured: true, cached: true, stale: true, error: '刷新失败，暂用上次数据', ...xhsCache.data };
+    }
+    return { configured: true, error: '小红书数据暂不可用', posts: [] };
+  }
+  return { configured: true, cached: false, ...payload };
+}
+
+// 公开接口：首页精选（无需登录；秒回 + 后台刷新）
+loadXhsCacheFromDisk();
 app.get('/api/xhs/posts', async (_req, res) => {
   try {
-    const data = await fetchXhsPosts();
-    res.json(data);
+    res.json(await fetchXhsPosts());
   } catch (err) {
     console.error('[xhs] 拉取失败:', err.message);
     res.json({ configured: xhsConfigured(), error: '小红书数据暂不可用', posts: [] });
@@ -1221,7 +1286,8 @@ app.get('/api/admin/xhs/stats', requireAuth, async (_req, res) => {
         posts: [],
       });
     }
-    const data = await fetchXhsPosts();
+    // 默认 stale-while-revalidate 秒回；?fresh=1 时强制等待最新（日报/后台核对用）
+    const data = await fetchXhsPosts({ force: _req.query.fresh === '1' });
     const posts = data.posts || [];
     const totalLikes = posts.reduce((s, p) => s + (p.likes || 0), 0);
     const totalComments = posts.reduce((s, p) => s + (p.comments || 0), 0);

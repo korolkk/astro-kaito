@@ -676,85 +676,151 @@ const thisMonthPosts = allPosts.filter(p => p.data.pubDate.getFullYear() === thi
 					.catch(function () { showError(); });
 			})();
 
-			// Xiaohongshu featured posts
-			(function () {
-				var cardEl = document.getElementById('xhsCard');
-				var loadingEl = document.getElementById('xhsLoading');
-				var listEl = document.getElementById('xhsList');
-				var errorEl = document.getElementById('xhsError');
-				if (!cardEl) return;
+            // Xiaohongshu featured posts
+            (function () {
+                var cardEl = document.getElementById('xhsCard');
+                var loadingEl = document.getElementById('xhsLoading');
+                var listEl = document.getElementById('xhsList');
+                var errorEl = document.getElementById('xhsError');
+                if (!cardEl) return;
 
-				function esc(s) {
-					var d = document.createElement('div');
-					d.textContent = s || '';
-					return d.innerHTML;
-				}
-				function fmtCount(n) {
-					n = n || 0;
-					if (n >= 10000) return (n / 10000).toFixed(1).replace(/\.0$/, '') + 'w';
-					if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
-					return String(n);
-				}
-				var likeIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21.2l7.8-7.8 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>';
-				var commentIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+                // 本地缓存：先渲染上次成功内容（预加载），再异步拉最新，避免长时间“加载中”
+                var CACHE_KEY = 'kaitohub.xhs.v1';
+                var CACHE_MAX_AGE = 3 * 24 * 60 * 60 * 1000; // 本地缓存最长 3 天
 
-				fetch('/api/xhs/posts')
-					.then(function (resp) { return resp.json(); })
-					.then(function (data) {
-						if (!data.configured || !data.posts || data.posts.length === 0) {
-							cardEl.style.display = 'none';
-							return;
-						}
-						// 精选最新 5 篇（按链接去重，防止重复渲染）
-						var seenLinks = {};
-						var top = [];
-						(data.posts || []).forEach(function (p) {
-							if (top.length >= 5) return;
-							if (!p.link || seenLinks[p.link]) return;
-							seenLinks[p.link] = true;
-							top.push(p);
-						});
-						loadingEl.style.display = 'none';
-						listEl.style.display = 'flex';
-						top.forEach(function (p) {
-							var a = document.createElement('a');
-							a.className = 'xhs-note';
-							a.href = p.link || '#';
-							a.target = '_blank';
-							a.rel = 'noopener noreferrer';
-						var cover = p.cover
-							? '<img class="xhs-cover" src="' + esc(p.cover) + '" alt="" loading="lazy" onerror="this.style.display=\'none\'" />'
-							: '<div class="xhs-cover"></div>';
-							var stats = '';
-							if (p.likes || p.comments) {
-								stats = '<span class="xhs-stats">' +
-									(p.likes ? '<span>' + likeIcon + ' ' + fmtCount(p.likes) + '</span>' : '') +
-									(p.comments ? '<span>' + commentIcon + ' ' + fmtCount(p.comments) + '</span>' : '') +
-									'</span>';
-							}
-							var date = '';
-							if (p.pubDate) {
-								try {
-									var d = new Date(p.pubDate);
-									if (!isNaN(d.getTime())) {
-										date = '<span>' + d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') + '</span>';
-									}
-								} catch (e) {}
-							}
-						a.innerHTML =
-							cover +
-							'<div class="xhs-info">' +
-								'<span class="xhs-title">' + esc(p.title) + '</span>' +
-								'<span class="xhs-meta">' + (stats ? stats + '<span class="xhs-sep">·</span>' : '') + date + '</span>' +
-							'</div>';
-							listEl.appendChild(a);
-						});
-					})
-					.catch(function () {
-						loadingEl.style.display = 'none';
-						errorEl.classList.remove('xhs-hidden');
-					});
-			})();
+                function esc(s) {
+                    var d = document.createElement('div');
+                    d.textContent = s || '';
+                    return d.innerHTML;
+                }
+                function fmtCount(n) {
+                    n = n || 0;
+                    if (n >= 10000) return (n / 10000).toFixed(1).replace(/\.0$/, '') + 'w';
+                    if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
+                    return String(n);
+                }
+                var likeIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21.2l7.8-7.8 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>';
+                var commentIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+
+                function hideLoading() { loadingEl.style.display = 'none'; }
+                function showError(msg) {
+                    errorEl.textContent = msg || '小红书数据暂不可用';
+                    errorEl.classList.remove('xhs-hidden');
+                }
+
+                // 统计角标：字段“已知”才显示图标——真实为 0 也显示 0；未抓到的字段不显示、不伪造 0
+                function postStats(p) {
+                    var has = function (v) { return typeof v === 'number' && isFinite(v); };
+                    var chips = [];
+                    if (has(p.likes)) chips.push('<span>' + likeIcon + ' ' + fmtCount(p.likes) + '</span>');
+                    if (has(p.comments)) chips.push('<span>' + commentIcon + ' ' + fmtCount(p.comments) + '</span>');
+                    return chips.length ? '<span class="xhs-stats">' + chips.join('') + '</span>' : '';
+                }
+
+                // 渲染最新 5 篇（按链接去重，防止重复渲染）
+                function renderPosts(posts) {
+                    var seen = {};
+                    var top = [];
+                    (posts || []).forEach(function (p) {
+                        if (top.length >= 5) return;
+                        if (!p.link || seen[p.link]) return;
+                        seen[p.link] = true;
+                        top.push(p);
+                    });
+                    if (!top.length) { cardEl.style.display = 'none'; return false; }
+                    cardEl.style.display = '';
+                    listEl.innerHTML = '';
+                    top.forEach(function (p) {
+                        var a = document.createElement('a');
+                        a.className = 'xhs-note';
+                        a.href = p.link || '#';
+                        a.target = '_blank';
+                        a.rel = 'noopener noreferrer';
+                        var cover = p.cover
+                            ? '<img class="xhs-cover" src="' + esc(p.cover) + '" alt="" loading="lazy" onerror="this.style.display=\'none\'" />'
+                            : '<div class="xhs-cover"></div>';
+                        var date = '';
+                        if (p.pubDate) {
+                            try {
+                                var d = new Date(p.pubDate);
+                                if (!isNaN(d.getTime())) {
+                                    date = '<span>' + d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') + '</span>';
+                                }
+                            } catch (e) {}
+                        }
+                        var meta = postStats(p);
+                        meta += meta ? '<span class="xhs-sep">·</span>' : '';
+                        meta += date;
+                        a.innerHTML =
+                            cover +
+                            '<div class="xhs-info">' +
+                                '<span class="xhs-title">' + esc(p.title) + '</span>' +
+                                '<span class="xhs-meta">' + meta + '</span>' +
+                            '</div>';
+                        listEl.appendChild(a);
+                    });
+                    listEl.style.display = 'flex';
+                    errorEl.classList.add('xhs-hidden');
+                    return true;
+                }
+
+                function readLocal() {
+                    try {
+                        var raw = localStorage.getItem(CACHE_KEY);
+                        if (!raw) return null;
+                        var o = JSON.parse(raw);
+                        if (!o || !o.t || !o.posts || !o.posts.length) return null;
+                        if (Date.now() - o.t > CACHE_MAX_AGE) return null;
+                        return o.posts;
+                    } catch (e) { return null; }
+                }
+                function saveLocal(posts) {
+                    try { localStorage.setItem(CACHE_KEY, JSON.stringify({ t: Date.now(), posts: posts })); } catch (e) {}
+                }
+                function sameLinks(a, b) {
+                    if (!a || !b || a.length !== b.length) return false;
+                    for (var i = 0; i < a.length; i++) {
+                        if ((a[i].link || '') !== (b[i].link || '')) return false;
+                    }
+                    return true;
+                }
+
+                // 1) 优先用上次成功内容立即渲染（预加载体验），随后异步拉最新覆盖
+                var cachedPosts = readLocal();
+                var usedCache = false;
+                if (cachedPosts) {
+                    usedCache = renderPosts(cachedPosts);
+                    if (usedCache) hideLoading();
+                }
+
+                // 2) 拉取最新数据（8s 超时兜底，避免无限“加载中”）
+                var controller = ('AbortController' in window) ? new AbortController() : null;
+                var timer = controller ? setTimeout(function () { controller.abort(); }, 8000) : null;
+                var reqOpts = controller ? { signal: controller.signal } : {};
+                fetch('/api/xhs/posts', reqOpts)
+                    .then(function (resp) { return resp.json(); })
+                    .then(function (data) {
+                        if (timer) clearTimeout(timer);
+                        if (!data.configured || !data.posts || data.posts.length === 0) {
+                            // 服务端未配置/无数据：无缓存内容时才隐藏卡片；已有缓存则保留
+                            if (!usedCache) cardEl.style.display = 'none';
+                            return;
+                        }
+                        // 与已展示内容一致时不重绘（避免闪烁），仅静默更新本地缓存
+                        if (!(usedCache && sameLinks(cachedPosts, data.posts))) {
+                            renderPosts(data.posts);
+                        }
+                        hideLoading();
+                        errorEl.classList.add('xhs-hidden');
+                        saveLocal(data.posts);
+                    })
+                    .catch(function () {
+                        if (timer) clearTimeout(timer);
+                        hideLoading();
+                        // 已有本地缓存内容时静默保留；否则提示错误而非无限加载
+                        if (!usedCache) showError('小红书数据暂不可用');
+                    });
+            })();
 
 			// Number counting animation
 			(function () {
