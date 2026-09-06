@@ -516,6 +516,9 @@ async function fetchXhsWithBrowser() {
                   likes: parseInt(nc.interactInfo?.likedCount, 10) || 0,
                   comments: 0,
                   collects: 0,
+                  // 详情页补抓评论/收藏数所需（主页卡片 interactInfo 仅含点赞）
+                  noteId: nc.noteId || '',
+                  xsecToken: nc.xsecToken || '',
                 });
               }
             }
@@ -541,13 +544,67 @@ async function fetchXhsWithBrowser() {
         const batch = await extractNotes();
         allPosts = batch;
       }
+      // 补抓互动数据：主页卡片 interactInfo 仅含点赞数（2026-09 实测），
+      // 评论/收藏需逐篇进详情页（带 noteCard 自带 xsecToken，否则被风控 404）
+      try {
+        await enrichInteract(page, allPosts);
+      } catch (err) {
+        console.error('[xhs] 互动补抓失败，保留主页数据:', err.message);
+      }
       return { posts: allPosts, noteCount: allPosts.length };
-      return data;
     } finally {
       await browser.close().catch(() => {});
     }
   } finally {
     // 显式退出（playwright-core 无需专门清理）
+  }
+}
+
+/**
+ * 逐篇打开笔记详情页，回填评论数/收藏数（likes 一并刷新为详情页权威值）。
+ * 从 window.__INITIAL_STATE__.note.noteDetailMap[*].note.interactInfo 读取，
+ * 单篇失败仅保留 0 兜底，不影响整体；最后清理内部字段 noteId/xsecToken。
+ */
+async function enrichInteract(page, posts) {
+  try {
+    for (const p of posts) {
+      if (!p.noteId || !p.xsecToken) continue;
+      const url =
+        `https://www.xiaohongshu.com/explore/${p.noteId}` +
+        `?xsec_token=${encodeURIComponent(p.xsecToken)}&xsec_source=pc_user`;
+      try {
+        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 25_000 });
+        // 等待 SSR 详情数据注入 __INITIAL_STATE__.note.noteDetailMap
+        await page.waitForFunction(() => {
+          try {
+            const s = window.__INITIAL_STATE__;
+            const m = s && s.note && s.note.noteDetailMap;
+            return !!(m && Object.keys(m).length);
+          } catch { return false; }
+        }, { timeout: 10_000 }).catch(() => {});
+        const it = await page.evaluate((id) => {
+          try {
+            const s = window.__INITIAL_STATE__;
+            const m = s && s.note && s.note.noteDetailMap;
+            const k = (m && Object.keys(m)[0]) || id;
+            const note = m && m[k] && (m[k].note || m[k]);
+            return note && note.interactInfo ? note.interactInfo : null;
+          } catch { return null; }
+        }, p.noteId);
+        if (it) {
+          const n = (v) => { const x = parseInt(v, 10); return isNaN(x) ? 0 : x; };
+          if (it.likedCount !== undefined) p.likes = n(it.likedCount);
+          if (it.commentCount !== undefined) p.comments = n(it.commentCount);
+          if (it.collectedCount !== undefined) p.collects = n(it.collectedCount);
+        }
+      } catch (err) {
+        console.error('[xhs] 详情页互动补抓失败:', p.noteId, err.message);
+      }
+      // 轻微间隔，降低触发风控的概率
+      await page.waitForTimeout(800).catch(() => {});
+    }
+  } finally {
+    for (const p of posts) { delete p.noteId; delete p.xsecToken; }
   }
 }
 
