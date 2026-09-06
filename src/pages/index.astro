@@ -705,11 +705,11 @@ const thisMonthPosts = allPosts.filter(p => p.data.pubDate.getFullYear() === thi
 							cardEl.style.display = 'none';
 							return;
 						}
-						// 精选最新 2 篇（按链接去重，防止重复渲染）
+						// 精选最新 5 篇（按链接去重，防止重复渲染）
 						var seenLinks = {};
 						var top = [];
 						(data.posts || []).forEach(function (p) {
-							if (top.length >= 2) return;
+							if (top.length >= 5) return;
 							if (!p.link || seenLinks[p.link]) return;
 							seenLinks[p.link] = true;
 							top.push(p);
